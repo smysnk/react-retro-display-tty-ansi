@@ -58,6 +58,15 @@ jobs:
       - name: Build Storybook
         run: yarn storybook:build
 
+      - name: Set npm package version from build number
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+          VERSION_MAJOR: ${{ vars.NPM_VERSION_MAJOR }}
+          VERSION_MINOR: ${{ vars.NPM_VERSION_MINOR }}
+          PATCH_MODE: ${{ vars.NPM_VERSION_PATCH_MODE }}
+          PATCH_FIXED: ${{ vars.NPM_VERSION_PATCH_FIXED }}
+        run: bash ./scripts/release/set-version-from-build.sh
+
       - name: Validate npm release package
         shell: bash
         run: bash ./scripts/release/release-npm-package.sh
@@ -89,6 +98,15 @@ jobs:
 
       - name: Install dependencies
         run: yarn install --immutable
+
+      - name: Set npm package version from build number
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+          VERSION_MAJOR: ${{ vars.NPM_VERSION_MAJOR }}
+          VERSION_MINOR: ${{ vars.NPM_VERSION_MINOR }}
+          PATCH_MODE: ${{ vars.NPM_VERSION_PATCH_MODE }}
+          PATCH_FIXED: ${{ vars.NPM_VERSION_PATCH_FIXED }}
+        run: bash ./scripts/release/set-version-from-build.sh
 
       - name: Check whether this version is already published
         id: package_version
