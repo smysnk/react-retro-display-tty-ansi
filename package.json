@@ -30,6 +30,7 @@
     "storybook": "storybook dev -p 6006",
     "storybook:build": "storybook build",
     "demo:webp": "storybook build && node ./scripts/generate-demo-webp.mjs",
+    "readme:videos": "node ./scripts/upload-readme-videos.mjs",
     "test": "vitest run",
     "test:e2e": "storybook build && node --test ./e2e/*.test.mjs",
     "test:watch": "vitest",

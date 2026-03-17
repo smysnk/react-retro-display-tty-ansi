@@ -11,15 +11,25 @@ const staticDir = resolve(rootDir, "storybook-static");
 const outputDir = resolve(rootDir, "docs/assets");
 const outputWebpFile = resolve(outputDir, "react-retro-display-tty-ansi.webp");
 const outputMp4File = resolve(outputDir, "react-retro-display-tty-ansi.mp4");
+const quietOutputWebpFile = resolve(outputDir, "react-retro-display-tty-ansi-quiet-output.webp");
 const quietOutputMp4File = resolve(outputDir, "react-retro-display-tty-ansi-quiet-output.mp4");
+const editableModeWebpFile = resolve(
+  outputDir,
+  "react-retro-display-tty-ansi-editable-drafting.webp"
+);
 const editableModeMp4File = resolve(
   outputDir,
   "react-retro-display-tty-ansi-editable-drafting.mp4"
+);
+const terminalModeWebpFile = resolve(
+  outputDir,
+  "react-retro-display-tty-ansi-terminal-output.webp"
 );
 const terminalModeMp4File = resolve(
   outputDir,
   "react-retro-display-tty-ansi-terminal-output.mp4"
 );
+const promptModeWebpFile = resolve(outputDir, "react-retro-display-tty-ansi-prompt-loop.webp");
 const promptModeMp4File = resolve(outputDir, "react-retro-display-tty-ansi-prompt-loop.mp4");
 const chromePath =
   process.env.CHROME_PATH ??
@@ -173,7 +183,10 @@ const captures = [
     waitMs: 220,
     fps: 16,
     durationMs: 5200,
-    outputs: [{ type: "mp4", file: quietOutputMp4File }]
+    outputs: [
+      { type: "webp", file: quietOutputWebpFile },
+      { type: "mp4", file: quietOutputMp4File }
+    ]
   },
   {
     name: "editable drafting",
@@ -182,7 +195,10 @@ const captures = [
     waitMs: 220,
     fps: 16,
     durationMs: 7600,
-    outputs: [{ type: "mp4", file: editableModeMp4File }]
+    outputs: [
+      { type: "webp", file: editableModeWebpFile },
+      { type: "mp4", file: editableModeMp4File }
+    ]
   },
   {
     name: "terminal output",
@@ -191,7 +207,10 @@ const captures = [
     waitMs: 220,
     fps: 15,
     durationMs: 6200,
-    outputs: [{ type: "mp4", file: terminalModeMp4File }]
+    outputs: [
+      { type: "webp", file: terminalModeWebpFile },
+      { type: "mp4", file: terminalModeMp4File }
+    ]
   },
   {
     name: "prompt loop",
@@ -200,7 +219,10 @@ const captures = [
     waitMs: 220,
     fps: 15,
     durationMs: 9000,
-    outputs: [{ type: "mp4", file: promptModeMp4File }]
+    outputs: [
+      { type: "webp", file: promptModeWebpFile },
+      { type: "mp4", file: promptModeMp4File }
+    ]
   }
 ];
 
