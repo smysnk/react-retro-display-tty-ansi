@@ -3,6 +3,18 @@ import type { RetroLcdScreenSnapshot, RetroLcdWriteOptions } from "./terminal/ty
 
 export type CursorMode = "solid" | "hollow";
 export type RetroLcdGridMode = "auto" | "static";
+export type RetroLcdDisplaySurfaceMode = "dark" | "light";
+export type RetroLcdDisplayPaddingValue = number | string;
+export type RetroLcdDisplayPadding =
+  | RetroLcdDisplayPaddingValue
+  | {
+      block?: RetroLcdDisplayPaddingValue;
+      inline?: RetroLcdDisplayPaddingValue;
+      top?: RetroLcdDisplayPaddingValue;
+      right?: RetroLcdDisplayPaddingValue;
+      bottom?: RetroLcdDisplayPaddingValue;
+      left?: RetroLcdDisplayPaddingValue;
+    };
 
 export type RetroLcdDisplayColorMode =
   | "phosphor-green"
@@ -24,6 +36,8 @@ export type RetroLcdGeometry = {
 export type RetroLcdSharedProps = {
   color?: string;
   displayColorMode?: RetroLcdDisplayColorMode;
+  displaySurfaceMode?: RetroLcdDisplaySurfaceMode;
+  displayPadding?: RetroLcdDisplayPadding;
   cursorMode?: CursorMode;
   gridMode?: RetroLcdGridMode;
   rows?: number;

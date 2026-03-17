@@ -6,7 +6,11 @@ import type {
   WheelEventHandler
 } from "react";
 import type { RetroLcdCell } from "../core/terminal/types";
-import type { RetroLcdDisplayColorMode, RetroLcdProps } from "../core/types";
+import type {
+  RetroLcdDisplayColorMode,
+  RetroLcdDisplaySurfaceMode,
+  RetroLcdProps
+} from "../core/types";
 import {
   getCellCharacter,
   getLineDisplayText,
@@ -31,6 +35,7 @@ type RetroLcdDisplayProps = {
   mode: RetroLcdProps["mode"];
   renderModel: RetroLcdRenderModel;
   displayColorMode: RetroLcdDisplayColorMode;
+  displaySurfaceMode: RetroLcdDisplaySurfaceMode;
   screenRef: RefObject<HTMLDivElement | null>;
   probeRef: RefObject<HTMLSpanElement | null>;
   viewportRef?: RefObject<HTMLDivElement | null>;
@@ -45,6 +50,7 @@ export function RetroLcdDisplay({
   mode,
   renderModel,
   displayColorMode,
+  displaySurfaceMode,
   screenRef,
   probeRef,
   viewportRef,
@@ -82,7 +88,7 @@ export function RetroLcdDisplay({
                       <span
                         className={getCellClassName(cell)}
                         key={`${rowIndex}-${colIndex}-${cell.char}`}
-                        style={getCellPresentationStyle(cell, displayColorMode)}
+                        style={getCellPresentationStyle(cell, displayColorMode, displaySurfaceMode)}
                       >
                         {getCellCharacter(cell)}
                       </span>

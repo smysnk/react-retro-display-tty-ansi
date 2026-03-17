@@ -55,6 +55,14 @@ const autoResizeProbeMp4File = resolve(
   outputDir,
   "react-retro-display-tty-ansi-auto-resize-probe.mp4"
 );
+const lightDarkHostsWebpFile = resolve(
+  outputDir,
+  "react-retro-display-tty-ansi-light-dark-hosts.webp"
+);
+const lightDarkHostsMp4File = resolve(
+  outputDir,
+  "react-retro-display-tty-ansi-light-dark-hosts.mp4"
+);
 const chromePath =
   process.env.CHROME_PATH ??
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
@@ -258,6 +266,18 @@ const captures = [
     outputs: [
       { type: "webp", file: displayColorModesWebpFile },
       { type: "mp4", file: displayColorModesMp4File }
+    ]
+  },
+  {
+    name: "light and dark hosts",
+    storyId: "retrolcd--light-dark-hosts-demo",
+    selector: "[data-demo-capture='light-dark-hosts']",
+    waitMs: 180,
+    fps: 16,
+    durationMs: 10400,
+    outputs: [
+      { type: "webp", file: lightDarkHostsWebpFile },
+      { type: "mp4", file: lightDarkHostsMp4File }
     ]
   },
   {

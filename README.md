@@ -1,4 +1,4 @@
-<video src="https://github.com/user-attachments/assets/d9e52d00-acfb-4881-8544-daf2b0d298c0" autoplay controls loop muted playsinline title="Feature Tour Demo">
+<video src="https://github.com/user-attachments/assets/6d8ca42a-2721-42cd-8344-e57a751ef595" autoplay controls loop muted playsinline title="Feature Tour Demo">
   Your browser does not support the video tag.
 </video>
 
@@ -11,7 +11,8 @@
 It can be a read-only display, a controlled editable surface, a controller-driven terminal,
 or a small command prompt without changing visual language. It also understands ANSI styling,
 semantic display color modes, and an xterm-checked terminal behavior surface for real control
-character playback.
+character playback. It can also project itself onto either dark or light LCD glass without
+asking the whole app shell to follow.
 
 Latest test report: [test-station.smysnk.com/projects/react-retro-display-tty-ansi](https://test-station.smysnk.com/projects/react-retro-display-tty-ansi)
 
@@ -42,13 +43,74 @@ That is the whole entry point.
 You hand the component a mode, a value or controller when needed, and let it handle the grid,
 wrapping, cursor rendering, and terminal feel.
 
+## Display Padding
+
+Use `displayPadding` when the screen content should sit tighter to the glass or breathe a little
+more. The prop accepts:
+
+- a number for uniform pixel padding
+- a CSS length string for uniform padding
+- an object with `block` and `inline`
+- an object with per-side `top`, `right`, `bottom`, and `left`
+
+```tsx
+<RetroLcd mode="value" value="Tight framing" displayPadding={8} />
+
+<RetroLcd mode="value" value="Room to breathe" displayPadding="1.25rem" />
+
+<RetroLcd
+  mode="terminal"
+  displayPadding={{ block: 10, inline: 14 }}
+  value="measured from the padded screen area"
+/>
+
+<RetroLcd
+  mode="prompt"
+  displayPadding={{ top: 6, right: 10, bottom: 12, left: 10 }}
+/>
+```
+
+Because rows and columns are measured from the visible screen area, tighter padding yields a
+denser grid and looser padding yields fewer cells.
+
+## Light And Dark Surface Modes
+
+Use `displaySurfaceMode` when the LCD itself should read like a light instrument panel or a
+dark night-ops surface. This is separate from the host page theme, so the same component can
+sit inside bright docs, dark dashboards, or a side-by-side comparison view.
+
+<video src="https://github.com/user-attachments/assets/5dd0a2ec-acea-4e8c-a988-e3a8ce42362e" autoplay controls loop muted playsinline title="Light And Dark Hosts Demo">
+  Your browser does not support the video tag.
+</video>
+
+```tsx
+<RetroLcd
+  mode="value"
+  value="LIGHT SHELL\nWarm notes for bright workspaces."
+  displaySurfaceMode="light"
+  displayColorMode="phosphor-amber"
+  displayPadding={{ block: 12, inline: 14 }}
+/>
+
+<RetroLcd
+  mode="value"
+  value="DARK SHELL\nNight-shift console stays grounded."
+  displaySurfaceMode="dark"
+  displayColorMode="phosphor-green"
+  displayPadding={{ block: 12, inline: 14 }}
+/>
+```
+
+Reach for `displaySurfaceMode="light"` when the LCD should feel like paper, enamel, or a sunlit
+instrument panel. Keep `displaySurfaceMode="dark"` for the classic terminal-glass look.
+
 ## Modes Of Use
 
 ### 1. Quiet output
 
 Use `mode="value"` when the display is just there to speak.
 
-<video src="https://github.com/user-attachments/assets/d29140fc-ed95-4e15-9543-1962cbda4a62" autoplay controls loop muted playsinline title="Quiet Output Demo">
+<video src="https://github.com/user-attachments/assets/df1d92f1-3ce4-48b8-aecb-23732d01bb5b" autoplay controls loop muted playsinline title="Quiet Output Demo">
   Your browser does not support the video tag.
 </video>
 
@@ -63,7 +125,7 @@ Use `mode="value"` when the display is just there to speak.
 
 Turn on `editable` when you want the same surface to behave like a controlled input.
 
-<video src="https://github.com/user-attachments/assets/53a93d3a-2558-4f41-978b-15f9fc43f7a3" autoplay controls loop muted playsinline title="Editable Drafting Demo">
+<video src="https://github.com/user-attachments/assets/128ae33f-6dc7-467f-8ebc-bb09759d4341" autoplay controls loop muted playsinline title="Editable Drafting Demo">
   Your browser does not support the video tag.
 </video>
 
@@ -93,7 +155,7 @@ export function DraftPad() {
 
 Use a controller when the display should follow external writes over time.
 
-<video src="https://github.com/user-attachments/assets/577224c8-d70e-4d7a-921e-bd2c82818119" autoplay controls loop muted playsinline title="Terminal Output Demo">
+<video src="https://github.com/user-attachments/assets/e422599f-f233-4f24-9b2f-44912eb69944" autoplay controls loop muted playsinline title="Terminal Output Demo">
   Your browser does not support the video tag.
 </video>
 
@@ -128,7 +190,7 @@ or `initialBuffer`.
 
 Use `mode="prompt"` when the interface should feel like a guided shell.
 
-<video src="https://github.com/user-attachments/assets/98a16326-3f82-49ac-a09c-f5e51d612271" autoplay controls loop muted playsinline title="Prompt Interaction Demo">
+<video src="https://github.com/user-attachments/assets/701eb6a5-8c0f-4537-b9d9-f6f1ee9125b4" autoplay controls loop muted playsinline title="Prompt Interaction Demo">
   Your browser does not support the video tag.
 </video>
 
@@ -205,9 +267,12 @@ scrollback while new lines arrive, and auto-follow recovery back to the live tai
 When rows and columns matter to the program inside the display, listen to `onGeometryChange`,
 turn that measurement into a terminal-style reply, and redraw from the reported size. The demo
 below simulates a terminal app issuing `CSI 18 t`, receiving `CSI 8;<rows>;<cols>t`, then
-repainting a full border and centered ASCII-art dimensions every time the DOM element resizes.
+repainting a full border and centered dimensions every time the DOM element resizes. The current
+demo also cycles through tight screen padding, multiple border alphabets, oversized glyph styles,
+and every monochrome plus ANSI display mode so the same terminal program can be watched under
+different visual projections.
 
-<video src="https://github.com/user-attachments/assets/ba459fd0-769c-41b8-871e-b5b957f82310" autoplay controls loop muted playsinline title="Auto Resize Probe Demo">
+<video src="https://github.com/user-attachments/assets/f1b457ad-e086-4e34-b6a2-c11bf1986298" autoplay controls loop muted playsinline title="Auto Resize Probe Demo">
   Your browser does not support the video tag.
 </video>
 
@@ -228,6 +293,7 @@ export function ResizingTerminalProbe() {
     <RetroLcd
       mode="terminal"
       controller={controller}
+      displayPadding={{ block: 8, inline: 10 }}
       onGeometryChange={(geometry) => {
         const nextReply = `\u001b[8;${geometry.rows};${geometry.cols}t`;
 
@@ -243,6 +309,8 @@ export function ResizingTerminalProbe() {
 
 This is useful for terminal-style dashboards, resize-aware prompts, or retro UIs that need to
 center content, draw frames, or adapt layouts from the actual LCD grid instead of from CSS alone.
+It is also a good place to project `displayColorMode` changes when you want the terminal behavior
+to stay fixed while the display mood shifts around it.
 
 ## Terminal Color Modes
 
@@ -250,7 +318,7 @@ Use `displayColorMode` to decide how semantic terminal color should be projected
 The phosphor modes keep the retro LCD personality even when the source emits ANSI color. The ANSI
 modes preserve more of the source terminal palette.
 
-<video src="https://github.com/user-attachments/assets/48ab3b54-616a-420d-86bf-12d0e8b5e94a" autoplay controls loop muted playsinline title="Display Color Modes Demo">
+<video src="https://github.com/user-attachments/assets/9e3f99a4-512c-4dc6-a962-9bc3fb6c6eb1" autoplay controls loop muted playsinline title="Display Color Modes Demo">
   Your browser does not support the video tag.
 </video>
 
@@ -283,7 +351,7 @@ The terminal path is now tested against an xterm oracle and can faithfully repla
 character effects like carriage return rewrites, erase-in-line, scroll regions, insert-line
 updates, ANSI 16-color, indexed 256-color, and truecolor output.
 
-<video src="https://github.com/user-attachments/assets/71ce7adc-2407-48e0-a1e2-d4123b013312" autoplay controls loop muted playsinline title="Control Character Replay Demo">
+<video src="https://github.com/user-attachments/assets/b022b96b-6f16-4181-9721-f822f8f97da9" autoplay controls loop muted playsinline title="Control Character Replay Demo">
   Your browser does not support the video tag.
 </video>
 
@@ -339,6 +407,7 @@ It includes stories for the main user journeys:
 - auto-resize geometry probing
 - ANSI styling
 - display color mode projection
+- light and dark surface modes
 - control-character replay fixtures
 - prompt interaction
 - responsive geometry

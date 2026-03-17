@@ -5,6 +5,9 @@ export { useRetroLcdPromptSession } from "./react/useRetroLcdPromptSession";
 export type {
   CursorMode,
   RetroLcdDisplayColorMode,
+  RetroLcdDisplaySurfaceMode,
+  RetroLcdDisplayPadding,
+  RetroLcdDisplayPaddingValue,
   RetroLcdController,
   RetroLcdGeometry,
   RetroLcdPromptCommandResult,

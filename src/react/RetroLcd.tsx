@@ -17,6 +17,7 @@ import type {
 import { RetroLcdDisplay } from "./RetroLcdDisplay";
 import { RetroLcdInputOverlay } from "./RetroLcdInputOverlay";
 import { getDisplayModeRootVars } from "./retro-lcd-display-color";
+import { getDisplayPaddingVars } from "./retro-lcd-display-padding";
 import { useRetroLcdController } from "./useRetroLcdController";
 import { useRetroLcdBufferViewport } from "./useRetroLcdBufferViewport";
 import { useRetroLcdGeometry } from "./useRetroLcdGeometry";
@@ -39,6 +40,7 @@ const clampSelection = (value: number, text: string) =>
 
 export function RetroLcd(props: RetroLcdProps) {
   const displayColorMode = props.displayColorMode ?? "phosphor-green";
+  const displaySurfaceMode = props.displaySurfaceMode ?? "dark";
   const requestedCursorMode = props.cursorMode;
   const cursorMode = requestedCursorMode ?? "solid";
   const valueProps = props.mode === "value" ? props : null;
@@ -296,7 +298,8 @@ export function RetroLcd(props: RetroLcdProps) {
   const inlineStyle = {
     "--retro-lcd-rows": `${geometry.rows}`,
     "--retro-lcd-cols": `${geometry.cols}`,
-    ...getDisplayModeRootVars(displayColorMode, props.color),
+    ...getDisplayModeRootVars(displayColorMode, displaySurfaceMode, props.color),
+    ...getDisplayPaddingVars(props.displayPadding),
     ...cssVars,
     ...props.style
   } as CSSProperties;
@@ -311,6 +314,7 @@ export function RetroLcd(props: RetroLcdProps) {
       data-cols={geometry.cols}
       data-grid-mode={props.gridMode ?? "auto"}
       data-display-color-mode={displayColorMode}
+      data-display-surface-mode={displaySurfaceMode}
       data-placeholder={renderModel.isDimmed ? "true" : "false"}
       data-buffer-offset={bufferViewport.viewportState.scrollOffset}
       data-buffer-max-offset={bufferViewport.viewportState.maxScrollOffset}
@@ -321,6 +325,7 @@ export function RetroLcd(props: RetroLcdProps) {
         mode={props.mode}
         renderModel={renderModel}
         displayColorMode={displayColorMode}
+        displaySurfaceMode={displaySurfaceMode}
         screenRef={screenRef}
         probeRef={probeRef}
         viewportRef={viewportRef}

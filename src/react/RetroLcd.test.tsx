@@ -14,6 +14,39 @@ const getVisibleLines = (container: HTMLElement) =>
     (line.textContent ?? "").replace(/\u00a0/gu, " ")
   );
 
+const parseRgb = (value: string) => {
+  const match = value.match(/\d+(?:\.\d+)?/g) ?? [];
+  return {
+    red: Number.parseFloat(match[0] ?? "0"),
+    green: Number.parseFloat(match[1] ?? "0"),
+    blue: Number.parseFloat(match[2] ?? "0")
+  };
+};
+
+const toLuminanceChannel = (value: number) => {
+  const normalized = value / 255;
+  return normalized <= 0.03928
+    ? normalized / 12.92
+    : ((normalized + 0.055) / 1.055) ** 2.4;
+};
+
+const getContrastRatio = (foreground: string, background: string) => {
+  const foregroundRgb = parseRgb(foreground);
+  const backgroundRgb = parseRgb(background);
+  const foregroundLuminance =
+    0.2126 * toLuminanceChannel(foregroundRgb.red) +
+    0.7152 * toLuminanceChannel(foregroundRgb.green) +
+    0.0722 * toLuminanceChannel(foregroundRgb.blue);
+  const backgroundLuminance =
+    0.2126 * toLuminanceChannel(backgroundRgb.red) +
+    0.7152 * toLuminanceChannel(backgroundRgb.green) +
+    0.0722 * toLuminanceChannel(backgroundRgb.blue);
+  const brighter = Math.max(foregroundLuminance, backgroundLuminance);
+  const darker = Math.min(foregroundLuminance, backgroundLuminance);
+
+  return (brighter + 0.05) / (darker + 0.05);
+};
+
 describe("RetroLcd", () => {
   it("renders value mode text", () => {
     render(<RetroLcd mode="value" value="HELLO LCD" />);
@@ -104,6 +137,45 @@ describe("RetroLcd", () => {
     expect(window.getComputedStyle(cells[1]!).backgroundColor).toBe("rgb(68, 85, 102)");
   });
 
+  it("switches to a light surface mode while keeping the phosphor accent readable", () => {
+    const { container } = render(
+      <RetroLcd
+        mode="value"
+        value="grid"
+        displayColorMode="phosphor-green"
+        displaySurfaceMode="light"
+      />
+    );
+
+    const root = container.querySelector(".retro-lcd") as HTMLElement | null;
+    expect(root).not.toBeNull();
+    expect(root).toHaveAttribute("data-display-surface-mode", "light");
+    expect(root?.style.getPropertyValue("--retro-lcd-color")).not.toBe("#97ff9b");
+    expect(root?.style.getPropertyValue("--retro-lcd-bg-bottom")).toBe("#edf5e7");
+  });
+
+  it("keeps ansi foreground and background colors legible in light surface mode", () => {
+    const controller = createRetroLcdController({ rows: 2, cols: 8 });
+    const { container } = render(
+      <RetroLcd
+        mode="terminal"
+        controller={controller}
+        displayColorMode="ansi-extended"
+        displaySurfaceMode="light"
+      />
+    );
+
+    act(() => {
+      controller.write("\u001b[38;5;196;48;5;25mA");
+    });
+
+    const cell = container.querySelector(".retro-lcd__cell") as HTMLElement | null;
+    expect(cell).not.toBeNull();
+
+    const computedStyle = window.getComputedStyle(cell!);
+    expect(getContrastRatio(computedStyle.color, computedStyle.backgroundColor)).toBeGreaterThan(4.5);
+  });
+
   it("renders prompt mode with the default prompt character", () => {
     const { container } = render(<RetroLcd mode="prompt" value="status" />);
 
@@ -176,6 +248,30 @@ describe("RetroLcd", () => {
         cols: expect.any(Number)
       })
     );
+  });
+
+  it("supports uniform and side-specific display padding", () => {
+    const uniformView = render(<RetroLcd mode="value" value="grid" displayPadding={10} />);
+    const uniformRoot = uniformView.container.querySelector(".retro-lcd") as HTMLElement | null;
+
+    expect(uniformRoot?.style.getPropertyValue("--retro-lcd-padding-top")).toBe("10px");
+    expect(uniformRoot?.style.getPropertyValue("--retro-lcd-padding-right")).toBe("10px");
+
+    uniformView.unmount();
+
+    const sideView = render(
+      <RetroLcd
+        mode="value"
+        value="grid"
+        displayPadding={{ block: 12, inline: "1.5rem", top: 6 }}
+      />
+    );
+    const sideRoot = sideView.container.querySelector(".retro-lcd") as HTMLElement | null;
+
+    expect(sideRoot?.style.getPropertyValue("--retro-lcd-padding-top")).toBe("6px");
+    expect(sideRoot?.style.getPropertyValue("--retro-lcd-padding-right")).toBe("1.5rem");
+    expect(sideRoot?.style.getPropertyValue("--retro-lcd-padding-bottom")).toBe("12px");
+    expect(sideRoot?.style.getPropertyValue("--retro-lcd-padding-left")).toBe("1.5rem");
   });
 
   it("supports a static grid mode with caller-supplied rows and columns", () => {

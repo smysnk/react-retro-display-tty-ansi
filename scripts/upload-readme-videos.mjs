@@ -33,6 +33,10 @@ const videoEntries = [
     file: resolve(rootDir, "docs/assets/react-retro-display-tty-ansi-display-color-modes.mp4")
   },
   {
+    title: "Light And Dark Hosts Demo",
+    file: resolve(rootDir, "docs/assets/react-retro-display-tty-ansi-light-dark-hosts.mp4")
+  },
+  {
     title: "Control Character Replay Demo",
     file: resolve(
       rootDir,

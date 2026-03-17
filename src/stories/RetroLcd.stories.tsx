@@ -40,22 +40,98 @@ type TerminalProbeSize = {
   height: number;
 };
 
+type ProbeBorderStyle = {
+  id: string;
+  label: string;
+  topLeft: string;
+  topRight: string;
+  bottomLeft: string;
+  bottomRight: string;
+  horizontal: string;
+  vertical: string;
+};
+
+type ProbeGlyphStyle = {
+  id: string;
+  label: string;
+  glyphs: Record<string, string[]>;
+};
+
+type ProbeSceneState = {
+  displayColorMode: RetroLcdDisplayColorMode;
+  borderStyleLabel: string;
+  glyphStyleLabel: string;
+};
+
 const wait = (duration: number) =>
   new Promise<void>((resolve) => {
     window.setTimeout(resolve, duration);
   });
 
 const TERMINAL_SIZE_QUERY = "\u001b[18t";
-const borderPalette = {
-  frame: "\u001b[38;5;120m",
-  title: "\u001b[38;5;159m",
-  reply: "\u001b[38;5;45m",
-  label: "\u001b[38;5;187m",
-  ascii: "\u001b[1;38;5;195m",
-  shadow: "\u001b[2;38;5;151m",
-  reset: "\u001b[0m"
-};
-const asciiGlyphs: Record<string, string[]> = {
+const PROBE_RESET = "\u001b[0m";
+const PROBE_BOLD = "\u001b[1m";
+const PROBE_FAINT = "\u001b[2m";
+const probeDisplayColorModes: RetroLcdDisplayColorMode[] = [
+  "phosphor-green",
+  "phosphor-amber",
+  "phosphor-ice",
+  "ansi-classic",
+  "ansi-extended"
+];
+const probeBorderStyles: ProbeBorderStyle[] = [
+  {
+    id: "ascii",
+    label: "ascii",
+    topLeft: "+",
+    topRight: "+",
+    bottomLeft: "+",
+    bottomRight: "+",
+    horizontal: "-",
+    vertical: "|"
+  },
+  {
+    id: "single-line",
+    label: "single-line",
+    topLeft: "┌",
+    topRight: "┐",
+    bottomLeft: "└",
+    bottomRight: "┘",
+    horizontal: "─",
+    vertical: "│"
+  },
+  {
+    id: "rounded",
+    label: "rounded",
+    topLeft: "╭",
+    topRight: "╮",
+    bottomLeft: "╰",
+    bottomRight: "╯",
+    horizontal: "─",
+    vertical: "│"
+  },
+  {
+    id: "double",
+    label: "double-line",
+    topLeft: "╔",
+    topRight: "╗",
+    bottomLeft: "╚",
+    bottomRight: "╝",
+    horizontal: "═",
+    vertical: "║"
+  },
+  {
+    id: "heavy",
+    label: "heavy",
+    topLeft: "┏",
+    topRight: "┓",
+    bottomLeft: "┗",
+    bottomRight: "┛",
+    horizontal: "━",
+    vertical: "┃"
+  }
+];
+const classicProbeGlyphs: Record<string, string[]> = {
   "0": [" ### ", "#   #", "#   #", "#   #", " ### "],
   "1": ["  #  ", " ##  ", "  #  ", "  #  ", " ### "],
   "2": [" ### ", "#   #", "   # ", "  #  ", "#####"],
@@ -67,6 +143,67 @@ const asciiGlyphs: Record<string, string[]> = {
   "8": [" ### ", "#   #", " ### ", "#   #", " ### "],
   "9": [" ### ", "#   #", " ####", "    #", " ### "],
   "x": ["#   #", " # # ", "  #  ", " # # ", "#   #"]
+};
+const outlineProbeGlyphs: Record<string, string[]> = {
+  "0": ["╭──╮", "│  │", "│  │", "│  │", "╰──╯"],
+  "1": [" ╭╮ ", "  │ ", "  │ ", "  │ ", " ╰╯ "],
+  "2": ["╭──╮", "  ─┤", "╭─╯ ", "│   ", "╰──╯"],
+  "3": ["╭──╮", "  ─┤", " ──┤", "  ─┤", "╰──╯"],
+  "4": ["│  │", "│  │", "╰──┤", "   │", "   ╵"],
+  "5": ["╭──╮", "│   ", "╰──╮", "   │", "╰──╯"],
+  "6": ["╭──╮", "│   ", "├──╮", "│  │", "╰──╯"],
+  "7": ["╭──╮", "  ─┤", "  ╱ ", " ╱  ", "╱   "],
+  "8": ["╭──╮", "├──┤", "├──┤", "│  │", "╰──╯"],
+  "9": ["╭──╮", "│  │", "╰──┤", "   │", "╰──╯"],
+  "x": ["╲  ╱", " ╲╱ ", " ╱╲ ", "╱  ╲", "    "]
+};
+const doubleProbeGlyphs: Record<string, string[]> = {
+  "0": ["╔══╗", "║  ║", "║  ║", "║  ║", "╚══╝"],
+  "1": [" ╔╗ ", "═╣║ ", " ║║ ", " ║║ ", "═╩╩═"],
+  "2": ["╔══╗", "  ═╣", "╔═╝ ", "║   ", "╚══╝"],
+  "3": ["╔══╗", "  ═╣", " ══╣", "  ═╣", "╚══╝"],
+  "4": ["║  ║", "║  ║", "╚══╣", "   ║", "   ╵"],
+  "5": ["╔══╗", "║   ", "╚══╗", "   ║", "╚══╝"],
+  "6": ["╔══╗", "║   ", "╠══╗", "║  ║", "╚══╝"],
+  "7": ["╔══╗", "  ═╣", "  ╱ ", " ╱  ", "╱   "],
+  "8": ["╔══╗", "╠══╣", "╠══╣", "║  ║", "╚══╝"],
+  "9": ["╔══╗", "║  ║", "╚══╣", "   ║", "╚══╝"],
+  "x": ["╲  ╱", " ╳  ", " ╳  ", "╱  ╲", "    "]
+};
+const graffitiProbeGlyphs: Record<string, string[]> = {
+  "0": ["█▀▀█", "█  █", "█  █", "█  █", "█▄▄█"],
+  "1": [" ▄█ ", "  █ ", "  █ ", "  █ ", "▄██▄"],
+  "2": ["█▀▀█", "  ▄▀", " ▀▄ ", "█   ", "█▄▄█"],
+  "3": ["█▀▀█", "  ▄▀", "  ▀█", "   █", "█▄▄█"],
+  "4": ["█  █", "█  █", "█▄▄█", "   █", "   █"],
+  "5": ["█▀▀▀", "█   ", "█▀▀█", "   █", "█▄▄█"],
+  "6": ["█▀▀█", "█   ", "█▀▀█", "█  █", "█▄▄█"],
+  "7": ["█▀▀█", "   █", "  █ ", " █  ", "█   "],
+  "8": ["█▀▀█", "█  █", "█▀▀█", "█  █", "█▄▄█"],
+  "9": ["█▀▀█", "█  █", "█▄▄█", "   █", "█▄▄█"],
+  "x": ["█  █", " ▀█ ", " ▄▀ ", "█  █", "    "]
+};
+const probeMonochromeGlyphStyles: ProbeGlyphStyle[] = [
+  {
+    id: "classic",
+    label: "classic blocks",
+    glyphs: classicProbeGlyphs
+  },
+  {
+    id: "outline",
+    label: "outline",
+    glyphs: outlineProbeGlyphs
+  },
+  {
+    id: "double",
+    label: "double-line",
+    glyphs: doubleProbeGlyphs
+  }
+];
+const graffitiProbeGlyphStyle: ProbeGlyphStyle = {
+  id: "graffiti",
+  label: "3D graffiti",
+  glyphs: graffitiProbeGlyphs
 };
 const autoResizeProbeSizes: TerminalProbeSize[] = [
   { width: 760, height: 360 },
@@ -198,6 +335,87 @@ const typeIntoTextarea = async (
 
 const buildTerminalSizeReply = (rows: number, cols: number) => `\u001b[8;${rows};${cols}t`;
 
+const createSeededRandom = (seed: number) => {
+  let state = seed >>> 0;
+
+  return () => {
+    state = (state * 1664525 + 1013904223) >>> 0;
+    return state / 0x100000000;
+  };
+};
+
+const stripAnsi = (value: string) => value.replace(/\u001b\[[0-9;]*m/gu, "");
+
+const applyAnsi = (code: string, text: string) => `${code}${text}${PROBE_RESET}`;
+
+const colorizeSequence = (text: string, palette: string[]) => {
+  let colorIndex = 0;
+
+  const rendered = Array.from(text).map((character) => {
+    if (character === " ") {
+      return character;
+    }
+
+    const color = palette[colorIndex % palette.length] ?? "";
+    colorIndex += 1;
+    return `${color}${character}`;
+  });
+
+  return `${rendered.join("")}${PROBE_RESET}`;
+};
+
+const buildProbeTheme = (displayColorMode: RetroLcdDisplayColorMode) => {
+  switch (displayColorMode) {
+    case "ansi-classic":
+      return {
+        label: ["\u001b[97m", "\u001b[96m", "\u001b[95m"],
+        meta: ["\u001b[93m", "\u001b[97m"],
+        topBorder: ["\u001b[96m", "\u001b[94m", "\u001b[95m"],
+        sideBorder: ["\u001b[93m", "\u001b[97m"],
+        bottomBorder: ["\u001b[92m", "\u001b[93m", "\u001b[91m"],
+        glyph: ["\u001b[97m", "\u001b[93m", "\u001b[96m"],
+        graffiti: ["\u001b[91m", "\u001b[95m", "\u001b[93m", "\u001b[96m", "\u001b[92m"],
+        graffitiShadow: "\u001b[90m"
+      };
+    case "ansi-extended":
+      return {
+        label: ["\u001b[38;2;255;240;196m", "\u001b[38;2;192;246;255m"],
+        meta: ["\u001b[38;2;168;220;255m", "\u001b[38;2;255;205;117m"],
+        topBorder: [
+          "\u001b[38;2;116;255;224m",
+          "\u001b[38;2;92;189;255m",
+          "\u001b[38;2;199;128;255m"
+        ],
+        sideBorder: ["\u001b[38;2;255;214;92m", "\u001b[38;2;255;102;186m"],
+        bottomBorder: [
+          "\u001b[38;2;255;150;92m",
+          "\u001b[38;2;255;214;92m",
+          "\u001b[38;2;120;255;168m"
+        ],
+        glyph: ["\u001b[38;2;214;255;250m", "\u001b[38;2;255;232;171m"],
+        graffiti: [
+          "\u001b[38;2;255;96;142m",
+          "\u001b[38;2;255;176;85m",
+          "\u001b[38;2;255;240;103m",
+          "\u001b[38;2;114;255;223m",
+          "\u001b[38;2;90;171;255m"
+        ],
+        graffitiShadow: "\u001b[38;2;66;18;102m"
+      };
+    default:
+      return {
+        label: [PROBE_BOLD, PROBE_FAINT],
+        meta: [PROBE_FAINT],
+        topBorder: [PROBE_BOLD, PROBE_FAINT],
+        sideBorder: [PROBE_FAINT, PROBE_BOLD],
+        bottomBorder: [PROBE_BOLD, PROBE_FAINT],
+        glyph: [PROBE_BOLD, PROBE_FAINT],
+        graffiti: [PROBE_BOLD, PROBE_FAINT],
+        graffitiShadow: PROBE_FAINT
+      };
+  }
+};
+
 const parseTerminalSizeReply = (reply: string) => {
   const match = /^\u001b\[8;(\d+);(\d+)t$/u.exec(reply);
 
@@ -211,11 +429,11 @@ const parseTerminalSizeReply = (reply: string) => {
   };
 };
 
-const toAsciiArt = (value: string) => {
+const toGlyphArt = (value: string, glyphs: Record<string, string[]>) => {
   const glyphLines = Array.from({ length: 5 }, () => "");
 
   for (const character of value) {
-    const glyph = asciiGlyphs[character] ?? asciiGlyphs["0"];
+    const glyph = glyphs[character] ?? glyphs["0"];
 
     for (let index = 0; index < glyphLines.length; index += 1) {
       glyphLines[index] += `${glyph[index] ?? "     "} `;
@@ -237,46 +455,92 @@ const writeAt = (
 const drawTerminalProbeFrame = (
   controller: ReturnType<typeof createRetroLcdController>,
   rows: number,
-  cols: number
+  cols: number,
+  {
+    displayColorMode,
+    borderStyle,
+    glyphStyle
+  }: {
+    displayColorMode: RetroLcdDisplayColorMode;
+    borderStyle: ProbeBorderStyle;
+    glyphStyle: ProbeGlyphStyle;
+  }
 ) => {
+  const theme = buildProbeTheme(displayColorMode);
   const clampedRows = Math.max(5, rows);
   const clampedCols = Math.max(12, cols);
-  const topBorder = `+${"-".repeat(Math.max(0, clampedCols - 2))}+`;
   const middleWidth = Math.max(0, clampedCols - 2);
   const sizeValue = `${clampedCols}x${clampedRows}`;
-  const asciiLines = toAsciiArt(sizeValue);
-  const contentRows = [
-    `${borderPalette.label}reported size${borderPalette.reset}`,
-    ...asciiLines.map((line) => `${borderPalette.ascii}${line}${borderPalette.reset}`)
-  ];
-  const blockHeight = contentRows.length;
+  const glyphLines = toGlyphArt(sizeValue, glyphStyle.glyphs);
+  const drawGraffitiShadow =
+    glyphStyle.id === graffitiProbeGlyphStyle.id && clampedRows >= glyphLines.length + 4;
+  const topBorder = colorizeSequence(
+    `${borderStyle.topLeft}${borderStyle.horizontal.repeat(middleWidth)}${borderStyle.topRight}`,
+    theme.topBorder
+  );
+  const bottomBorder = colorizeSequence(
+    `${borderStyle.bottomLeft}${borderStyle.horizontal.repeat(middleWidth)}${borderStyle.bottomRight}`,
+    theme.bottomBorder
+  );
+  const blockHeight = 1 + glyphLines.length + (drawGraffitiShadow ? 1 : 0);
   const startRow = Math.max(
     2,
     Math.min(clampedRows - blockHeight, Math.floor((clampedRows - blockHeight) / 2))
   );
+  const labelText = colorizeSequence(
+    `mode ${displayColorMode}  ${borderStyle.label}`,
+    theme.label
+  );
 
   controller.write("\u001b[2J\u001b[H");
 
-  writeAt(controller, 1, 1, `${borderPalette.frame}${topBorder}${borderPalette.reset}`);
+  writeAt(controller, 1, 1, topBorder);
   for (let row = 2; row < clampedRows; row += 1) {
     writeAt(
       controller,
       row,
       1,
-      `${borderPalette.frame}|${borderPalette.reset}${" ".repeat(middleWidth)}${borderPalette.frame}|${borderPalette.reset}`
+      `${applyAnsi(theme.sideBorder[0] ?? "", borderStyle.vertical)}${" ".repeat(middleWidth)}${applyAnsi(
+        theme.sideBorder[theme.sideBorder.length - 1] ?? theme.sideBorder[0] ?? "",
+        borderStyle.vertical
+      )}`
     );
   }
-  writeAt(controller, clampedRows, 1, `${borderPalette.frame}${topBorder}${borderPalette.reset}`);
+  writeAt(controller, clampedRows, 1, bottomBorder);
 
-  contentRows.forEach((line, index) => {
-    if (line.length === 0) {
-      return;
-    }
+  writeAt(
+    controller,
+    startRow,
+    Math.max(2, Math.floor((clampedCols - stripAnsi(labelText).length) / 2) + 1),
+    labelText
+  );
 
-    const plainLength = line.replace(/\u001b\[[0-9;]*m/gu, "").length;
-    const startCol = Math.max(2, Math.floor((clampedCols - plainLength) / 2) + 1);
-    writeAt(controller, startRow + index, startCol, line);
-  });
+  if (glyphStyle.id === graffitiProbeGlyphStyle.id) {
+    glyphLines.forEach((line, index) => {
+      const frontRow = startRow + index + 1;
+      const plainLength = stripAnsi(line).length;
+      const baseCol = Math.max(2, Math.floor((clampedCols - plainLength) / 2) + 1);
+
+      if (drawGraffitiShadow) {
+        const shadowRow = startRow + index + 2;
+
+        writeAt(
+          controller,
+          shadowRow,
+          Math.min(clampedCols - 1, baseCol + 2),
+          colorizeSequence(line, [theme.graffitiShadow])
+        );
+      }
+
+      writeAt(controller, frontRow, baseCol, colorizeSequence(line, theme.graffiti));
+    });
+  } else {
+    glyphLines.forEach((line, index) => {
+      const centered = colorizeSequence(line, theme.glyph);
+      const startCol = Math.max(2, Math.floor((clampedCols - stripAnsi(line).length) / 2) + 1);
+      writeAt(controller, startRow + index + 1, startCol, centered);
+    });
+  }
 
   controller.write(`\u001b[${clampedRows};${clampedCols}H`);
   controller.setCursorVisible(false);
@@ -966,14 +1230,22 @@ function DisplayBufferStory() {
 
 function AutoResizeProbeStory() {
   const [lastReply, setLastReply] = useState<string>("");
+  const [sceneState, setSceneState] = useState<ProbeSceneState>({
+    displayColorMode: probeDisplayColorModes[0],
+    borderStyleLabel: probeBorderStyles[0]?.label ?? "ascii",
+    glyphStyleLabel: probeMonochromeGlyphStyles[0]?.label ?? "classic blocks"
+  });
 
   return (
     <StoryShell
       kicker="Auto Resize Probe"
       title="Let a terminal program redraw itself from the screen's reported geometry."
-      copy="This demo simulates a terminal app issuing a size query, receiving a terminal-style rows/cols reply, and repainting the whole scene with ANSI cursor movement. As the DOM element resizes, the border and centered ASCII-art dimensions update to match the newly reported grid."
+      copy="This demo simulates a terminal app issuing a size query, receiving a terminal-style rows/cols reply, and repainting the whole scene with ANSI cursor movement. The screen keeps a deliberately tight padding, cycles through every monochrome and ANSI display mode, and randomly swaps border alphabets plus oversized text styles while the DOM element resizes."
       footer={
         <div className="sb-retro-status">
+          <span className="sb-retro-measure">mode: <code>{sceneState.displayColorMode}</code></span>
+          <span className="sb-retro-measure">border: <code>{sceneState.borderStyleLabel}</code></span>
+          <span className="sb-retro-measure">glyphs: <code>{sceneState.glyphStyleLabel}</code></span>
           <span className="sb-retro-measure">
             query: <code>{TERMINAL_SIZE_QUERY.replace(/\u001b/gu, "ESC")}</code>
           </span>
@@ -983,15 +1255,17 @@ function AutoResizeProbeStory() {
         </div>
       }
     >
-      <AutoResizeProbeSurface onReplyChange={setLastReply} />
+      <AutoResizeProbeSurface onReplyChange={setLastReply} onSceneChange={setSceneState} />
     </StoryShell>
   );
 }
 
 function AutoResizeProbeSurface({
-  onReplyChange
+  onReplyChange,
+  onSceneChange
 }: {
   onReplyChange?: (reply: string) => void;
+  onSceneChange?: (sceneState: ProbeSceneState) => void;
 }) {
   const [controller] = useState(() =>
     createRetroLcdController({
@@ -1002,6 +1276,8 @@ function AutoResizeProbeSurface({
     })
   );
   const [sizeIndex, setSizeIndex] = useState(0);
+  const [displayModeIndex, setDisplayModeIndex] = useState(0);
+  const [visualVariant, setVisualVariant] = useState(0);
   const [reportedGeometry, setReportedGeometry] = useState<RetroLcdGeometry | null>(null);
 
   useEffect(() => {
@@ -1011,6 +1287,60 @@ function AutoResizeProbeSurface({
 
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setDisplayModeIndex((current) => (current + 1) % probeDisplayColorModes.length);
+    }, 2600);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const nextRandom = createSeededRandom(19760317);
+    let timer = 0;
+    let active = true;
+
+    const schedule = () => {
+      timer = window.setTimeout(
+        () => {
+          if (!active) {
+            return;
+          }
+
+          setVisualVariant((current) => current + 1);
+          schedule();
+        },
+        1150 + Math.floor(nextRandom() * 1500)
+      );
+    };
+
+    schedule();
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, []);
+
+  const displayColorMode = probeDisplayColorModes[displayModeIndex] ?? probeDisplayColorModes[0];
+  const borderStyle = probeBorderStyles[visualVariant % probeBorderStyles.length] ?? probeBorderStyles[0];
+  const monochromeGlyphStyle =
+    probeMonochromeGlyphStyles[
+      (visualVariant + Math.floor(sizeIndex / 2)) % probeMonochromeGlyphStyles.length
+    ] ?? probeMonochromeGlyphStyles[0];
+  const glyphStyle =
+    displayColorMode === "ansi-classic" || displayColorMode === "ansi-extended"
+      ? graffitiProbeGlyphStyle
+      : monochromeGlyphStyle;
+
+  useEffect(() => {
+    onSceneChange?.({
+      displayColorMode,
+      borderStyleLabel: borderStyle.label,
+      glyphStyleLabel: glyphStyle.label
+    });
+  }, [borderStyle.label, displayColorMode, glyphStyle.label, onSceneChange]);
 
   useEffect(() => {
     if (!reportedGeometry) {
@@ -1027,8 +1357,12 @@ function AutoResizeProbeSurface({
     onReplyChange?.(reply);
     controller.reset();
     controller.resize(parsed.rows, parsed.cols);
-    drawTerminalProbeFrame(controller, parsed.rows, parsed.cols);
-  }, [controller, onReplyChange, reportedGeometry]);
+    drawTerminalProbeFrame(controller, parsed.rows, parsed.cols, {
+      displayColorMode,
+      borderStyle,
+      glyphStyle
+    });
+  }, [borderStyle, controller, displayColorMode, glyphStyle, onReplyChange, reportedGeometry]);
 
   const currentSize = autoResizeProbeSizes[sizeIndex] ?? autoResizeProbeSizes[0];
 
@@ -1040,10 +1374,12 @@ function AutoResizeProbeSurface({
           width: currentSize.width,
           height: currentSize.height
         }}
-      >
+        >
         <RetroLcd
           mode="terminal"
           controller={controller}
+          displayColorMode={displayColorMode}
+          displayPadding={{ block: 8, inline: 10 }}
           onGeometryChange={setReportedGeometry}
           style={{
             width: "100%",
@@ -1207,6 +1543,122 @@ function DisplayColorModesStory() {
         </DisplayColorModeCard>
       </div>
     </StoryShell>
+  );
+}
+
+function LightDarkHostsSurface({
+  activeTheme,
+  animated = false
+}: {
+  activeTheme: "light" | "dark" | "both";
+  animated?: boolean;
+}) {
+  const [tick, setTick] = useState(0);
+  const cycleMs = 10200;
+  const now = tick % cycleMs;
+  const takeText = (text: string, progress: number) =>
+    text.slice(0, Math.max(1, Math.round(text.length * progress)));
+  const clampProgress = (start: number, end: number) =>
+    Math.max(0, Math.min(1, (now - start) / (end - start)));
+  const resolvedActiveTheme =
+    animated ? (now < cycleMs / 2 ? "light" : "dark") : activeTheme;
+  const lightText = [
+    "LIGHT SHELL",
+    "Warm notes for bright workspaces.",
+    "Amber glass without forcing the whole page dark."
+  ].join("\n");
+  const darkText = [
+    "DARK SHELL",
+    "Night-shift console stays grounded.",
+    "Same component, different host mood."
+  ].join("\n");
+  const lightValue = animated ? takeText(lightText, clampProgress(0, 4000)) : lightText;
+  const darkValue = animated ? takeText(darkText, clampProgress(5200, 9200)) : darkText;
+
+  return (
+    <div className="sb-retro-host-grid">
+      <article
+        className="sb-retro-host-card sb-retro-host-card--light"
+        data-active={resolvedActiveTheme === "light" || resolvedActiveTheme === "both"}
+      >
+        <div className="sb-retro-host-copy">
+          <span className="sb-retro-host-kicker">Light shell</span>
+          <h2 className="sb-retro-host-title">Bright docs lane</h2>
+          <p className="sb-retro-host-description">
+            Keep the surrounding page light, warm, and editorial while the LCD stays focused.
+          </p>
+        </div>
+        <RetroLcd
+          mode="value"
+          value={lightValue}
+          displaySurfaceMode="light"
+          displayColorMode="phosphor-amber"
+          displayPadding={{ block: 12, inline: 14 }}
+        />
+      </article>
+      <article
+        className="sb-retro-host-card sb-retro-host-card--dark"
+        data-active={resolvedActiveTheme === "dark" || resolvedActiveTheme === "both"}
+      >
+        <div className="sb-retro-host-copy">
+          <span className="sb-retro-host-kicker">Dark shell</span>
+          <h2 className="sb-retro-host-title">Night operations lane</h2>
+          <p className="sb-retro-host-description">
+            Drop the same display into a deeper host surface when the app wants darker chrome.
+          </p>
+        </div>
+        <RetroLcd
+          mode="value"
+          value={darkValue}
+          displaySurfaceMode="dark"
+          displayColorMode="phosphor-green"
+          displayPadding={{ block: 12, inline: 14 }}
+        />
+      </article>
+    </div>
+  );
+}
+
+function LightDarkHostsStory() {
+  const [activeTheme, setActiveTheme] = useState<"light" | "dark" | "both">("both");
+
+  return (
+    <StoryShell
+      kicker="Light And Dark Shells"
+      title="Let the host app pick the mood."
+      copy="The component does not need the whole page to become a terminal. You can place the same LCD inside a bright editorial shell or a deep operational shell and keep the display language consistent."
+      footer={
+        <ul className="sb-retro-note-list">
+          <li>Use the host page to define the light or dark surface around the display.</li>
+          <li>`displayColorMode` can stay warm in light shells and cooler in dark shells.</li>
+        </ul>
+      }
+    >
+      <div className="sb-retro-toolbar">
+        {(["both", "light", "dark"] as const).map((entry) => (
+          <button
+            className="sb-retro-button"
+            type="button"
+            key={entry}
+            data-active={entry === activeTheme}
+            onClick={() => setActiveTheme(entry)}
+          >
+            {entry === "both" ? "Show both" : `${entry} focus`}
+          </button>
+        ))}
+      </div>
+      <Stage maxWidth={980}>
+        <LightDarkHostsSurface activeTheme={activeTheme} />
+      </Stage>
+    </StoryShell>
+  );
+}
+
+function LightDarkHostsDemoStory() {
+  return (
+    <CaptureStage captureId="light-dark-hosts" maxWidth={980}>
+      <LightDarkHostsSurface activeTheme="both" animated />
+    </CaptureStage>
   );
 }
 
@@ -1430,6 +1882,10 @@ export const DisplayColorModes: Story = {
   render: () => <DisplayColorModesStory />
 };
 
+export const LightDarkHosts: Story = {
+  render: () => <LightDarkHostsStory />
+};
+
 export const ControlCharacterReplay: Story = {
   render: () => <ControlCharacterReplayStory />
 };
@@ -1510,6 +1966,19 @@ export const DisplayColorModesDemo: Story = {
     }
   },
   render: () => <DisplayColorModesDemoStory />
+};
+
+export const LightDarkHostsDemo: Story = {
+  name: "Capture / Light And Dark Hosts Demo",
+  parameters: {
+    controls: {
+      disable: true
+    },
+    docs: {
+      disable: true
+    }
+  },
+  render: () => <LightDarkHostsDemoStory />
 };
 
 export const ControlCharacterReplayDemo: Story = {
