@@ -35,10 +35,45 @@ type TraceScenario = {
   stepDelay: number;
 };
 
+type TerminalProbeSize = {
+  width: number;
+  height: number;
+};
+
 const wait = (duration: number) =>
   new Promise<void>((resolve) => {
     window.setTimeout(resolve, duration);
   });
+
+const TERMINAL_SIZE_QUERY = "\u001b[18t";
+const borderPalette = {
+  frame: "\u001b[38;5;120m",
+  title: "\u001b[38;5;159m",
+  reply: "\u001b[38;5;45m",
+  label: "\u001b[38;5;187m",
+  ascii: "\u001b[1;38;5;195m",
+  shadow: "\u001b[2;38;5;151m",
+  reset: "\u001b[0m"
+};
+const asciiGlyphs: Record<string, string[]> = {
+  "0": [" ### ", "#   #", "#   #", "#   #", " ### "],
+  "1": ["  #  ", " ##  ", "  #  ", "  #  ", " ### "],
+  "2": [" ### ", "#   #", "   # ", "  #  ", "#####"],
+  "3": ["#### ", "    #", " ### ", "    #", "#### "],
+  "4": ["#  # ", "#  # ", "#####", "   # ", "   # "],
+  "5": ["#####", "#    ", "#### ", "    #", "#### "],
+  "6": [" ### ", "#    ", "#### ", "#   #", " ### "],
+  "7": ["#####", "   # ", "  #  ", " #   ", " #   "],
+  "8": [" ### ", "#   #", " ### ", "#   #", " ### "],
+  "9": [" ### ", "#   #", " ####", "    #", " ### "],
+  "x": ["#   #", " # # ", "  #  ", " # # ", "#   #"]
+};
+const autoResizeProbeSizes: TerminalProbeSize[] = [
+  { width: 760, height: 360 },
+  { width: 560, height: 420 },
+  { width: 840, height: 332 },
+  { width: 640, height: 388 }
+];
 
 const displayColorModeDemoSteps: {
   displayColorMode: RetroLcdDisplayColorMode;
@@ -159,6 +194,92 @@ const typeIntoTextarea = async (
   }
 
   return currentValue;
+};
+
+const buildTerminalSizeReply = (rows: number, cols: number) => `\u001b[8;${rows};${cols}t`;
+
+const parseTerminalSizeReply = (reply: string) => {
+  const match = /^\u001b\[8;(\d+);(\d+)t$/u.exec(reply);
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    rows: Number.parseInt(match[1] ?? "0", 10),
+    cols: Number.parseInt(match[2] ?? "0", 10)
+  };
+};
+
+const toAsciiArt = (value: string) => {
+  const glyphLines = Array.from({ length: 5 }, () => "");
+
+  for (const character of value) {
+    const glyph = asciiGlyphs[character] ?? asciiGlyphs["0"];
+
+    for (let index = 0; index < glyphLines.length; index += 1) {
+      glyphLines[index] += `${glyph[index] ?? "     "} `;
+    }
+  }
+
+  return glyphLines.map((line) => line.trimEnd());
+};
+
+const writeAt = (
+  controller: ReturnType<typeof createRetroLcdController>,
+  row: number,
+  col: number,
+  text: string
+) => {
+  controller.write(`\u001b[${row};${col}H${text}`);
+};
+
+const drawTerminalProbeFrame = (
+  controller: ReturnType<typeof createRetroLcdController>,
+  rows: number,
+  cols: number
+) => {
+  const clampedRows = Math.max(5, rows);
+  const clampedCols = Math.max(12, cols);
+  const topBorder = `+${"-".repeat(Math.max(0, clampedCols - 2))}+`;
+  const middleWidth = Math.max(0, clampedCols - 2);
+  const sizeValue = `${clampedCols}x${clampedRows}`;
+  const asciiLines = toAsciiArt(sizeValue);
+  const contentRows = [
+    `${borderPalette.label}reported size${borderPalette.reset}`,
+    ...asciiLines.map((line) => `${borderPalette.ascii}${line}${borderPalette.reset}`)
+  ];
+  const blockHeight = contentRows.length;
+  const startRow = Math.max(
+    2,
+    Math.min(clampedRows - blockHeight, Math.floor((clampedRows - blockHeight) / 2))
+  );
+
+  controller.write("\u001b[2J\u001b[H");
+
+  writeAt(controller, 1, 1, `${borderPalette.frame}${topBorder}${borderPalette.reset}`);
+  for (let row = 2; row < clampedRows; row += 1) {
+    writeAt(
+      controller,
+      row,
+      1,
+      `${borderPalette.frame}|${borderPalette.reset}${" ".repeat(middleWidth)}${borderPalette.frame}|${borderPalette.reset}`
+    );
+  }
+  writeAt(controller, clampedRows, 1, `${borderPalette.frame}${topBorder}${borderPalette.reset}`);
+
+  contentRows.forEach((line, index) => {
+    if (line.length === 0) {
+      return;
+    }
+
+    const plainLength = line.replace(/\u001b\[[0-9;]*m/gu, "").length;
+    const startCol = Math.max(2, Math.floor((clampedCols - plainLength) / 2) + 1);
+    writeAt(controller, startRow + index, startCol, line);
+  });
+
+  controller.write(`\u001b[${clampedRows};${clampedCols}H`);
+  controller.setCursorVisible(false);
 };
 
 const playTraceScenario = (
@@ -843,6 +964,107 @@ function DisplayBufferStory() {
   );
 }
 
+function AutoResizeProbeStory() {
+  const [lastReply, setLastReply] = useState<string>("");
+
+  return (
+    <StoryShell
+      kicker="Auto Resize Probe"
+      title="Let a terminal program redraw itself from the screen's reported geometry."
+      copy="This demo simulates a terminal app issuing a size query, receiving a terminal-style rows/cols reply, and repainting the whole scene with ANSI cursor movement. As the DOM element resizes, the border and centered ASCII-art dimensions update to match the newly reported grid."
+      footer={
+        <div className="sb-retro-status">
+          <span className="sb-retro-measure">
+            query: <code>{TERMINAL_SIZE_QUERY.replace(/\u001b/gu, "ESC")}</code>
+          </span>
+          <span className="sb-retro-measure">
+            reply: <code>{lastReply ? lastReply.replace(/\u001b/gu, "ESC") : "measuring"}</code>
+          </span>
+        </div>
+      }
+    >
+      <AutoResizeProbeSurface onReplyChange={setLastReply} />
+    </StoryShell>
+  );
+}
+
+function AutoResizeProbeSurface({
+  onReplyChange
+}: {
+  onReplyChange?: (reply: string) => void;
+}) {
+  const [controller] = useState(() =>
+    createRetroLcdController({
+      rows: 9,
+      cols: 34,
+      scrollback: 20,
+      cursorMode: "solid"
+    })
+  );
+  const [sizeIndex, setSizeIndex] = useState(0);
+  const [reportedGeometry, setReportedGeometry] = useState<RetroLcdGeometry | null>(null);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setSizeIndex((current) => (current + 1) % autoResizeProbeSizes.length);
+    }, 2400);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!reportedGeometry) {
+      return;
+    }
+
+    const reply = buildTerminalSizeReply(reportedGeometry.rows, reportedGeometry.cols);
+    const parsed = parseTerminalSizeReply(reply);
+
+    if (!parsed) {
+      return;
+    }
+
+    onReplyChange?.(reply);
+    controller.reset();
+    controller.resize(parsed.rows, parsed.cols);
+    drawTerminalProbeFrame(controller, parsed.rows, parsed.cols);
+  }, [controller, onReplyChange, reportedGeometry]);
+
+  const currentSize = autoResizeProbeSizes[sizeIndex] ?? autoResizeProbeSizes[0];
+
+  return (
+    <div className="sb-retro-auto-resize-stage">
+      <div
+        className="sb-retro-auto-resize-frame"
+        style={{
+          width: currentSize.width,
+          height: currentSize.height
+        }}
+      >
+        <RetroLcd
+          mode="terminal"
+          controller={controller}
+          onGeometryChange={setReportedGeometry}
+          style={{
+            width: "100%",
+            height: "100%"
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function AutoResizeProbeDemoStory() {
+  return (
+    <CaptureStage captureId="auto-resize-probe" maxWidth={920}>
+      <div className="sb-retro-auto-resize-capture-shell">
+        <AutoResizeProbeSurface />
+      </div>
+    </CaptureStage>
+  );
+}
+
 function ResponsivePanelStory() {
   const widths = [
     { label: "Compact", value: 420 },
@@ -1200,6 +1422,10 @@ export const ResponsivePanel: Story = {
   render: () => <ResponsivePanelStory />
 };
 
+export const AutoResizeProbe: Story = {
+  render: () => <AutoResizeProbeStory />
+};
+
 export const DisplayColorModes: Story = {
   render: () => <DisplayColorModesStory />
 };
@@ -1297,4 +1523,17 @@ export const ControlCharacterReplayDemo: Story = {
     }
   },
   render: () => <ControlCharacterReplayDemoStory />
+};
+
+export const AutoResizeProbeDemo: Story = {
+  name: "Capture / Auto Resize Probe Demo",
+  parameters: {
+    controls: {
+      disable: true
+    },
+    docs: {
+      disable: true
+    }
+  },
+  render: () => <AutoResizeProbeDemoStory />
 };

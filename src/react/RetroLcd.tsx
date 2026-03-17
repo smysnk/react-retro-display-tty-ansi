@@ -50,11 +50,13 @@ export function RetroLcd(props: RetroLcdProps) {
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const previousEditableValueRef = useRef(valueProps?.value ?? "");
   const internalTerminalController = useRetroLcdController({
+    rows: props.gridMode === "static" ? props.rows : undefined,
+    cols: props.gridMode === "static" ? props.cols : undefined,
     scrollback: terminalProps?.bufferSize
   });
   const promptSession = useRetroLcdPromptSession({
-    rows: DEFAULT_ROWS,
-    cols: DEFAULT_COLS,
+    rows: props.gridMode === "static" ? props.rows ?? DEFAULT_ROWS : DEFAULT_ROWS,
+    cols: props.gridMode === "static" ? props.cols ?? DEFAULT_COLS : DEFAULT_COLS,
     cursorMode,
     scrollback: promptProps?.bufferSize,
     promptChar: promptProps?.promptChar,
@@ -71,6 +73,9 @@ export function RetroLcd(props: RetroLcdProps) {
   const { geometry, cssVars } = useRetroLcdGeometry({
     screenRef,
     probeRef,
+    gridMode: props.gridMode,
+    rows: props.rows,
+    cols: props.cols,
     onGeometryChange: props.onGeometryChange
   });
   const { snapshot: terminalSnapshot } = useRetroLcdTerminalRenderModel({
@@ -304,6 +309,7 @@ export function RetroLcd(props: RetroLcdProps) {
       data-cursor-mode={renderModel.cursor?.mode ?? cursorMode}
       data-rows={geometry.rows}
       data-cols={geometry.cols}
+      data-grid-mode={props.gridMode ?? "auto"}
       data-display-color-mode={displayColorMode}
       data-placeholder={renderModel.isDimmed ? "true" : "false"}
       data-buffer-offset={bufferViewport.viewportState.scrollOffset}

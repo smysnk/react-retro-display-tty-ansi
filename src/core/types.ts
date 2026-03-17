@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import type { RetroLcdScreenSnapshot, RetroLcdWriteOptions } from "./terminal/types";
 
 export type CursorMode = "solid" | "hollow";
+export type RetroLcdGridMode = "auto" | "static";
 
 export type RetroLcdDisplayColorMode =
   | "phosphor-green"
@@ -17,12 +18,16 @@ export type RetroLcdGeometry = {
   cellHeight: number;
   innerWidth: number;
   innerHeight: number;
+  fontSize: number;
 };
 
 export type RetroLcdSharedProps = {
   color?: string;
   displayColorMode?: RetroLcdDisplayColorMode;
   cursorMode?: CursorMode;
+  gridMode?: RetroLcdGridMode;
+  rows?: number;
+  cols?: number;
   className?: string;
   style?: CSSProperties;
   autoFocus?: boolean;

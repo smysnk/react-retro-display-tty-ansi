@@ -38,6 +38,10 @@ const videoEntries = [
       rootDir,
       "docs/assets/react-retro-display-tty-ansi-control-character-replay.mp4"
     )
+  },
+  {
+    title: "Auto Resize Probe Demo",
+    file: resolve(rootDir, "docs/assets/react-retro-display-tty-ansi-auto-resize-probe.mp4")
   }
 ];
 

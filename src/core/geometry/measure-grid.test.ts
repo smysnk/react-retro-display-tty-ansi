@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { measureGrid } from "./measure-grid";
+import { measureGrid, measureStaticGrid } from "./measure-grid";
 
 describe("measureGrid", () => {
   it("derives rows and columns using floor division", () => {
@@ -27,6 +27,25 @@ describe("measureGrid", () => {
     ).toMatchObject({
       cols: 1,
       rows: 1
+    });
+  });
+
+  it("supports a static grid that derives cell metrics from requested rows and columns", () => {
+    expect(
+      measureStaticGrid({
+        innerWidth: 400,
+        innerHeight: 200,
+        rows: 5,
+        cols: 20,
+        fontWidthRatio: 0.5,
+        fontHeightRatio: 1
+      })
+    ).toMatchObject({
+      rows: 5,
+      cols: 20,
+      cellWidth: 20,
+      cellHeight: 40,
+      fontSize: 40
     });
   });
 });

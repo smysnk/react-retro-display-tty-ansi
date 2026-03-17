@@ -47,6 +47,14 @@ const controlCharacterReplayMp4File = resolve(
   outputDir,
   "react-retro-display-tty-ansi-control-character-replay.mp4"
 );
+const autoResizeProbeWebpFile = resolve(
+  outputDir,
+  "react-retro-display-tty-ansi-auto-resize-probe.webp"
+);
+const autoResizeProbeMp4File = resolve(
+  outputDir,
+  "react-retro-display-tty-ansi-auto-resize-probe.mp4"
+);
 const chromePath =
   process.env.CHROME_PATH ??
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
@@ -262,6 +270,18 @@ const captures = [
     outputs: [
       { type: "webp", file: controlCharacterReplayWebpFile },
       { type: "mp4", file: controlCharacterReplayMp4File }
+    ]
+  },
+  {
+    name: "auto resize probe",
+    storyId: "retrolcd--auto-resize-probe-demo",
+    selector: "[data-demo-capture='auto-resize-probe']",
+    waitMs: 240,
+    fps: 16,
+    durationMs: 10400,
+    outputs: [
+      { type: "webp", file: autoResizeProbeWebpFile },
+      { type: "mp4", file: autoResizeProbeMp4File }
     ]
   }
 ];

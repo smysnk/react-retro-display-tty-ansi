@@ -254,6 +254,29 @@
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
 }
 
+.sb-retro-auto-resize-stage {
+  width: 100%;
+  display: grid;
+  justify-items: center;
+}
+
+.sb-retro-auto-resize-capture-shell {
+  width: 100%;
+  min-height: 420px;
+  height: 420px;
+  display: grid;
+  align-items: center;
+}
+
+.sb-retro-auto-resize-frame {
+  display: grid;
+  justify-items: center;
+  transition:
+    width 720ms ease,
+    height 720ms ease;
+  will-change: width, height;
+}
+
 [data-feature-tour-root="true"] .retro-lcd__cursor {
   animation: none;
   opacity: 1;

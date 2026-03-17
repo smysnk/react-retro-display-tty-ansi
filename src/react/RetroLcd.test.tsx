@@ -178,6 +178,31 @@ describe("RetroLcd", () => {
     );
   });
 
+  it("supports a static grid mode with caller-supplied rows and columns", () => {
+    const onGeometryChange = vi.fn();
+    const { container } = render(
+      <RetroLcd
+        mode="value"
+        value="grid"
+        gridMode="static"
+        rows={4}
+        cols={18}
+        onGeometryChange={onGeometryChange}
+      />
+    );
+
+    const root = container.querySelector(".retro-lcd");
+    expect(root).toHaveAttribute("data-grid-mode", "static");
+    expect(root).toHaveAttribute("data-rows", "4");
+    expect(root).toHaveAttribute("data-cols", "18");
+    expect(onGeometryChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        rows: 4,
+        cols: 18
+      })
+    );
+  });
+
   it("switches the base palette when a phosphor display color mode is selected", () => {
     const { container } = render(<RetroLcd mode="value" value="grid" displayColorMode="phosphor-amber" />);
 

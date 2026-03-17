@@ -1,4 +1,4 @@
-<video src="https://github.com/user-attachments/assets/2be69856-c4d4-4f8e-8155-191f3836b96a" autoplay controls loop muted playsinline title="Feature Tour Demo">
+<video src="https://github.com/user-attachments/assets/d9e52d00-acfb-4881-8544-daf2b0d298c0" autoplay controls loop muted playsinline title="Feature Tour Demo">
   Your browser does not support the video tag.
 </video>
 
@@ -48,7 +48,7 @@ wrapping, cursor rendering, and terminal feel.
 
 Use `mode="value"` when the display is just there to speak.
 
-<video src="https://github.com/user-attachments/assets/4942d6d1-b68f-45aa-af69-d15e8a262fcb" autoplay controls loop muted playsinline title="Quiet Output Demo">
+<video src="https://github.com/user-attachments/assets/d29140fc-ed95-4e15-9543-1962cbda4a62" autoplay controls loop muted playsinline title="Quiet Output Demo">
   Your browser does not support the video tag.
 </video>
 
@@ -63,7 +63,7 @@ Use `mode="value"` when the display is just there to speak.
 
 Turn on `editable` when you want the same surface to behave like a controlled input.
 
-<video src="https://github.com/user-attachments/assets/78600036-e1f7-4898-a7db-05c2255729ae" autoplay controls loop muted playsinline title="Editable Drafting Demo">
+<video src="https://github.com/user-attachments/assets/53a93d3a-2558-4f41-978b-15f9fc43f7a3" autoplay controls loop muted playsinline title="Editable Drafting Demo">
   Your browser does not support the video tag.
 </video>
 
@@ -93,7 +93,7 @@ export function DraftPad() {
 
 Use a controller when the display should follow external writes over time.
 
-<video src="https://github.com/user-attachments/assets/a7d6ebbf-8f6f-4239-b8f7-9ca0523fff28" autoplay controls loop muted playsinline title="Terminal Output Demo">
+<video src="https://github.com/user-attachments/assets/577224c8-d70e-4d7a-921e-bd2c82818119" autoplay controls loop muted playsinline title="Terminal Output Demo">
   Your browser does not support the video tag.
 </video>
 
@@ -128,7 +128,7 @@ or `initialBuffer`.
 
 Use `mode="prompt"` when the interface should feel like a guided shell.
 
-<video src="https://github.com/user-attachments/assets/f8f40e8b-d658-4808-a12b-9dfd15ef215d" autoplay controls loop muted playsinline title="Prompt Interaction Demo">
+<video src="https://github.com/user-attachments/assets/98a16326-3f82-49ac-a09c-f5e51d612271" autoplay controls loop muted playsinline title="Prompt Interaction Demo">
   Your browser does not support the video tag.
 </video>
 
@@ -200,13 +200,57 @@ const controller = createRetroLcdController({
 The browser suite now covers this path directly, including paging, wheel scrolling, anchored
 scrollback while new lines arrive, and auto-follow recovery back to the live tail.
 
+## Auto Resize And Geometry Probing
+
+When rows and columns matter to the program inside the display, listen to `onGeometryChange`,
+turn that measurement into a terminal-style reply, and redraw from the reported size. The demo
+below simulates a terminal app issuing `CSI 18 t`, receiving `CSI 8;<rows>;<cols>t`, then
+repainting a full border and centered ASCII-art dimensions every time the DOM element resizes.
+
+<video src="https://github.com/user-attachments/assets/ba459fd0-769c-41b8-871e-b5b957f82310" autoplay controls loop muted playsinline title="Auto Resize Probe Demo">
+  Your browser does not support the video tag.
+</video>
+
+```tsx
+import {
+  RetroLcd,
+  createRetroLcdController
+} from "react-retro-display-tty-ansi";
+
+const controller = createRetroLcdController({
+  rows: 9,
+  cols: 34,
+  cursorMode: "solid"
+});
+
+export function ResizingTerminalProbe() {
+  return (
+    <RetroLcd
+      mode="terminal"
+      controller={controller}
+      onGeometryChange={(geometry) => {
+        const nextReply = `\u001b[8;${geometry.rows};${geometry.cols}t`;
+
+        console.log("terminal reply:", nextReply);
+        controller.reset();
+        controller.resize(geometry.rows, geometry.cols);
+        redrawBorderAndMetrics(controller, geometry.rows, geometry.cols);
+      }}
+    />
+  );
+}
+```
+
+This is useful for terminal-style dashboards, resize-aware prompts, or retro UIs that need to
+center content, draw frames, or adapt layouts from the actual LCD grid instead of from CSS alone.
+
 ## Terminal Color Modes
 
 Use `displayColorMode` to decide how semantic terminal color should be projected onto the screen.
 The phosphor modes keep the retro LCD personality even when the source emits ANSI color. The ANSI
 modes preserve more of the source terminal palette.
 
-<video src="https://github.com/user-attachments/assets/7ce144e3-672c-490b-9eeb-230c22f847fc" autoplay controls loop muted playsinline title="Display Color Modes Demo">
+<video src="https://github.com/user-attachments/assets/48ab3b54-616a-420d-86bf-12d0e8b5e94a" autoplay controls loop muted playsinline title="Display Color Modes Demo">
   Your browser does not support the video tag.
 </video>
 
@@ -239,7 +283,7 @@ The terminal path is now tested against an xterm oracle and can faithfully repla
 character effects like carriage return rewrites, erase-in-line, scroll regions, insert-line
 updates, ANSI 16-color, indexed 256-color, and truecolor output.
 
-<video src="https://github.com/user-attachments/assets/77e6ffed-d352-487c-92e7-9f72befdebb8" autoplay controls loop muted playsinline title="Control Character Replay Demo">
+<video src="https://github.com/user-attachments/assets/71ce7adc-2407-48e0-a1e2-d4123b013312" autoplay controls loop muted playsinline title="Control Character Replay Demo">
   Your browser does not support the video tag.
 </video>
 
@@ -292,6 +336,7 @@ It includes stories for the main user journeys:
 - editable drafting
 - controller-fed terminal output
 - display buffer paging and follow mode
+- auto-resize geometry probing
 - ANSI styling
 - display color mode projection
 - control-character replay fixtures
