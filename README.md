@@ -1,4 +1,6 @@
-<video src="./docs/assets/react-retro-display-tty-ansi.mp4" width="100%" autoplay controls muted playsinline loop></video>
+<video src="./docs/assets/react-retro-display-tty-ansi.mp4" controls loop title="Feature Tour Demo">
+  Your browser does not support the video tag.
+</video>
 
 # react-retro-display-tty-ansi
 
@@ -39,7 +41,9 @@ wrapping, cursor rendering, and terminal feel.
 
 Use `mode="value"` when the display is just there to speak.
 
-<video src="./docs/assets/react-retro-display-tty-ansi-quiet-output.mp4" width="100%" autoplay controls muted playsinline loop></video>
+<video src="./docs/assets/react-retro-display-tty-ansi-quiet-output.mp4" controls loop title="Quiet Output Demo">
+  Your browser does not support the video tag.
+</video>
 
 ```tsx
 <RetroLcd
@@ -52,7 +56,9 @@ Use `mode="value"` when the display is just there to speak.
 
 Turn on `editable` when you want the same surface to behave like a controlled input.
 
-<video src="./docs/assets/react-retro-display-tty-ansi-editable-drafting.mp4" width="100%" autoplay controls muted playsinline loop></video>
+<video src="./docs/assets/react-retro-display-tty-ansi-editable-drafting.mp4" controls loop title="Editable Drafting Demo">
+  Your browser does not support the video tag.
+</video>
 
 ```tsx
 import { useState } from "react";
@@ -80,7 +86,9 @@ export function DraftPad() {
 
 Use a controller when the display should follow external writes over time.
 
-<video src="./docs/assets/react-retro-display-tty-ansi-terminal-output.mp4" width="100%" autoplay controls muted playsinline loop></video>
+<video src="./docs/assets/react-retro-display-tty-ansi-terminal-output.mp4" controls loop title="Terminal Output Demo">
+  Your browser does not support the video tag.
+</video>
 
 ```tsx
 import { useEffect } from "react";
@@ -113,7 +121,9 @@ or `initialBuffer`.
 
 Use `mode="prompt"` when the interface should feel like a guided shell.
 
-<video src="./docs/assets/react-retro-display-tty-ansi-prompt-loop.mp4" width="100%" autoplay controls muted playsinline loop></video>
+<video src="./docs/assets/react-retro-display-tty-ansi-prompt-loop.mp4" controls loop title="Prompt Interaction Demo">
+  Your browser does not support the video tag.
+</video>
 
 ```tsx
 <RetroLcd
