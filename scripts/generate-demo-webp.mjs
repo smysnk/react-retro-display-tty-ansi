@@ -11,13 +11,25 @@ const staticDir = resolve(rootDir, "storybook-static");
 const outputDir = resolve(rootDir, "docs/assets");
 const outputWebpFile = resolve(outputDir, "react-retro-display-tty-ansi.webp");
 const outputMp4File = resolve(outputDir, "react-retro-display-tty-ansi.mp4");
+const quietOutputMp4File = resolve(outputDir, "react-retro-display-tty-ansi-quiet-output.mp4");
+const editableModeMp4File = resolve(
+  outputDir,
+  "react-retro-display-tty-ansi-editable-drafting.mp4"
+);
+const terminalModeMp4File = resolve(
+  outputDir,
+  "react-retro-display-tty-ansi-terminal-output.mp4"
+);
+const promptModeMp4File = resolve(outputDir, "react-retro-display-tty-ansi-prompt-loop.mp4");
 const chromePath =
   process.env.CHROME_PATH ??
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const port = Number.parseInt(process.env.STORYBOOK_CAPTURE_PORT ?? "6111", 10);
-const fps = Number.parseInt(process.env.STORYBOOK_CAPTURE_FPS ?? "14", 10);
-const durationMs = Number.parseInt(process.env.STORYBOOK_CAPTURE_DURATION_MS ?? "30000", 10);
-const frameCount = Math.max(1, Math.ceil((durationMs / 1000) * fps));
+const featureTourFps = Number.parseInt(process.env.STORYBOOK_CAPTURE_FPS ?? "14", 10);
+const featureTourDurationMs = Number.parseInt(
+  process.env.STORYBOOK_CAPTURE_DURATION_MS ?? "30000",
+  10
+);
 
 const mimeTypes = new Map([
   [".css", "text/css; charset=utf-8"],
@@ -80,7 +92,7 @@ const createStaticServer = () =>
     }
   });
 
-const runImg2Webp = async (framesDir) => {
+const runImg2Webp = async ({ framesDir, fps, outputFile }) => {
   const duration = Math.max(40, Math.round(1000 / fps));
   const frameFiles = (await readdir(framesDir))
     .filter((file) => file.endsWith(".png"))
@@ -95,7 +107,7 @@ const runImg2Webp = async (framesDir) => {
     args.push("-lossy", "-q", "82", "-m", "6", join(framesDir, frameFile));
   }
 
-  args.push("-o", outputWebpFile);
+  args.push("-o", outputFile);
 
   const result = spawnSync("img2webp", args, {
     cwd: rootDir,
@@ -107,7 +119,7 @@ const runImg2Webp = async (framesDir) => {
   }
 };
 
-const runFfmpegMp4 = (framesDir) => {
+const runFfmpegMp4 = ({ framesDir, fps, outputFile }) => {
   const result = spawnSync(
     "ffmpeg",
     [
@@ -128,7 +140,7 @@ const runFfmpegMp4 = (framesDir) => {
       "+faststart",
       "-crf",
       "18",
-      outputMp4File
+      outputFile
     ],
     {
       cwd: rootDir,
@@ -141,16 +153,122 @@ const runFfmpegMp4 = (framesDir) => {
   }
 };
 
+const captures = [
+  {
+    name: "feature tour",
+    storyId: "retrolcd--feature-tour",
+    selector: "[data-feature-tour-root='true']",
+    waitMs: 300,
+    fps: featureTourFps,
+    durationMs: featureTourDurationMs,
+    outputs: [
+      { type: "webp", file: outputWebpFile },
+      { type: "mp4", file: outputMp4File }
+    ]
+  },
+  {
+    name: "quiet output",
+    storyId: "retrolcd--quiet-output-demo",
+    selector: "[data-demo-capture='quiet-output']",
+    waitMs: 220,
+    fps: 16,
+    durationMs: 5200,
+    outputs: [{ type: "mp4", file: quietOutputMp4File }]
+  },
+  {
+    name: "editable drafting",
+    storyId: "retrolcd--editable-mode-demo",
+    selector: "[data-demo-capture='editable-drafting']",
+    waitMs: 220,
+    fps: 16,
+    durationMs: 7600,
+    outputs: [{ type: "mp4", file: editableModeMp4File }]
+  },
+  {
+    name: "terminal output",
+    storyId: "retrolcd--terminal-mode-demo",
+    selector: "[data-demo-capture='terminal-output']",
+    waitMs: 220,
+    fps: 15,
+    durationMs: 6200,
+    outputs: [{ type: "mp4", file: terminalModeMp4File }]
+  },
+  {
+    name: "prompt loop",
+    storyId: "retrolcd--prompt-mode-demo",
+    selector: "[data-demo-capture='prompt-interaction']",
+    waitMs: 220,
+    fps: 15,
+    durationMs: 9000,
+    outputs: [{ type: "mp4", file: promptModeMp4File }]
+  }
+];
+
+const captureStoryFrames = async (page, capture) => {
+  const frameDir = await mkdtemp(join(tmpdir(), "retro-display-frames-"));
+  const frameCount = Math.max(1, Math.ceil((capture.durationMs / 1000) * capture.fps));
+
+  try {
+    await page.goto(
+      `http://127.0.0.1:${port}/iframe.html?id=${capture.storyId}&viewMode=story`,
+      { waitUntil: "networkidle" }
+    );
+    await page.waitForSelector(capture.selector);
+    await page.waitForTimeout(capture.waitMs);
+
+    const target = page.locator(capture.selector);
+
+    for (let index = 0; index < frameCount; index += 1) {
+      const framePath = join(frameDir, `frame-${String(index).padStart(4, "0")}.png`);
+      await target.screenshot({ path: framePath });
+
+      if (index < frameCount - 1) {
+        await page.waitForTimeout(1000 / capture.fps);
+      }
+    }
+
+    return { frameDir, frameCount };
+  } catch (error) {
+    await rm(frameDir, { recursive: true, force: true });
+    throw error;
+  }
+};
+
+const encodeCapture = async (capture, framesDir, frameCount) => {
+  for (const output of capture.outputs) {
+    if (output.type === "webp") {
+      await runImg2Webp({
+        framesDir,
+        fps: capture.fps,
+        outputFile: output.file
+      });
+    } else {
+      runFfmpegMp4({
+        framesDir,
+        fps: capture.fps,
+        outputFile: output.file
+      });
+    }
+
+    const encodedAsset = await stat(output.file);
+    console.log(
+      `Created ${output.file} for ${capture.name} from ${frameCount} frames (${Math.round(
+        encodedAsset.size / 1024
+      )} KB).`
+    );
+  }
+};
+
 const main = async () => {
   await ensureReadable(staticDir, "storybook-static");
   await ensureReadable(chromePath, "Chrome executable");
   await mkdir(outputDir, { recursive: true });
 
-  const frameDir = await mkdtemp(join(tmpdir(), "retro-display-frames-"));
   const server = createStaticServer();
   await new Promise((resolvePromise) => server.listen(port, resolvePromise));
 
   let browser;
+  let page;
 
   try {
     browser = await chromium.launch({
@@ -158,7 +276,7 @@ const main = async () => {
       headless: true
     });
 
-    const page = await browser.newPage({
+    page = await browser.newPage({
       viewport: {
         width: 1440,
         height: 920
@@ -166,44 +284,19 @@ const main = async () => {
       deviceScaleFactor: 1
     });
 
-    await page.goto(
-      `http://127.0.0.1:${port}/iframe.html?id=retrolcd--feature-tour&viewMode=story`,
-      { waitUntil: "networkidle" }
-    );
-    await page.waitForSelector("[data-feature-tour-root='true']");
-    await page.waitForTimeout(300);
+    for (const capture of captures) {
+      const { frameDir, frameCount } = await captureStoryFrames(page, capture);
 
-    const target = page.locator("[data-feature-tour-root='true']");
-
-    for (let index = 0; index < frameCount; index += 1) {
-      const framePath = join(frameDir, `frame-${String(index).padStart(4, "0")}.png`);
-      await target.screenshot({ path: framePath });
-
-      if (index < frameCount - 1) {
-        await page.waitForTimeout(1000 / fps);
+      try {
+        await encodeCapture(capture, frameDir, frameCount);
+      } finally {
+        await rm(frameDir, { recursive: true, force: true });
       }
     }
-
-    await runImg2Webp(frameDir);
-    runFfmpegMp4(frameDir);
-    const encodedWebp = await stat(outputWebpFile);
-    const encodedMp4 = await stat(outputMp4File);
-    const generatedFrames = await readdir(frameDir);
-
-    console.log(
-      `Created ${outputWebpFile} from ${generatedFrames.length} frames (${Math.round(
-        encodedWebp.size / 1024
-      )} KB).`
-    );
-    console.log(
-      `Created ${outputMp4File} from ${generatedFrames.length} frames (${Math.round(
-        encodedMp4.size / 1024
-      )} KB).`
-    );
   } finally {
+    await page?.close();
     await browser?.close();
     await new Promise((resolvePromise) => server.close(() => resolvePromise(undefined)));
-    await rm(frameDir, { recursive: true, force: true });
   }
 };
 

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { createRetroLcdController } from "../core/terminal/controller";
 import type { RetroLcdGeometry } from "../core/types";
@@ -18,6 +18,48 @@ const wait = (duration: number) =>
   new Promise<void>((resolve) => {
     window.setTimeout(resolve, duration);
   });
+
+const setTextareaValue = (node: HTMLTextAreaElement, value: string) => {
+  const descriptor = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value");
+  descriptor?.set?.call(node, value);
+  node.setSelectionRange(value.length, value.length);
+  node.dispatchEvent(new Event("input", { bubbles: true, cancelable: true }));
+};
+
+const pressTextareaEnter = (node: HTMLTextAreaElement, shiftKey = false) => {
+  const options = {
+    key: "Enter",
+    code: "Enter",
+    bubbles: true,
+    cancelable: true,
+    shiftKey
+  };
+
+  node.dispatchEvent(new KeyboardEvent("keydown", options));
+  node.dispatchEvent(new KeyboardEvent("keyup", options));
+};
+
+const typeIntoTextarea = async (
+  node: HTMLTextAreaElement,
+  text: string,
+  {
+    delay = 110,
+    initialValue
+  }: {
+    delay?: number;
+    initialValue?: string;
+  } = {}
+) => {
+  let currentValue = initialValue ?? node.value;
+
+  for (const character of text) {
+    currentValue += character;
+    setTextareaValue(node, currentValue);
+    await wait(delay);
+  }
+
+  return currentValue;
+};
 
 function StoryShell({ kicker, title, copy, children, footer }: StoryShellProps) {
   return (
@@ -42,6 +84,127 @@ function Stage({ children, maxWidth = 860 }: { children: ReactNode; maxWidth?: n
         {children}
       </div>
     </div>
+  );
+}
+
+function CaptureStage({
+  captureId,
+  children,
+  maxWidth = 860
+}: {
+  captureId: string;
+  children: ReactNode;
+  maxWidth?: number;
+}) {
+  return (
+    <div className="sb-retro-page sb-retro-page--capture">
+      <div className="sb-retro-shell sb-retro-shell--capture">
+        <div className="sb-retro-stage sb-retro-stage--capture">
+          <div className="sb-retro-frame" style={{ maxWidth }}>
+            <div className="sb-retro-capture-root" data-demo-capture={captureId}>
+              {children}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function QuietOutputDemoStory() {
+  const [value, setValue] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    const message = "LINK STABLE\nAwaiting operator input.";
+
+    const run = async () => {
+      await wait(220);
+
+      for (let index = 1; index <= message.length; index += 1) {
+        if (cancelled) {
+          return;
+        }
+
+        setValue(message.slice(0, index));
+        await wait(message[index - 1] === "\n" ? 260 : 92);
+      }
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (
+    <CaptureStage captureId="quiet-output" maxWidth={760}>
+      <RetroLcd mode="value" color={STORY_COLOR} value={value} />
+    </CaptureStage>
+  );
+}
+
+function EditableModeDemoStory() {
+  const [value, setValue] = useState("");
+  const hostRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const run = async () => {
+      await wait(260);
+
+      const input = hostRef.current?.querySelector(".retro-lcd__input");
+      if (!(input instanceof HTMLTextAreaElement)) {
+        return;
+      }
+
+      input.focus();
+      let currentValue = await typeIntoTextarea(input, "Compose inline.", { delay: 105 });
+
+      if (cancelled) {
+        return;
+      }
+
+      await wait(320);
+      pressTextareaEnter(input, true);
+      currentValue += "\n";
+      setTextareaValue(input, currentValue);
+      await wait(220);
+
+      if (cancelled) {
+        return;
+      }
+
+      await typeIntoTextarea(input, "Let the cursor land after every thought.", {
+        delay: 96,
+        initialValue: currentValue
+      });
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (
+    <CaptureStage captureId="editable-drafting" maxWidth={860}>
+      <div ref={hostRef}>
+        <RetroLcd
+          mode="value"
+          value={value}
+          editable
+          autoFocus
+          color={STORY_COLOR}
+          cursorMode="solid"
+          placeholder="Write a line, breathe, then press Enter."
+          onChange={setValue}
+        />
+      </div>
+    </CaptureStage>
   );
 }
 
@@ -142,6 +305,55 @@ function TerminalStreamStory() {
   );
 }
 
+function TerminalModeDemoStory() {
+  const [controller] = useState(() =>
+    createRetroLcdController({
+      rows: 9,
+      cols: 46,
+      cursorMode: "solid"
+    })
+  );
+
+  useEffect(() => {
+    controller.reset();
+    controller.setCursorMode("solid");
+    controller.setCursorVisible(true);
+
+    const schedule = [
+      window.setTimeout(() => {
+        controller.writeln("BOOT   react-retro-display-tty-ansi");
+      }, 260),
+      window.setTimeout(() => {
+        controller.writeln("CHECK  controller attached");
+      }, 1120),
+      window.setTimeout(() => {
+        controller.write("\u001b[1mREADY\u001b[0m ansi parser online");
+        controller.writeln("");
+      }, 2080),
+      window.setTimeout(() => {
+        controller.write("\u001b[2msoft notes stay readable without stealing focus\u001b[0m");
+        controller.writeln("");
+      }, 3140),
+      window.setTimeout(() => {
+        controller.write("\u001b[7mLIVE\u001b[0m output keeps pace with external writes");
+        controller.writeln("");
+      }, 4320)
+    ];
+
+    return () => {
+      for (const timer of schedule) {
+        window.clearTimeout(timer);
+      }
+    };
+  }, [controller]);
+
+  return (
+    <CaptureStage captureId="terminal-output" maxWidth={860}>
+      <RetroLcd mode="terminal" controller={controller} color={STORY_COLOR} />
+    </CaptureStage>
+  );
+}
+
 function PromptConsoleStory() {
   return (
     <StoryShell
@@ -192,6 +404,80 @@ function PromptConsoleStory() {
         />
       </Stage>
     </StoryShell>
+  );
+}
+
+function PromptModeDemoStory() {
+  const hostRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const run = async () => {
+      await wait(260);
+
+      const input = hostRef.current?.querySelector(".retro-lcd__input");
+      if (!(input instanceof HTMLTextAreaElement)) {
+        return;
+      }
+
+      input.focus();
+      await typeIntoTextarea(input, "status", { delay: 120 });
+
+      if (cancelled) {
+        return;
+      }
+
+      await wait(260);
+      pressTextareaEnter(input);
+      await wait(1100);
+
+      if (cancelled) {
+        return;
+      }
+
+      await typeIntoTextarea(input, "wipe", { delay: 120 });
+      await wait(220);
+      pressTextareaEnter(input);
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (
+    <CaptureStage captureId="prompt-interaction" maxWidth={860}>
+      <div ref={hostRef}>
+        <RetroLcd
+          mode="prompt"
+          autoFocus
+          color={STORY_COLOR}
+          cursorMode="solid"
+          promptChar="$"
+          acceptanceText="READY"
+          rejectionText="DENIED"
+          onCommand={async (command) => {
+            await wait(420);
+
+            switch (command.trim()) {
+              case "status":
+                return {
+                  accepted: true,
+                  response: ["grid synced", "cursor stable", "story ready"]
+                };
+              default:
+                return {
+                  accepted: false,
+                  response: "unknown command"
+                };
+            }
+          }}
+        />
+      </div>
+    </CaptureStage>
   );
 }
 
@@ -467,4 +753,56 @@ export const FeatureTour: Story = {
     }
   },
   render: () => <FeatureTourStory />
+};
+
+export const QuietOutputDemo: Story = {
+  name: "Capture / Quiet Output Demo",
+  parameters: {
+    controls: {
+      disable: true
+    },
+    docs: {
+      disable: true
+    }
+  },
+  render: () => <QuietOutputDemoStory />
+};
+
+export const EditableModeDemo: Story = {
+  name: "Capture / Editable Mode Demo",
+  parameters: {
+    controls: {
+      disable: true
+    },
+    docs: {
+      disable: true
+    }
+  },
+  render: () => <EditableModeDemoStory />
+};
+
+export const TerminalModeDemo: Story = {
+  name: "Capture / Terminal Mode Demo",
+  parameters: {
+    controls: {
+      disable: true
+    },
+    docs: {
+      disable: true
+    }
+  },
+  render: () => <TerminalModeDemoStory />
+};
+
+export const PromptModeDemo: Story = {
+  name: "Capture / Prompt Mode Demo",
+  parameters: {
+    controls: {
+      disable: true
+    },
+    docs: {
+      disable: true
+    }
+  },
+  render: () => <PromptModeDemoStory />
 };

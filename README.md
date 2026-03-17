@@ -1,4 +1,12 @@
-[Watch the demo video](./docs/assets/react-retro-display-tty-ansi.mp4)
+<video
+  src="./docs/assets/react-retro-display-tty-ansi.mp4"
+  width="100%"
+  autoplay
+  controls
+  muted
+  playsinline
+  loop
+></video>
 
 # react-retro-display-tty-ansi
 
@@ -39,6 +47,16 @@ wrapping, cursor rendering, and terminal feel.
 
 Use `mode="value"` when the display is just there to speak.
 
+<video
+  src="./docs/assets/react-retro-display-tty-ansi-quiet-output.mp4"
+  width="100%"
+  autoplay
+  controls
+  muted
+  playsinline
+  loop
+></video>
+
 ```tsx
 <RetroLcd
   mode="value"
@@ -49,6 +67,16 @@ Use `mode="value"` when the display is just there to speak.
 ### 2. Editable drafting
 
 Turn on `editable` when you want the same surface to behave like a controlled input.
+
+<video
+  src="./docs/assets/react-retro-display-tty-ansi-editable-drafting.mp4"
+  width="100%"
+  autoplay
+  controls
+  muted
+  playsinline
+  loop
+></video>
 
 ```tsx
 import { useState } from "react";
@@ -75,6 +103,16 @@ export function DraftPad() {
 ### 3. Terminal output from a controller
 
 Use a controller when the display should follow external writes over time.
+
+<video
+  src="./docs/assets/react-retro-display-tty-ansi-terminal-output.mp4"
+  width="100%"
+  autoplay
+  controls
+  muted
+  playsinline
+  loop
+></video>
 
 ```tsx
 import { useEffect } from "react";
@@ -106,6 +144,16 @@ or `initialBuffer`.
 ### 4. Prompt-first interaction
 
 Use `mode="prompt"` when the interface should feel like a guided shell.
+
+<video
+  src="./docs/assets/react-retro-display-tty-ansi-prompt-loop.mp4"
+  width="100%"
+  autoplay
+  controls
+  muted
+  playsinline
+  loop
+></video>
 
 ```tsx
 <RetroLcd
@@ -158,22 +206,6 @@ Run it locally with:
 ```bash
 npm install
 npm run storybook
-```
-
-## Demo Assets
-
-The animated `.webp` at the top of this README is generated from the Storybook `FeatureTour` story.
-To rebuild it:
-
-```bash
-npm run demo:webp
-```
-
-That command builds Storybook, captures the feature tour, and writes both demo assets to:
-
-```text
-docs/assets/react-retro-display-tty-ansi.webp
-docs/assets/react-retro-display-tty-ansi.mp4
 ```
 
 ## Development
