@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { progressRewriteTraceFixture } from "../core/terminal/conformance/fixtures/real-world/progress-rewrite.trace.fixture";
 import { shellSessionTraceFixture } from "../core/terminal/conformance/fixtures/real-world/shell-session.trace.fixture";
 import { statusPaneTraceFixture } from "../core/terminal/conformance/fixtures/real-world/status-pane.trace.fixture";
 import { createRetroLcdController } from "../core/terminal/controller";
+import { createRetroLcdWebSocketSession } from "../core/terminal/websocket-session";
 import type { RetroLcdDisplayColorMode, RetroLcdGeometry } from "../core/types";
 import { RetroScreen, RetroScreen as RetroLcd } from "../react/RetroScreen";
 
@@ -69,6 +70,20 @@ type ProbeRedrawMeta = {
   rows: number;
   cols: number;
 };
+
+type LiveTtyDemoConfig = {
+  url: string;
+  openPayload?: Record<string, unknown>;
+};
+
+type LiveTtyStageSize = {
+  id: string;
+  label: string;
+  width: number;
+  height: number;
+};
+
+const DEFAULT_LIVE_TTY_URL = "ws://127.0.0.1:8787";
 
 const wait = (duration: number) =>
   new Promise<void>((resolve) => {
@@ -221,6 +236,17 @@ const autoResizeProbeSizes: TerminalProbeSize[] = [
 const autoResizeProbeHoldAfterResizeMs = 250;
 const autoResizeProbeResizeMs = 720;
 const autoResizeProbeStepMs = 2400 + autoResizeProbeHoldAfterResizeMs;
+const liveTtyStageSizes: LiveTtyStageSize[] = [
+  { id: "compact", label: "Compact", width: 560, height: 280 },
+  { id: "console", label: "Console", width: 720, height: 340 },
+  { id: "wide", label: "Wide", width: 920, height: 420 }
+];
+
+declare global {
+  interface Window {
+    __RETRO_SCREEN_TTY_DEMO__?: LiveTtyDemoConfig;
+  }
+}
 
 const displayColorModeDemoSteps: {
   displayColorMode: RetroLcdDisplayColorMode;
@@ -479,6 +505,21 @@ const parseTerminalSizeReply = (reply: string) => {
   return {
     rows: Number.parseInt(match[1] ?? "0", 10),
     cols: Number.parseInt(match[2] ?? "0", 10)
+  };
+};
+
+const resolveLiveTtyDemoConfig = (): LiveTtyDemoConfig | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const globalConfig = window.__RETRO_SCREEN_TTY_DEMO__;
+  const query = new URLSearchParams(window.location.search);
+  const url = globalConfig?.url ?? query.get("ttyUrl") ?? DEFAULT_LIVE_TTY_URL;
+
+  return {
+    url,
+    openPayload: globalConfig?.openPayload
   };
 };
 
@@ -1281,6 +1322,197 @@ function DisplayBufferStory() {
   );
 }
 
+function LiveTtyTerminalBridgeStory() {
+  const [config] = useState<LiveTtyDemoConfig | null>(() => resolveLiveTtyDemoConfig());
+  const [sessionState, setSessionState] = useState("idle");
+  const [sessionTitle, setSessionTitle] = useState<string>("(waiting)");
+  const [bellCount, setBellCount] = useState(0);
+  const [stageSizeId, setStageSizeId] = useState(liveTtyStageSizes[1]?.id ?? "console");
+  const stageSize =
+    liveTtyStageSizes.find((candidate) => candidate.id === stageSizeId) ?? liveTtyStageSizes[1]!;
+  const openPayloadSignature = JSON.stringify(config?.openPayload ?? {});
+  const session = useMemo(() => {
+    if (!config) {
+      return null;
+    }
+
+    return createRetroLcdWebSocketSession({
+      url: config.url,
+      openPayload:
+        typeof config.openPayload === "object" && config.openPayload !== null
+          ? config.openPayload
+          : undefined
+    });
+  }, [config?.url, openPayloadSignature]);
+
+  useEffect(() => {
+    setSessionState(session?.getState() ?? "idle");
+    setSessionTitle("(waiting)");
+    setBellCount(0);
+  }, [session]);
+
+  if (!config || !session) {
+    return (
+      <StoryShell
+        kicker="Live TTY Bridge"
+        title="Point the story at a websocket TTY and drive a real shell."
+        copy="This story defaults to the local example server at ws://127.0.0.1:8787. Start that server and the demo will come alive automatically, or override the URL through a global config or a ttyUrl query param."
+        footer={
+          <ul className="sb-retro-note-list">
+            <li>Start the example server with <code>yarn tty:server</code>.</li>
+            <li>The story will try <code>{DEFAULT_LIVE_TTY_URL}</code> automatically.</li>
+            <li>Set <code>window.__RETRO_SCREEN_TTY_DEMO__</code> to override the URL or open payload.</li>
+            <li>The browser test suite does this automatically for the TTY bridge checks.</li>
+          </ul>
+        }
+      >
+        <Stage maxWidth={900}>
+          <RetroLcd
+            mode="value"
+            value={[
+              "LIVE TTY STORY IDLE",
+              `Default URL: ${DEFAULT_LIVE_TTY_URL}`,
+              "",
+              "Start the example server:",
+              "  yarn tty:server",
+              "",
+              "Optional override:",
+              "Provide window.__RETRO_SCREEN_TTY_DEMO__ = {",
+              `  url: "${DEFAULT_LIVE_TTY_URL}",`,
+              "  openPayload: {",
+              '    command: process.execPath,',
+              '    args: ["/absolute/path/to/scripts/tty-test-terminal.mjs"]',
+              "  }",
+              "}"
+            ].join("\n")}
+            displayPadding={{ block: 12, inline: 14 }}
+          />
+        </Stage>
+      </StoryShell>
+    );
+  }
+
+  return (
+    <StoryShell
+      kicker="Live TTY Bridge"
+      title="Drive a real TTY session through the browser terminal surface."
+      copy="This story connects RetroScreen to an actual websocket TTY. Use the keyboard directly, resize the host shell with the buttons below, and watch session state, title reporting, alternate-screen mode, and bell tracking update live."
+      footer={
+        <div className="sb-retro-status">
+          <span className="sb-retro-measure">
+            state: <code>{sessionState}</code>
+          </span>
+          <span className="sb-retro-measure">
+            title: <code>{sessionTitle}</code>
+          </span>
+          <span className="sb-retro-measure">
+            bells: <code>{bellCount}</code>
+          </span>
+        </div>
+      }
+    >
+      <div className="sb-retro-toolbar">
+        {liveTtyStageSizes.map((size) => (
+          <button
+            className="sb-retro-button"
+            key={size.id}
+            type="button"
+            data-tty-size={size.id}
+            data-active={size.id === stageSize.id ? "true" : "false"}
+            onMouseDown={(event) => {
+              event.preventDefault();
+            }}
+            onClick={() => setStageSizeId(size.id)}
+          >
+            {size.label}
+          </button>
+        ))}
+      </div>
+      <Stage maxWidth={980}>
+        <div
+          className="sb-retro-live-tty-host"
+          data-session-state={sessionState}
+          data-tty-size-frame={stageSize.id}
+          style={{ width: `${stageSize.width}px`, height: `${stageSize.height}px` }}
+        >
+          <RetroLcd
+            mode="terminal"
+            session={session}
+            autoFocus
+            displayColorMode="ansi-extended"
+            displayPadding={{ block: 12, inline: 14 }}
+            onSessionStateChange={setSessionState}
+            onSessionEvent={(event) => {
+              if (event.type === "title") {
+                setSessionTitle(event.title || "(empty)");
+              } else if (event.type === "bell") {
+                setBellCount((count) => count + 1);
+              }
+            }}
+          />
+        </div>
+      </Stage>
+    </StoryShell>
+  );
+}
+
+function LiveTtyTerminalBridgeDemoStory() {
+  const [config] = useState<LiveTtyDemoConfig | null>(() => resolveLiveTtyDemoConfig());
+  const openPayloadSignature = JSON.stringify(config?.openPayload ?? {});
+  const session = useMemo(() => {
+    if (!config) {
+      return null;
+    }
+
+    return createRetroLcdWebSocketSession({
+      url: config.url,
+      openPayload:
+        typeof config.openPayload === "object" && config.openPayload !== null
+          ? config.openPayload
+          : undefined
+    });
+  }, [config?.url, openPayloadSignature]);
+
+  if (!config || !session) {
+    return (
+      <CaptureStage captureId="live-tty-terminal-bridge" maxWidth={980}>
+        <RetroLcd
+          mode="value"
+          value={[
+            "LIVE TTY CAPTURE IDLE",
+            `Default URL: ${DEFAULT_LIVE_TTY_URL}`,
+            "",
+            "Start the example server:",
+            "  yarn tty:server",
+            "",
+            "Or provide window.__RETRO_SCREEN_TTY_DEMO__"
+          ].join("\n")}
+          displayPadding={{ block: 10, inline: 12 }}
+        />
+      </CaptureStage>
+    );
+  }
+
+  return (
+    <CaptureStage captureId="live-tty-terminal-bridge" maxWidth={980}>
+      <div
+        className="sb-retro-live-tty-host"
+        data-session-state="capture"
+        style={{ width: "920px", height: "420px" }}
+      >
+        <RetroLcd
+          mode="terminal"
+          session={session}
+          autoFocus
+          closeSessionOnUnmount
+          displayColorMode="ansi-extended"
+          displayPadding={{ block: 10, inline: 12 }}
+        />
+      </div>
+    </CaptureStage>
+  );
+}
+
 function AutoResizeProbeStory() {
   const [lastReply, setLastReply] = useState<string>("");
   const [sceneState, setSceneState] = useState<ProbeSceneState>({
@@ -2038,6 +2270,11 @@ export const DisplayBuffer: Story = {
   render: () => <DisplayBufferStory />
 };
 
+export const LiveTtyTerminalBridge: Story = {
+  name: "Live Tty Terminal Bridge",
+  render: () => <LiveTtyTerminalBridgeStory />
+};
+
 export const FeatureTour: Story = {
   parameters: {
     controls: {
@@ -2149,4 +2386,17 @@ export const AutoResizeProbeDemo: Story = {
     }
   },
   render: () => <AutoResizeProbeDemoStory />
+};
+
+export const LiveTtyTerminalBridgeDemo: Story = {
+  name: "Capture / Live Tty Terminal Bridge Demo",
+  parameters: {
+    controls: {
+      disable: true
+    },
+    docs: {
+      disable: true
+    }
+  },
+  render: () => <LiveTtyTerminalBridgeDemoStory />
 };

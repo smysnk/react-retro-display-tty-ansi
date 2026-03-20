@@ -5,6 +5,7 @@ import { useState } from "react";
 import { RetroScreen as RetroLcd } from "./RetroScreen";
 import { createRetroLcdController } from "../core/terminal/controller";
 import { wrapTextToColumns } from "../core/geometry/wrap";
+import type { RetroLcdTerminalSession, RetroLcdTerminalSessionEvent } from "../core/terminal/session-types";
 
 const getBodyText = (container: HTMLElement) =>
   container.querySelector(".retro-lcd__body")?.textContent?.replace(/\u00a0/gu, " ") ?? "";
@@ -13,6 +14,52 @@ const getVisibleLines = (container: HTMLElement) =>
   Array.from(container.querySelectorAll(".retro-lcd__line")).map((line) =>
     (line.textContent ?? "").replace(/\u00a0/gu, " ")
   );
+
+const mockScreenRect = (container: HTMLElement, rect: DOMRectInit) => {
+  const screenNode = container.querySelector(".retro-lcd__grid") as HTMLDivElement | null;
+  expect(screenNode).not.toBeNull();
+  vi.spyOn(screenNode!, "getBoundingClientRect").mockImplementation(
+    () =>
+      ({
+        x: rect.x ?? 0,
+        y: rect.y ?? 0,
+        left: rect.x ?? 0,
+        top: rect.y ?? 0,
+        width: rect.width ?? 0,
+        height: rect.height ?? 0,
+        right: (rect.x ?? 0) + (rect.width ?? 0),
+        bottom: (rect.y ?? 0) + (rect.height ?? 0),
+        toJSON: () => ({})
+      }) as DOMRect
+  );
+};
+
+const createMockTerminalSession = (
+  initialState: RetroLcdTerminalSession["getState"] extends () => infer T ? T : never = "idle"
+) => {
+  let listener: ((event: RetroLcdTerminalSessionEvent) => void) | null = null;
+
+  return {
+    connect: vi.fn(),
+    writeInput: vi.fn(),
+    resize: vi.fn(),
+    close: vi.fn(),
+    getState: vi.fn(() => initialState),
+    subscribe: vi.fn((nextListener: (event: RetroLcdTerminalSessionEvent) => void) => {
+      listener = nextListener;
+      return () => {
+        if (listener === nextListener) {
+          listener = null;
+        }
+      };
+    }),
+    emit(event: RetroLcdTerminalSessionEvent) {
+      listener?.(event);
+    }
+  } satisfies RetroLcdTerminalSession & {
+    emit: (event: RetroLcdTerminalSessionEvent) => void;
+  };
+};
 
 const parseRgb = (value: string) => {
   const match = value.match(/\d+(?:\.\d+)?/g) ?? [];
@@ -87,6 +134,511 @@ describe("RetroLcd", () => {
       "data-cursor-mode",
       "hollow"
     );
+  });
+
+  it("bridges a live terminal session into terminal mode and resizes it with the grid", async () => {
+    const session = createMockTerminalSession();
+    const onSessionEvent = vi.fn();
+    const onSessionStateChange = vi.fn();
+    const { container, rerender } = render(
+      <RetroLcd
+        mode="terminal"
+        session={session}
+        gridMode="static"
+        rows={5}
+        cols={12}
+        onSessionEvent={onSessionEvent}
+        onSessionStateChange={onSessionStateChange}
+      />
+    );
+
+    expect(session.connect).toHaveBeenCalledWith({
+      rows: 5,
+      cols: 12
+    });
+
+    await act(async () => {
+      session.emit({ type: "ready", pid: 99 });
+      session.emit({ type: "data", data: "shell ready" });
+      await Promise.resolve();
+    });
+
+    expect(getBodyText(container)).toContain("shell ready");
+    expect(onSessionEvent).toHaveBeenCalledWith({ type: "ready", pid: 99 });
+    expect(onSessionStateChange).toHaveBeenCalledWith("open");
+
+    rerender(
+      <RetroLcd
+        mode="terminal"
+        session={session}
+        gridMode="static"
+        rows={6}
+        cols={16}
+        onSessionEvent={onSessionEvent}
+        onSessionStateChange={onSessionStateChange}
+      />
+    );
+
+    expect(session.resize).toHaveBeenCalledWith(6, 16);
+  });
+
+  it("exposes session metadata hooks and closes the session on unmount", () => {
+    const session = createMockTerminalSession("open");
+    const { container, unmount } = render(
+      <RetroLcd mode="terminal" session={session} gridMode="static" rows={4} cols={12} />
+    );
+
+    const root = container.querySelector(".retro-lcd") as HTMLElement | null;
+    expect(root).not.toBeNull();
+    expect(root).toHaveAttribute("data-session-state", "open");
+    expect(root).toHaveAttribute("data-session-bell-count", "0");
+
+    act(() => {
+      session.emit({ type: "title", title: "htop" });
+      session.emit({ type: "bell" });
+    });
+
+    expect(root).toHaveAttribute("data-session-title", "htop");
+    expect(root).toHaveAttribute("data-session-bell-count", "1");
+
+    unmount();
+
+    expect(session.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("encodes terminal key presses into session input by default when a live session is attached", () => {
+    const session = createMockTerminalSession();
+    const onTerminalData = vi.fn();
+    const onTerminalKeyDown = vi.fn();
+    const { container } = render(
+      <RetroLcd
+        mode="terminal"
+        session={session}
+        gridMode="static"
+        rows={4}
+        cols={12}
+        onTerminalData={onTerminalData}
+        onTerminalKeyDown={onTerminalKeyDown}
+      />
+    );
+
+    const viewport = container.querySelector(".retro-lcd__viewport") as HTMLDivElement | null;
+    expect(viewport).not.toBeNull();
+
+    fireEvent.keyDown(viewport!, {
+      key: "c",
+      code: "KeyC",
+      ctrlKey: true
+    });
+
+    expect(onTerminalKeyDown).toHaveBeenCalledWith(
+      expect.objectContaining({
+        key: "c",
+        code: "KeyC",
+        ctrlKey: true
+      })
+    );
+    expect(onTerminalData).toHaveBeenCalledWith("\u0003");
+    expect(session.writeInput).toHaveBeenCalledWith("\u0003");
+  });
+
+  it("keeps PageUp local when terminal keyboard capture is disabled", () => {
+    const session = createMockTerminalSession();
+    const controller = createRetroLcdController({ rows: 3, cols: 12, scrollback: 12 });
+
+    act(() => {
+      controller.write(
+        ["line-01", "line-02", "line-03", "line-04", "line-05", "line-06"].join("\r\n")
+      );
+    });
+
+    const { container } = render(
+      <RetroLcd
+        mode="terminal"
+        session={session}
+        controller={controller}
+        captureKeyboard={false}
+        gridMode="static"
+        rows={3}
+        cols={12}
+      />
+    );
+
+    const viewport = container.querySelector(".retro-lcd__viewport") as HTMLDivElement | null;
+    const root = container.querySelector(".retro-lcd") as HTMLElement | null;
+    expect(viewport).not.toBeNull();
+    expect(root?.dataset.bufferOffset).toBe("0");
+
+    fireEvent.keyDown(viewport!, {
+      key: "PageUp",
+      code: "PageUp"
+    });
+
+    expect(root?.dataset.bufferOffset).not.toBe("0");
+    expect(session.writeInput).not.toHaveBeenCalled();
+  });
+
+  it("routes PageUp to terminal input when keyboard capture is enabled", () => {
+    const session = createMockTerminalSession();
+    const controller = createRetroLcdController({ rows: 3, cols: 12, scrollback: 12 });
+
+    act(() => {
+      controller.write(
+        ["line-01", "line-02", "line-03", "line-04", "line-05", "line-06"].join("\r\n")
+      );
+    });
+
+    const { container } = render(
+      <RetroLcd
+        mode="terminal"
+        session={session}
+        controller={controller}
+        gridMode="static"
+        rows={3}
+        cols={12}
+      />
+    );
+
+    const viewport = container.querySelector(".retro-lcd__viewport") as HTMLDivElement | null;
+    const root = container.querySelector(".retro-lcd") as HTMLElement | null;
+    expect(viewport).not.toBeNull();
+
+    fireEvent.keyDown(viewport!, {
+      key: "PageUp",
+      code: "PageUp"
+    });
+
+    expect(root?.dataset.bufferOffset).toBe("0");
+    expect(session.writeInput).toHaveBeenCalledWith("\u001b[5~");
+  });
+
+  it("uses application cursor key sequences when the host enables application cursor mode", () => {
+    const session = createMockTerminalSession();
+    const controller = createRetroLcdController({ rows: 3, cols: 12 });
+    const { container } = render(
+      <RetroLcd
+        mode="terminal"
+        session={session}
+        controller={controller}
+        gridMode="static"
+        rows={3}
+        cols={12}
+      />
+    );
+
+    act(() => {
+      controller.write("\u001b[?1h");
+    });
+
+    const viewport = container.querySelector(".retro-lcd__viewport") as HTMLDivElement | null;
+    expect(viewport).not.toBeNull();
+
+    fireEvent.keyDown(viewport!, {
+      key: "ArrowUp",
+      code: "ArrowUp"
+    });
+
+    expect(session.writeInput).toHaveBeenCalledWith("\u001bOA");
+  });
+
+  it("can emit terminal input even without a live session", () => {
+    const onTerminalData = vi.fn();
+    const { container } = render(
+      <RetroLcd
+        mode="terminal"
+        captureKeyboard
+        onTerminalData={onTerminalData}
+        gridMode="static"
+        rows={3}
+        cols={12}
+      />
+    );
+
+    const viewport = container.querySelector(".retro-lcd__viewport") as HTMLDivElement | null;
+    expect(viewport).not.toBeNull();
+
+    fireEvent.keyDown(viewport!, {
+      key: "Enter",
+      code: "Enter"
+    });
+
+    expect(onTerminalData).toHaveBeenCalledWith("\r");
+  });
+
+  it("wraps pasted terminal text when the host enables bracketed paste mode", () => {
+    const session = createMockTerminalSession();
+    const controller = createRetroLcdController({ rows: 3, cols: 12 });
+    const onTerminalData = vi.fn();
+    const { container } = render(
+      <RetroLcd
+        mode="terminal"
+        session={session}
+        controller={controller}
+        onTerminalData={onTerminalData}
+        gridMode="static"
+        rows={3}
+        cols={12}
+      />
+    );
+
+    act(() => {
+      controller.write("\u001b[?2004h");
+    });
+
+    const viewport = container.querySelector(".retro-lcd__viewport") as HTMLDivElement | null;
+    expect(viewport).not.toBeNull();
+
+    fireEvent.paste(viewport!, {
+      clipboardData: {
+        getData: (type: string) => (type === "text/plain" ? "npm test\nnpm run build" : "")
+      }
+    });
+
+    expect(onTerminalData).toHaveBeenCalledWith(
+      "\u001b[200~npm test\nnpm run build\u001b[201~"
+    );
+    expect(session.writeInput).toHaveBeenCalledWith(
+      "\u001b[200~npm test\nnpm run build\u001b[201~"
+    );
+  });
+
+  it("reports focus changes to the terminal when focus reporting mode is enabled", () => {
+    const session = createMockTerminalSession();
+    const controller = createRetroLcdController({ rows: 3, cols: 12 });
+    const onTerminalData = vi.fn();
+    const { container } = render(
+      <RetroLcd
+        mode="terminal"
+        session={session}
+        controller={controller}
+        onTerminalData={onTerminalData}
+        gridMode="static"
+        rows={3}
+        cols={12}
+      />
+    );
+
+    act(() => {
+      controller.write("\u001b[?1004h");
+    });
+
+    const viewport = container.querySelector(".retro-lcd__viewport") as HTMLDivElement | null;
+    expect(viewport).not.toBeNull();
+
+    fireEvent.focus(viewport!);
+    fireEvent.blur(viewport!);
+
+    expect(onTerminalData).toHaveBeenNthCalledWith(1, "\u001b[I");
+    expect(onTerminalData).toHaveBeenNthCalledWith(2, "\u001b[O");
+    expect(session.writeInput).toHaveBeenNthCalledWith(1, "\u001b[I");
+    expect(session.writeInput).toHaveBeenNthCalledWith(2, "\u001b[O");
+  });
+
+  it("encodes terminal mouse press, drag, and release events when the host enables mouse tracking", () => {
+    const session = createMockTerminalSession();
+    const controller = createRetroLcdController({ rows: 3, cols: 4 });
+    const onTerminalMouse = vi.fn();
+    const props = {
+      mode: "terminal" as const,
+      session,
+      controller,
+      onTerminalMouse,
+      gridMode: "static" as const,
+      rows: 3,
+      cols: 4
+    };
+    const { container, rerender } = render(<RetroLcd {...props} />);
+
+    mockScreenRect(container, {
+      x: 0,
+      y: 0,
+      width: 40,
+      height: 30
+    });
+    rerender(<RetroLcd {...props} />);
+
+    act(() => {
+      controller.write("\u001b[?1002h\u001b[?1006h");
+    });
+
+    const viewport = container.querySelector(".retro-lcd__viewport") as HTMLDivElement | null;
+    expect(viewport).not.toBeNull();
+
+    fireEvent.mouseDown(viewport!, {
+      button: 0,
+      clientX: 15,
+      clientY: 6
+    });
+    fireEvent.mouseMove(viewport!, {
+      buttons: 1,
+      clientX: 25,
+      clientY: 16
+    });
+    fireEvent.mouseUp(viewport!, {
+      button: 0,
+      clientX: 25,
+      clientY: 16
+    });
+
+    expect(onTerminalMouse).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        action: "press",
+        button: "left",
+        row: 1,
+        col: 2,
+        encodedData: "\u001b[<0;2;1M"
+      })
+    );
+    expect(onTerminalMouse).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        action: "move",
+        button: "left",
+        row: 2,
+        col: 3,
+        encodedData: "\u001b[<32;3;2M"
+      })
+    );
+    expect(onTerminalMouse).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        action: "release",
+        button: "left",
+        row: 2,
+        col: 3,
+        encodedData: "\u001b[<0;3;2m"
+      })
+    );
+    expect(session.writeInput).toHaveBeenNthCalledWith(1, "\u001b[<0;2;1M");
+    expect(session.writeInput).toHaveBeenNthCalledWith(2, "\u001b[<32;3;2M");
+    expect(session.writeInput).toHaveBeenNthCalledWith(3, "\u001b[<0;3;2m");
+  });
+
+  it("forwards wheel events to the terminal when mouse reporting is active", () => {
+    const session = createMockTerminalSession();
+    const controller = createRetroLcdController({ rows: 2, cols: 12, scrollback: 12 });
+    const props = {
+      mode: "terminal" as const,
+      session,
+      controller,
+      gridMode: "static" as const,
+      rows: 2,
+      cols: 12
+    };
+    const { container, rerender } = render(<RetroLcd {...props} />);
+
+    mockScreenRect(container, {
+      x: 0,
+      y: 0,
+      width: 120,
+      height: 20
+    });
+    rerender(<RetroLcd {...props} />);
+
+    act(() => {
+      controller.write(
+        `${Array.from({ length: 8 }, (_, index) => `line-${index + 1}`).join("\r\n")}\r\n\u001b[?1000h\u001b[?1006h`
+      );
+    });
+
+    const viewport = container.querySelector(".retro-lcd__viewport") as HTMLDivElement | null;
+    const root = container.querySelector(".retro-lcd") as HTMLElement | null;
+    expect(viewport).not.toBeNull();
+    expect(root).not.toBeNull();
+
+    fireEvent.wheel(viewport!, {
+      deltaY: -120,
+      clientX: 36,
+      clientY: 6
+    });
+
+    expect(root).toHaveAttribute("data-buffer-offset", "0");
+    expect(session.writeInput).toHaveBeenCalledWith("\u001b[<64;4;1M");
+  });
+
+  it("can keep wheel scrolling local while mouse reporting is active", () => {
+    const session = createMockTerminalSession();
+    const controller = createRetroLcdController({ rows: 2, cols: 12, scrollback: 12 });
+    const props = {
+      mode: "terminal" as const,
+      session,
+      controller,
+      localScrollbackWhenMouseActive: true,
+      gridMode: "static" as const,
+      rows: 2,
+      cols: 12
+    };
+    const { container, rerender } = render(<RetroLcd {...props} />);
+
+    mockScreenRect(container, {
+      x: 0,
+      y: 0,
+      width: 120,
+      height: 20
+    });
+    rerender(<RetroLcd {...props} />);
+
+    act(() => {
+      controller.write(
+        `${Array.from({ length: 8 }, (_, index) => `line-${index + 1}`).join("\r\n")}\r\n\u001b[?1000h\u001b[?1006h`
+      );
+    });
+
+    const viewport = container.querySelector(".retro-lcd__viewport") as HTMLDivElement | null;
+    const root = container.querySelector(".retro-lcd") as HTMLElement | null;
+    expect(viewport).not.toBeNull();
+    expect(root).not.toBeNull();
+
+    fireEvent.wheel(viewport!, {
+      deltaY: -120,
+      clientX: 36,
+      clientY: 6
+    });
+
+    expect(Number(root?.getAttribute("data-buffer-offset") ?? "0")).toBeGreaterThan(0);
+    expect(session.writeInput).not.toHaveBeenCalled();
+  });
+
+  it("does not emit focus reports when captureFocusReport is disabled", () => {
+    const session = createMockTerminalSession();
+    const controller = createRetroLcdController({ rows: 3, cols: 12 });
+    const onTerminalData = vi.fn();
+    const { container } = render(
+      <RetroLcd
+        mode="terminal"
+        session={session}
+        controller={controller}
+        captureFocusReport={false}
+        onTerminalData={onTerminalData}
+        gridMode="static"
+        rows={3}
+        cols={12}
+      />
+    );
+
+    act(() => {
+      controller.write("\u001b[?1004h");
+    });
+
+    const viewport = container.querySelector(".retro-lcd__viewport") as HTMLDivElement | null;
+    expect(viewport).not.toBeNull();
+
+    fireEvent.focus(viewport!);
+    fireEvent.blur(viewport!);
+
+    expect(onTerminalData).not.toHaveBeenCalled();
+    expect(session.writeInput).not.toHaveBeenCalled();
+  });
+
+  it("autofocuses the terminal viewport in terminal mode", () => {
+    const { container } = render(
+      <RetroLcd mode="terminal" autoFocus gridMode="static" rows={3} cols={12} />
+    );
+
+    const viewport = container.querySelector(".retro-lcd__viewport") as HTMLDivElement | null;
+    expect(viewport).not.toBeNull();
+    expect(document.activeElement).toBe(viewport);
   });
 
   it("renders ansi cell styles from terminal snapshots", () => {
@@ -538,5 +1090,30 @@ describe("RetroLcd", () => {
     const root = container.querySelector(".retro-lcd") as HTMLElement | null;
     expect(root).not.toBeNull();
     expect(root).toHaveAttribute("data-buffer-max-offset", "2");
+  });
+
+  it("renders alternate-screen terminal output without exposing primary scrollback", () => {
+    const controller = createRetroLcdController({ rows: 2, cols: 8, scrollback: 8 });
+    const { container } = render(
+      <RetroLcd mode="terminal" controller={controller} gridMode="static" rows={2} cols={8} />
+    );
+
+    act(() => {
+      controller.write("main\r\nshell");
+      controller.write("\u001b[?1049h");
+      controller.write("ALT");
+    });
+
+    const root = container.querySelector(".retro-lcd") as HTMLElement | null;
+    expect(root).not.toBeNull();
+    expect(root).toHaveAttribute("data-terminal-alternate-screen", "true");
+    expect(getVisibleLines(container)).toEqual(["ALT     ", "        "]);
+
+    act(() => {
+      controller.write("\u001b[?1049l");
+    });
+
+    expect(root).toHaveAttribute("data-terminal-alternate-screen", "false");
+    expect(getVisibleLines(container)).toEqual(["main    ", "shell   "]);
   });
 });

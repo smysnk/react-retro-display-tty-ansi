@@ -187,6 +187,76 @@ export function StreamedTerminal() {
 If you already have a terminal-like buffer as a string, `mode="terminal"` also accepts `value`
 or `initialBuffer`.
 
+## Live TTY Websocket Bridge
+
+`RetroScreen` can also act as the browser-side surface for a real TTY session. The transport
+stays outside the component, while the component handles geometry, keyboard capture, paste,
+focus reporting, mouse reporting, alternate-screen rendering, title updates, and bell metadata.
+
+[![Live Tty Terminal Bridge Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi/main/docs/assets/react-retro-display-tty-ansi-live-tty-terminal-bridge.webp)](https://github.com/user-attachments/assets/8e525d78-ddf1-4604-bdcc-d05f6d817489)
+
+The demo sequence is recorded from a live shell session and stages the kind of workload this
+bridge is built for: a live-updating `top` session, a fullscreen `vim` pass, and a `nano`
+screen with help bars and cursor-owned chrome.
+
+```tsx
+import {
+  RetroScreen,
+  createRetroScreenWebSocketSession
+} from "react-retro-display-tty-ansi";
+
+const session = createRetroScreenWebSocketSession({
+  url: "ws://127.0.0.1:8787",
+  openPayload: {
+    cwd: "/workspace",
+    term: "xterm-256color"
+  }
+});
+
+export function LiveShell() {
+  return (
+    <RetroScreen
+      mode="terminal"
+      session={session}
+      autoFocus
+      displayColorMode="ansi-extended"
+      displayPadding={{ block: 12, inline: 14 }}
+    />
+  );
+}
+```
+
+For local development, the repo includes a reference `node-pty` websocket backend:
+
+```bash
+yarn tty:server
+```
+
+By default, that example server starts a themed demo shell rooted at `~/tty-demo` with the
+prompt `operator@retro:~/tty-demo$`, so the live story and the recorded bridge demo share the
+same shell framing.
+
+There is also a dedicated Storybook story for this path. It now defaults to the local example
+server at `ws://127.0.0.1:8787`, so if `yarn tty:server` is already running you can open the
+`Live Tty Terminal Bridge` story directly without adding any extra query params.
+
+If you want to override the target or the open payload, use:
+
+```js
+window.__RETRO_SCREEN_TTY_DEMO__ = {
+  url: "ws://127.0.0.1:8787",
+  openPayload: {
+    cwd: "/Users/josh/play/react-retro-display",
+    term: "xterm-256color"
+  }
+};
+```
+
+The example server now supports token checks, origin checks, idle timeouts, payload-size limits,
+and optional command/cwd/env override restrictions. See
+[examples/node-tty-websocket-server/README.md](/Users/josh/play/react-retro-display/examples/node-tty-websocket-server/README.md)
+for the available flags.
+
 ### 4. Prompt-first interaction
 
 Use `mode="prompt"` when the interface should feel like a guided shell.
@@ -375,8 +445,13 @@ The same trace fixtures used in Storybook are also exercised in the terminal ver
 
 ```bash
 yarn test:conformance
+yarn test:tty
+yarn test:e2e:tty
 yarn test:e2e
 ```
+
+The TTY-specific checks skip themselves automatically in environments where `node-pty` cannot
+allocate a TTY session, but they run normally on TTY-capable developer machines and CI runners.
 
 ## Ease Of Integration
 
@@ -398,6 +473,7 @@ It includes stories for the main user journeys:
 - controller-fed terminal output
 - display buffer paging and follow mode
 - auto-resize geometry probing
+- live TTY bridge wiring
 - ANSI styling
 - display color mode projection
 - light and dark surface modes
@@ -421,4 +497,12 @@ npm run build
 npm run test
 npm run test:unit
 npm run storybook
+```
+
+Useful extra checks:
+
+```bash
+yarn test:tty
+yarn test:e2e:tty
+yarn perf:terminal
 ```

@@ -10,6 +10,7 @@ import type {
   RetroLcdCell,
   RetroLcdCellStyle,
   RetroLcdCursorState,
+  RetroLcdTerminalMouseTrackingMode,
   RetroLcdTerminalModes,
   RetroLcdScreenBufferOptions,
   RetroLcdScreenSnapshot,
@@ -45,7 +46,27 @@ const defaultSavedCursor = () => ({
 const DEFAULT_TERMINAL_MODES: RetroLcdTerminalModes = {
   insertMode: false,
   originMode: false,
-  wraparoundMode: true
+  wraparoundMode: true,
+  applicationCursorKeysMode: false,
+  bracketedPasteMode: false,
+  focusReportingMode: false,
+  alternateScreenBufferMode: false,
+  mouseTrackingMode: "none",
+  mouseProtocol: "none"
+};
+
+type RetroLcdBufferSurfaceState = {
+  grid: RetroLcdCell[][];
+  scrollbackCells: RetroLcdCell[][];
+  cursorState: RetroLcdCursorState;
+  savedCursorState: {
+    row: number;
+    col: number;
+  };
+  currentStyle: RetroLcdCellStyle;
+  pendingWrap: boolean;
+  scrollRegionTop: number;
+  scrollRegionBottom: number;
 };
 
 export class RetroLcdScreenBuffer {
@@ -53,8 +74,8 @@ export class RetroLcdScreenBuffer {
   readonly cols: number;
   readonly scrollbackLimit: number;
   readonly tabWidth: number;
-  private readonly grid: RetroLcdCell[][];
-  private readonly scrollbackCells: RetroLcdCell[][] = [];
+  private grid: RetroLcdCell[][];
+  private scrollbackCells: RetroLcdCell[][];
   private readonly parser: RetroLcdAnsiParser;
   private cursorState: RetroLcdCursorState;
   private savedCursorState = defaultSavedCursor();
@@ -63,20 +84,30 @@ export class RetroLcdScreenBuffer {
   private pendingWrap = false;
   private scrollRegionTop = 0;
   private scrollRegionBottom: number;
+  private primarySurface: RetroLcdBufferSurfaceState;
+  private alternateSurface: RetroLcdBufferSurfaceState;
+  private activeSurface: "primary" | "alternate" = "primary";
 
   constructor(options: RetroLcdScreenBufferOptions) {
     this.rows = clampDimension(options.rows);
     this.cols = clampDimension(options.cols);
     this.scrollbackLimit = Math.max(0, Math.floor(options.scrollback ?? 200));
     this.tabWidth = Math.max(1, Math.floor(options.tabWidth ?? 4));
-    this.grid = Array.from({ length: this.rows }, () => createBlankLine(this.cols));
+    this.primarySurface = this.createSurfaceState({
+      cursorMode: options.cursorMode ?? "solid"
+    });
+    this.alternateSurface = this.createSurfaceState({
+      cursorMode: options.cursorMode ?? "solid"
+    });
+    this.grid = this.primarySurface.grid;
+    this.scrollbackCells = this.primarySurface.scrollbackCells;
     this.scrollRegionBottom = this.rows - 1;
-    this.cursorState = {
-      row: 0,
-      col: 0,
-      visible: true,
-      mode: options.cursorMode ?? "solid"
-    };
+    this.cursorState = { ...this.primarySurface.cursorState };
+    this.savedCursorState = { ...this.primarySurface.savedCursorState };
+    this.currentStyle = cloneStyle(this.primarySurface.currentStyle);
+    this.pendingWrap = this.primarySurface.pendingWrap;
+    this.scrollRegionTop = this.primarySurface.scrollRegionTop;
+    this.scrollRegionBottom = this.primarySurface.scrollRegionBottom;
     this.parser = new RetroLcdAnsiParser({
       command: (command) => this.applyCommand(command)
     });
@@ -96,20 +127,16 @@ export class RetroLcdScreenBuffer {
   }
 
   reset() {
-    this.clear();
-    this.scrollbackCells.length = 0;
+    this.primarySurface = this.createSurfaceState({
+      cursorMode: "solid"
+    });
+    this.alternateSurface = this.createSurfaceState({
+      cursorMode: "solid"
+    });
+    this.loadSurface("primary");
     this.currentStyle = cloneStyle(DEFAULT_CELL_STYLE);
     this.savedCursorState = defaultSavedCursor();
     this.terminalModes = { ...DEFAULT_TERMINAL_MODES };
-    this.scrollRegionTop = 0;
-    this.scrollRegionBottom = this.rows - 1;
-    this.pendingWrap = false;
-    this.cursorState = {
-      row: 0,
-      col: 0,
-      visible: true,
-      mode: "solid"
-    };
     this.parser.reset();
   }
 
@@ -389,7 +416,9 @@ export class RetroLcdScreenBuffer {
       if (this.cursorState.row === this.scrollRegionBottom) {
         this.shiftLinesUp(this.scrollRegionTop, this.scrollRegionBottom, 1, {
           captureScrollback:
-            this.scrollRegionTop === 0 && this.scrollRegionBottom === this.rows - 1
+            !this.terminalModes.alternateScreenBufferMode &&
+            this.scrollRegionTop === 0 &&
+            this.scrollRegionBottom === this.rows - 1
         });
         return;
       }
@@ -524,10 +553,29 @@ export class RetroLcdScreenBuffer {
 
   private setMode(prefix: string | undefined, params: number[], enabled: boolean) {
     const values = params.length > 0 ? params : [0];
+    const nextMouseTrackingMode = (value: number, active: boolean): RetroLcdTerminalMouseTrackingMode => {
+      if (!active) {
+        return "none";
+      }
+
+      switch (value) {
+        case 1000:
+          return "vt200";
+        case 1002:
+          return "drag";
+        case 1003:
+          return "any";
+        default:
+          return this.terminalModes.mouseTrackingMode;
+      }
+    };
 
     for (const value of values) {
       if (prefix === "?") {
         switch (value) {
+          case 1:
+            this.terminalModes.applicationCursorKeysMode = enabled;
+            break;
           case 6:
             this.terminalModes.originMode = enabled;
             this.pendingWrap = false;
@@ -541,6 +589,25 @@ export class RetroLcdScreenBuffer {
             break;
           case 25:
             this.setCursorVisible(enabled);
+            break;
+          case 47:
+          case 1047:
+          case 1049:
+            this.setAlternateScreenMode(enabled);
+            break;
+          case 1000:
+          case 1002:
+          case 1003:
+            this.terminalModes.mouseTrackingMode = nextMouseTrackingMode(value, enabled);
+            break;
+          case 1004:
+            this.terminalModes.focusReportingMode = enabled;
+            break;
+          case 1006:
+            this.terminalModes.mouseProtocol = enabled ? "sgr" : "none";
+            break;
+          case 2004:
+            this.terminalModes.bracketedPasteMode = enabled;
             break;
           default:
             break;
@@ -659,5 +726,91 @@ export class RetroLcdScreenBuffer {
 
       this.grid[top] = createBlankLine(this.cols, this.currentStyle);
     }
+  }
+
+  private createSurfaceState({
+    cursorMode,
+    cursorVisible = true,
+    currentStyle = DEFAULT_CELL_STYLE
+  }: {
+    cursorMode: CursorMode;
+    cursorVisible?: boolean;
+    currentStyle?: RetroLcdCellStyle;
+  }): RetroLcdBufferSurfaceState {
+    return {
+      grid: Array.from({ length: this.rows }, () => createBlankLine(this.cols)),
+      scrollbackCells: [],
+      cursorState: {
+        row: 0,
+        col: 0,
+        visible: cursorVisible,
+        mode: cursorMode
+      },
+      savedCursorState: defaultSavedCursor(),
+      currentStyle: cloneStyle(currentStyle),
+      pendingWrap: false,
+      scrollRegionTop: 0,
+      scrollRegionBottom: this.rows - 1
+    };
+  }
+
+  private getActiveSurfaceState() {
+    return this.activeSurface === "primary" ? this.primarySurface : this.alternateSurface;
+  }
+
+  private storeSurface() {
+    const surface = this.getActiveSurfaceState();
+    surface.grid = this.grid;
+    surface.scrollbackCells = this.scrollbackCells;
+    surface.cursorState = { ...this.cursorState };
+    surface.savedCursorState = { ...this.savedCursorState };
+    surface.currentStyle = cloneStyle(this.currentStyle);
+    surface.pendingWrap = this.pendingWrap;
+    surface.scrollRegionTop = this.scrollRegionTop;
+    surface.scrollRegionBottom = this.scrollRegionBottom;
+  }
+
+  private loadSurface(name: "primary" | "alternate") {
+    const surface = name === "primary" ? this.primarySurface : this.alternateSurface;
+    this.activeSurface = name;
+    this.grid = surface.grid;
+    this.scrollbackCells = surface.scrollbackCells;
+    this.cursorState = { ...surface.cursorState };
+    this.savedCursorState = { ...surface.savedCursorState };
+    this.currentStyle = cloneStyle(surface.currentStyle);
+    this.pendingWrap = surface.pendingWrap;
+    this.scrollRegionTop = surface.scrollRegionTop;
+    this.scrollRegionBottom = surface.scrollRegionBottom;
+  }
+
+  private setAlternateScreenMode(enabled: boolean) {
+    if (enabled) {
+      if (this.terminalModes.alternateScreenBufferMode) {
+        return;
+      }
+
+      this.storeSurface();
+      this.alternateSurface = this.createSurfaceState({
+        cursorMode: this.cursorState.mode,
+        cursorVisible: this.cursorState.visible,
+        currentStyle: this.currentStyle
+      });
+      this.terminalModes.alternateScreenBufferMode = true;
+      this.loadSurface("alternate");
+      return;
+    }
+
+    if (!this.terminalModes.alternateScreenBufferMode) {
+      return;
+    }
+
+    this.storeSurface();
+    this.terminalModes.alternateScreenBufferMode = false;
+    this.loadSurface("primary");
+    this.alternateSurface = this.createSurfaceState({
+      cursorMode: this.cursorState.mode,
+      cursorVisible: this.cursorState.visible,
+      currentStyle: this.currentStyle
+    });
   }
 }

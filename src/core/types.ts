@@ -1,5 +1,12 @@
 import type { CSSProperties } from "react";
 import type { RetroLcdScreenSnapshot, RetroLcdWriteOptions } from "./terminal/types";
+import type { RetroLcdTerminalHostKeyEvent } from "./terminal/host-adapter";
+import type { RetroLcdTerminalMouseEvent } from "./terminal/mouse-encoder";
+import type {
+  RetroLcdTerminalSession,
+  RetroLcdTerminalSessionEvent,
+  RetroLcdTerminalSessionState
+} from "./terminal/session-types";
 
 export type CursorMode = "solid" | "hollow";
 export type RetroLcdGridMode = "auto" | "static";
@@ -51,9 +58,13 @@ export type RetroLcdSharedProps = {
 
 export type RetroLcdController = {
   write: (data: string, options?: RetroLcdWriteOptions) => void;
+  writeMany: (chunks: readonly RetroLcdWriteChunk[]) => void;
   writeln: (line: string) => void;
   clear: () => void;
   reset: () => void;
+  batch: <T>(fn: () => T) => T;
+  suspendNotifications: () => void;
+  resumeNotifications: () => void;
   moveCursorTo: (row: number, col: number) => void;
   resize: (rows: number, cols: number) => void;
   setCursorVisible: (visible: boolean) => void;
@@ -76,8 +87,22 @@ export type RetroLcdTerminalModeProps = RetroLcdSharedProps & {
   value?: string;
   initialBuffer?: string;
   controller?: RetroLcdController;
+  session?: RetroLcdTerminalSession;
+  closeSessionOnUnmount?: boolean;
   bufferSize?: number;
   defaultAutoFollow?: boolean;
+  captureKeyboard?: boolean;
+  captureMouse?: boolean;
+  capturePaste?: boolean;
+  captureFocusReport?: boolean;
+  terminalFocusable?: boolean;
+  localScrollbackWhenMouseActive?: boolean;
+  onSessionEvent?: (event: RetroLcdTerminalSessionEvent) => void;
+  onSessionStateChange?: (state: RetroLcdTerminalSessionState) => void;
+  onTerminalData?: (data: string | Uint8Array) => void;
+  onTerminalKeyDown?: (event: RetroLcdTerminalHostKeyEvent) => void;
+  onTerminalKeyUp?: (event: RetroLcdTerminalHostKeyEvent) => void;
+  onTerminalMouse?: (event: RetroLcdTerminalMouseEvent & { encodedData: string }) => void;
 };
 
 export type RetroLcdPromptCommandResult =
@@ -107,3 +132,10 @@ export type RetroLcdProps =
   | RetroLcdValueModeProps
   | RetroLcdTerminalModeProps
   | RetroLcdPromptModeProps;
+
+export type RetroLcdWriteChunk =
+  | string
+  | {
+      data: string;
+      options?: RetroLcdWriteOptions;
+    };

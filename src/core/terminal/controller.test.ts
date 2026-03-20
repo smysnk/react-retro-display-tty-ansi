@@ -72,4 +72,54 @@ describe("createRetroLcdController", () => {
       scrollback: ["alpha", "beta"]
     });
   });
+
+  it("batches writeMany into a single notification and replays it after resize", () => {
+    const controller = createRetroLcdController({ rows: 2, cols: 4 });
+    let notifications = 0;
+    controller.subscribe(() => {
+      notifications += 1;
+    });
+
+    controller.writeMany(["AB", { data: "CD", options: { appendNewline: true } }, "EF"]);
+
+    expect(notifications).toBe(1);
+    expect(controller.getSnapshot()).toMatchObject({
+      lines: ["ABCD", "EF"]
+    });
+
+    controller.resize(3, 3);
+
+    expect(controller.getSnapshot()).toMatchObject({
+      rows: 3,
+      cols: 3,
+      lines: ["ABC", "D", "EF"]
+    });
+  });
+
+  it("flushes exactly one notification for nested batches and suspended notifications", () => {
+    const controller = createRetroLcdController({ rows: 2, cols: 4 });
+    let notifications = 0;
+    controller.subscribe(() => {
+      notifications += 1;
+    });
+
+    controller.suspendNotifications();
+    controller.write("AB");
+    controller.batch(() => {
+      controller.write("CD");
+      controller.setCursorVisible(false);
+    });
+
+    expect(notifications).toBe(0);
+
+    controller.resumeNotifications();
+
+    expect(notifications).toBe(1);
+    expect(controller.getSnapshot()).toMatchObject({
+      lines: ["ABCD", ""],
+      cursor: {
+        visible: false
+      }
+    });
+  });
 });

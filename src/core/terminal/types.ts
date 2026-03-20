@@ -37,10 +37,19 @@ export type RetroLcdCursorState = {
   mode: CursorMode;
 };
 
+export type RetroLcdTerminalMouseTrackingMode = "none" | "vt200" | "drag" | "any";
+export type RetroLcdTerminalMouseProtocol = "none" | "sgr";
+
 export type RetroLcdTerminalModes = {
   insertMode: boolean;
   originMode: boolean;
   wraparoundMode: boolean;
+  applicationCursorKeysMode: boolean;
+  bracketedPasteMode: boolean;
+  focusReportingMode: boolean;
+  alternateScreenBufferMode: boolean;
+  mouseTrackingMode: RetroLcdTerminalMouseTrackingMode;
+  mouseProtocol: RetroLcdTerminalMouseProtocol;
 };
 
 export type RetroLcdScreenBufferOptions = {

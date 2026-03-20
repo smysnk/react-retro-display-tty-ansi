@@ -115,8 +115,23 @@ export const createStorybookBrowserHarness = ({
     get page() {
       return page;
     },
-    gotoStory: async (storyId) => {
-      await page.goto(`http://127.0.0.1:${port}/iframe.html?id=${storyId}&viewMode=story`, {
+    get baseUrl() {
+      return `http://127.0.0.1:${port}`;
+    },
+    gotoStory: async (storyId, { searchParams = {} } = {}) => {
+      const storyUrl = new URL("/iframe.html", `http://127.0.0.1:${port}`);
+      storyUrl.searchParams.set("id", storyId);
+      storyUrl.searchParams.set("viewMode", "story");
+
+      for (const [key, value] of Object.entries(searchParams)) {
+        if (value === undefined || value === null) {
+          continue;
+        }
+
+        storyUrl.searchParams.set(key, String(value));
+      }
+
+      await page.goto(String(storyUrl), {
         waitUntil: "networkidle"
       });
     }

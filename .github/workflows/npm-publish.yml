@@ -52,6 +52,9 @@ jobs:
       - name: Run terminal conformance regression suite
         run: yarn test:conformance
 
+      - name: Run TTY integration suite
+        run: yarn test:tty
+
       - name: Detect browser executable
         id: browser
         shell: bash

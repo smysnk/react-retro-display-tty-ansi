@@ -1,0 +1,12 @@
+{
+  "name": "react-retro-display-tty-ansi-node-tty-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node ./server.mjs"
+  },
+  "dependencies": {
+    "node-pty": "^1.0.0",
+    "ws": "^8.18.3"
+  }
+}

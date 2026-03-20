@@ -10,7 +10,7 @@ export default {
   },
   workspaceDiscovery: {
     provider: "manual",
-    packages: ["library", "terminal", "docs", "quality"]
+    packages: ["library", "terminal", "tty", "docs", "quality"]
   },
   execution: {
     continueOnError: true,
@@ -62,6 +62,19 @@ export default {
       package: "terminal",
       cwd: rootDir,
       command: ["yarn", "test:conformance"],
+      module: "runtime",
+      theme: "terminal",
+      coverage: {
+        enabled: false
+      }
+    },
+    {
+      id: "tty-integration",
+      label: "TTY Integration",
+      adapter: "shell",
+      package: "tty",
+      cwd: rootDir,
+      command: ["yarn", "test:tty"],
       module: "runtime",
       theme: "terminal",
       coverage: {

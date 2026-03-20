@@ -1,10 +1,16 @@
 import { spawnSync } from "node:child_process";
 import { createReadStream } from "node:fs";
-import { access, mkdir, mkdtemp, readdir, rm, stat } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { extname, join, normalize, resolve } from "node:path";
 import { chromium } from "playwright-core";
+import {
+  buildRetroTtyDemoEnv,
+  buildRetroTtyDemoShellLaunch,
+  createRetroTtyDemoShell
+} from "./tty-demo-shell.mjs";
+import { startTtyWebSocketServer } from "./tty-websocket-server.mjs";
 
 const rootDir = resolve(new URL("..", import.meta.url).pathname);
 const staticDir = resolve(rootDir, "storybook-static");
@@ -55,6 +61,14 @@ const autoResizeProbeMp4File = resolve(
   outputDir,
   "react-retro-display-tty-ansi-auto-resize-probe.mp4"
 );
+const liveTtyTerminalBridgeWebpFile = resolve(
+  outputDir,
+  "react-retro-display-tty-ansi-live-tty-terminal-bridge.webp"
+);
+const liveTtyTerminalBridgeMp4File = resolve(
+  outputDir,
+  "react-retro-display-tty-ansi-live-tty-terminal-bridge.mp4"
+);
 const lightDarkHostsWebpFile = resolve(
   outputDir,
   "react-retro-display-tty-ansi-light-dark-hosts.webp"
@@ -72,7 +86,6 @@ const featureTourDurationMs = Number.parseInt(
   process.env.STORYBOOK_CAPTURE_DURATION_MS ?? "30000",
   10
 );
-
 const mimeTypes = new Map([
   [".css", "text/css; charset=utf-8"],
   [".html", "text/html; charset=utf-8"],
@@ -303,6 +316,111 @@ const captures = [
       { type: "webp", file: autoResizeProbeWebpFile },
       { type: "mp4", file: autoResizeProbeMp4File }
     ]
+  },
+  {
+    name: "live tty terminal bridge",
+    storyId: "retroscreen--live-tty-terminal-bridge-demo",
+    selector: "[data-demo-capture='live-tty-terminal-bridge']",
+    waitMs: 220,
+    fps: 16,
+    durationMs: 65000,
+    stopAfterAutomationMs: 800,
+    outputs: [
+      { type: "webp", file: liveTtyTerminalBridgeWebpFile },
+      { type: "mp4", file: liveTtyTerminalBridgeMp4File }
+    ],
+    setup: async () => {
+      const ttyDemoShell = await createRetroTtyDemoShell();
+      const { bashRcFile, homeDir, workDir, zshRcFile } = ttyDemoShell;
+      const demoFile = "tty-bridge-demo.txt";
+
+      await writeFile(
+        join(workDir, demoFile),
+        ["retro tty bridge", "", "status: ready", "buffer synced"].join("\n"),
+        "utf8"
+      );
+      const { command: shellCommand, args: shellArgs } = buildRetroTtyDemoShellLaunch({
+        bashRcFile,
+        zshRcFile
+      });
+      const server = await startTtyWebSocketServer({
+        port: 0,
+        defaultCommand: shellCommand,
+        defaultArgs: shellArgs,
+        defaultCwd: workDir,
+        allowCommandOverride: false,
+        allowCwdOverride: false,
+        allowEnvOverride: false,
+        defaultEnv: buildRetroTtyDemoEnv({ homeDir })
+      });
+
+      return {
+        storyConfig: {
+          url: server.url,
+          openPayload: {
+            term: "xterm-256color"
+          }
+        },
+        preparePage: async (page) => {
+          await page.addInitScript((config) => {
+            window.__RETRO_SCREEN_TTY_DEMO__ = config;
+          }, {
+            url: server.url,
+            openPayload: {
+              term: "xterm-256color"
+            }
+          });
+        },
+        afterNavigate: async (page) => {
+          await page.waitForSelector('.retro-lcd[data-session-state="open"]', {
+            timeout: 60000
+          });
+          await page.waitForFunction(
+            () => (document.querySelector(".retro-lcd__body")?.textContent ?? "").trim().length > 0,
+            {
+              timeout: 60000
+            }
+          );
+          await page.waitForTimeout(2500);
+          await page.locator(".retro-lcd__viewport").click();
+        },
+        startAutomation: async (page) => {
+          const viewport = page.locator(".retro-lcd__viewport");
+
+          const typeCommand = async (command, delay) => {
+            await viewport.focus();
+            await page.keyboard.type(command, { delay });
+            await page.keyboard.press("Enter");
+          };
+
+          await page.waitForTimeout(3500);
+          await typeCommand("top", 460);
+          await page.waitForTimeout(12000);
+          await page.keyboard.press("q");
+          await page.waitForTimeout(3200);
+          await typeCommand(`vim ${demoFile}`, 220);
+          await page.waitForTimeout(2800);
+          await page.keyboard.press("o");
+          await page.keyboard.type("live tty bridge capture", { delay: 140 });
+          await page.keyboard.press("Escape");
+          await page.waitForTimeout(9500);
+          await page.keyboard.type(":q!\n", { delay: 140 });
+          await page.waitForTimeout(3200);
+          await typeCommand(`nano ${demoFile}`, 220);
+          await page.waitForTimeout(2600);
+          await page.keyboard.type("\nlive tty bridge steady", { delay: 140 });
+          await page.waitForTimeout(9500);
+          await page.keyboard.press("Control+x");
+          await page.waitForTimeout(700);
+          await page.keyboard.type("n", { delay: 140 });
+          await page.waitForTimeout(1000);
+        },
+        teardown: async () => {
+          await server.close();
+          await ttyDemoShell.cleanup();
+        }
+      };
+    }
   }
 ];
 
@@ -326,33 +444,63 @@ const selectedCaptures = captureOnlyFilter
     })
   : captures;
 
-const captureStoryFrames = async (page, capture) => {
+const captureStoryFrames = async (browser, capture) => {
   const frameDir = await mkdtemp(join(tmpdir(), "retro-display-frames-"));
-  const frameCount = Math.max(1, Math.ceil((capture.durationMs / 1000) * capture.fps));
+  const maxFrameCount = Math.max(1, Math.ceil((capture.durationMs / 1000) * capture.fps));
+  const captureRuntime = capture.setup ? await capture.setup() : null;
+  const page = await browser.newPage({
+    viewport: {
+      width: 1440,
+      height: 920
+    },
+    deviceScaleFactor: 1
+  });
 
   try {
+    await captureRuntime?.preparePage?.(page);
     await page.goto(
       `http://127.0.0.1:${port}/iframe.html?id=${capture.storyId}&viewMode=story`,
       { waitUntil: "networkidle" }
     );
+    await captureRuntime?.afterNavigate?.(page);
     await page.waitForSelector(capture.selector);
     await page.waitForTimeout(capture.waitMs);
 
     const target = page.locator(capture.selector);
+    let automationFinishedAt = null;
+    const automationPromise = (captureRuntime?.startAutomation?.(page) ?? Promise.resolve())
+      .then(() => {
+        automationFinishedAt = Date.now();
+      });
+    let frameCount = 0;
 
-    for (let index = 0; index < frameCount; index += 1) {
+    for (let index = 0; index < maxFrameCount; index += 1) {
       const framePath = join(frameDir, `frame-${String(index).padStart(4, "0")}.png`);
       await target.screenshot({ path: framePath });
+      frameCount = index + 1;
 
-      if (index < frameCount - 1) {
+      if (
+        capture.stopAfterAutomationMs !== undefined &&
+        automationFinishedAt !== null &&
+        Date.now() - automationFinishedAt >= capture.stopAfterAutomationMs
+      ) {
+        break;
+      }
+
+      if (index < maxFrameCount - 1) {
         await page.waitForTimeout(1000 / capture.fps);
       }
     }
+
+    await automationPromise;
 
     return { frameDir, frameCount };
   } catch (error) {
     await rm(frameDir, { recursive: true, force: true });
     throw error;
+  } finally {
+    await page.close();
+    await captureRuntime?.teardown?.();
   }
 };
 
@@ -394,7 +542,6 @@ const main = async () => {
   await new Promise((resolvePromise) => server.listen(port, resolvePromise));
 
   let browser;
-  let page;
 
   try {
     browser = await chromium.launch({
@@ -402,16 +549,8 @@ const main = async () => {
       headless: true
     });
 
-    page = await browser.newPage({
-      viewport: {
-        width: 1440,
-        height: 920
-      },
-      deviceScaleFactor: 1
-    });
-
     for (const capture of selectedCaptures) {
-      const { frameDir, frameCount } = await captureStoryFrames(page, capture);
+      const { frameDir, frameCount } = await captureStoryFrames(browser, capture);
 
       try {
         await encodeCapture(capture, frameDir, frameCount);
@@ -420,7 +559,6 @@ const main = async () => {
       }
     }
   } finally {
-    await page?.close();
     await browser?.close();
     await new Promise((resolvePromise) => server.close(() => resolvePromise(undefined)));
   }

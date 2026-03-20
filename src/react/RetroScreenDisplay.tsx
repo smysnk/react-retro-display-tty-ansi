@@ -1,6 +1,9 @@
 import type {
+  ClipboardEventHandler,
+  FocusEventHandler,
   CSSProperties,
   KeyboardEventHandler,
+  MouseEventHandler,
   ReactNode,
   RefObject,
   WheelEventHandler
@@ -40,7 +43,15 @@ type RetroScreenDisplayProps = {
   probeRef: RefObject<HTMLSpanElement | null>;
   viewportRef?: RefObject<HTMLDivElement | null>;
   onViewportClick: () => void;
+  onViewportFocus?: FocusEventHandler<HTMLDivElement>;
+  onViewportBlur?: FocusEventHandler<HTMLDivElement>;
+  onViewportPaste?: ClipboardEventHandler<HTMLDivElement>;
   onViewportKeyDown?: KeyboardEventHandler<HTMLDivElement>;
+  onViewportKeyUp?: KeyboardEventHandler<HTMLDivElement>;
+  onViewportMouseDown?: MouseEventHandler<HTMLDivElement>;
+  onViewportMouseMove?: MouseEventHandler<HTMLDivElement>;
+  onViewportMouseUp?: MouseEventHandler<HTMLDivElement>;
+  onViewportContextMenu?: MouseEventHandler<HTMLDivElement>;
   onViewportWheel?: WheelEventHandler<HTMLDivElement>;
   viewportTabIndex?: number;
   children?: ReactNode;
@@ -55,7 +66,15 @@ export function RetroScreenDisplay({
   probeRef,
   viewportRef,
   onViewportClick,
+  onViewportFocus,
+  onViewportBlur,
+  onViewportPaste,
   onViewportKeyDown,
+  onViewportKeyUp,
+  onViewportMouseDown,
+  onViewportMouseMove,
+  onViewportMouseUp,
+  onViewportContextMenu,
   onViewportWheel,
   viewportTabIndex,
   children
@@ -66,7 +85,15 @@ export function RetroScreenDisplay({
         ref={viewportRef}
         className="retro-lcd__viewport"
         onClick={onViewportClick}
+        onFocus={onViewportFocus}
+        onBlur={onViewportBlur}
+        onPaste={onViewportPaste}
         onKeyDown={onViewportKeyDown}
+        onKeyUp={onViewportKeyUp}
+        onMouseDown={onViewportMouseDown}
+        onMouseMove={onViewportMouseMove}
+        onMouseUp={onViewportMouseUp}
+        onContextMenu={onViewportContextMenu}
         onWheel={onViewportWheel}
         tabIndex={viewportTabIndex}
       >

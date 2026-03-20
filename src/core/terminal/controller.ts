@@ -1,4 +1,8 @@
-import type { CursorMode, RetroLcdController } from "../types";
+import type {
+  CursorMode,
+  RetroLcdController,
+  RetroLcdWriteChunk
+} from "../types";
 import { RetroLcdScreenBuffer } from "./screen-buffer";
 import type {
   RetroLcdScreenBufferOptions,
@@ -8,6 +12,7 @@ import type {
 
 type ControllerOperation =
   | { type: "write"; data: string; options?: RetroLcdWriteOptions }
+  | { type: "writeMany"; chunks: RetroLcdWriteChunk[] }
   | { type: "writeln"; line: string }
   | { type: "clear" }
   | { type: "reset" }
@@ -20,6 +25,21 @@ const clampDimension = (value: number, fallback: number) => {
   return Number.isFinite(nextValue) && nextValue > 0 ? nextValue : fallback;
 };
 
+const normalizeWriteChunk = (
+  chunk: RetroLcdWriteChunk
+): {
+  data: string;
+  options?: RetroLcdWriteOptions;
+} =>
+  typeof chunk === "string"
+    ? {
+        data: chunk
+      }
+    : {
+        data: chunk.data,
+        options: chunk.options
+      };
+
 class RetroLcdControllerStore implements RetroLcdController {
   private readonly listeners = new Set<() => void>();
   private readonly history: ControllerOperation[] = [];
@@ -27,6 +47,9 @@ class RetroLcdControllerStore implements RetroLcdController {
   private rows: number;
   private cols: number;
   private buffer: RetroLcdScreenBuffer;
+  private cachedSnapshot: RetroLcdScreenSnapshot | null = null;
+  private notificationSuspendDepth = 0;
+  private hasPendingNotification = false;
 
   constructor(options: Partial<RetroLcdScreenBufferOptions> = {}) {
     this.rows = clampDimension(options.rows ?? 9, 9);
@@ -58,7 +81,33 @@ class RetroLcdControllerStore implements RetroLcdController {
       data,
       options
     });
-    this.emit();
+    this.markDirtyAndEmit();
+  }
+
+  writeMany(chunks: readonly RetroLcdWriteChunk[]) {
+    if (chunks.length === 0) {
+      return;
+    }
+
+    this.batch(() => {
+      for (const chunk of chunks) {
+        const normalized = normalizeWriteChunk(chunk);
+        this.buffer.write(normalized.data, normalized.options);
+      }
+
+      this.history.push({
+        type: "writeMany",
+        chunks: chunks.map((chunk) =>
+          typeof chunk === "string"
+            ? chunk
+            : {
+                data: chunk.data,
+                options: chunk.options
+              }
+        )
+      });
+      this.markDirtyAndEmit();
+    });
   }
 
   writeln(line: string) {
@@ -67,20 +116,46 @@ class RetroLcdControllerStore implements RetroLcdController {
       type: "writeln",
       line
     });
-    this.emit();
+    this.markDirtyAndEmit();
   }
 
   clear() {
     this.buffer.clear();
     this.history.push({ type: "clear" });
-    this.emit();
+    this.markDirtyAndEmit();
   }
 
   reset() {
     this.buffer.reset();
     this.history.length = 0;
     this.history.push({ type: "reset" });
-    this.emit();
+    this.markDirtyAndEmit();
+  }
+
+  batch<T>(fn: () => T) {
+    this.suspendNotifications();
+
+    try {
+      return fn();
+    } finally {
+      this.resumeNotifications();
+    }
+  }
+
+  suspendNotifications() {
+    this.notificationSuspendDepth += 1;
+  }
+
+  resumeNotifications() {
+    if (this.notificationSuspendDepth === 0) {
+      return;
+    }
+
+    this.notificationSuspendDepth -= 1;
+    if (this.notificationSuspendDepth === 0 && this.hasPendingNotification) {
+      this.hasPendingNotification = false;
+      this.emitNow();
+    }
   }
 
   moveCursorTo(row: number, col: number) {
@@ -90,7 +165,7 @@ class RetroLcdControllerStore implements RetroLcdController {
       row,
       col
     });
-    this.emit();
+    this.markDirtyAndEmit();
   }
 
   resize(rows: number, cols: number) {
@@ -110,7 +185,7 @@ class RetroLcdControllerStore implements RetroLcdController {
       tabWidth: this.options.tabWidth
     });
     this.replay();
-    this.emit();
+    this.markDirtyAndEmit();
   }
 
   setCursorVisible(visible: boolean) {
@@ -119,7 +194,7 @@ class RetroLcdControllerStore implements RetroLcdController {
       type: "setCursorVisible",
       visible
     });
-    this.emit();
+    this.markDirtyAndEmit();
   }
 
   setCursorMode(mode: CursorMode) {
@@ -128,11 +203,15 @@ class RetroLcdControllerStore implements RetroLcdController {
       type: "setCursorMode",
       mode
     });
-    this.emit();
+    this.markDirtyAndEmit();
   }
 
   getSnapshot(): RetroLcdScreenSnapshot {
-    return this.buffer.getSnapshot();
+    if (!this.cachedSnapshot) {
+      this.cachedSnapshot = this.buffer.getSnapshot();
+    }
+
+    return this.cachedSnapshot;
   }
 
   subscribe(listener: () => void) {
@@ -148,6 +227,12 @@ class RetroLcdControllerStore implements RetroLcdController {
       switch (operation.type) {
         case "write":
           this.buffer.write(operation.data, operation.options);
+          break;
+        case "writeMany":
+          for (const chunk of operation.chunks) {
+            const normalized = normalizeWriteChunk(chunk);
+            this.buffer.write(normalized.data, normalized.options);
+          }
           break;
         case "writeln":
           this.buffer.writeln(operation.line);
@@ -171,7 +256,21 @@ class RetroLcdControllerStore implements RetroLcdController {
     }
   }
 
+  private markDirtyAndEmit() {
+    this.cachedSnapshot = null;
+    this.emit();
+  }
+
   private emit() {
+    if (this.notificationSuspendDepth > 0) {
+      this.hasPendingNotification = true;
+      return;
+    }
+
+    this.emitNow();
+  }
+
+  private emitNow() {
     for (const listener of this.listeners) {
       listener();
     }

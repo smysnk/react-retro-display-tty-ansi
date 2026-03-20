@@ -473,6 +473,101 @@ describe("RetroLcdScreenBuffer", () => {
     });
   });
 
+  it("tracks richer DEC private mode state for terminal integration", () => {
+    const buffer = new RetroLcdScreenBuffer({ rows: 3, cols: 6 });
+
+    buffer.write("\u001b[?1h");
+    buffer.write("\u001b[?1004h");
+    buffer.write("\u001b[?2004h");
+    buffer.write("\u001b[?1002h");
+    buffer.write("\u001b[?1006h");
+    buffer.write("\u001b[?1049h");
+    buffer.write("\u001b[?25l");
+
+    expect(buffer.getSnapshot()).toMatchObject({
+      cursor: {
+        visible: false
+      },
+      modes: {
+        applicationCursorKeysMode: true,
+        focusReportingMode: true,
+        bracketedPasteMode: true,
+        mouseTrackingMode: "drag",
+        mouseProtocol: "sgr",
+        alternateScreenBufferMode: true
+      }
+    });
+
+    buffer.write("\u001b[?1l\u001b[?1004l\u001b[?2004l\u001b[?1002l\u001b[?1006l\u001b[?1049l\u001b[?25h");
+
+    expect(buffer.getSnapshot()).toMatchObject({
+      cursor: {
+        visible: true
+      },
+      modes: {
+        applicationCursorKeysMode: false,
+        focusReportingMode: false,
+        bracketedPasteMode: false,
+        mouseTrackingMode: "none",
+        mouseProtocol: "none",
+        alternateScreenBufferMode: false
+      }
+    });
+  });
+
+  it("switches to the alternate screen without polluting the primary screen", () => {
+    const buffer = new RetroLcdScreenBuffer({ rows: 2, cols: 8, scrollback: 4 });
+
+    buffer.write("main\r\nshell");
+    buffer.write("\u001b[?1049h");
+    buffer.write("ALT");
+
+    expect(buffer.getSnapshot()).toMatchObject({
+      lines: ["ALT", ""],
+      scrollback: [],
+      modes: {
+        alternateScreenBufferMode: true
+      }
+    });
+
+    buffer.write("\u001b[?1049l");
+
+    expect(buffer.getSnapshot()).toMatchObject({
+      lines: ["main", "shell"],
+      scrollback: [],
+      modes: {
+        alternateScreenBufferMode: false
+      }
+    });
+  });
+
+  it("keeps alternate-screen scrolling out of the primary scrollback history", () => {
+    const buffer = new RetroLcdScreenBuffer({ rows: 1, cols: 6, scrollback: 8 });
+
+    buffer.writeln("main-1");
+    buffer.write("\u001b[?1049h");
+    buffer.writeln("alt-1");
+    buffer.writeln("alt-2");
+
+    expect(buffer.getSnapshot()).toMatchObject({
+      lines: [""],
+      scrollback: [],
+      modes: {
+        alternateScreenBufferMode: true
+      }
+    });
+
+    buffer.write("\u001b[?1049l");
+
+    expect(buffer.getSnapshot()).toMatchObject({
+      lines: [""],
+      scrollback: ["main-1"],
+      modes: {
+        alternateScreenBufferMode: false
+      }
+    });
+  });
+
   it("clears and resets independently", () => {
     const buffer = new RetroLcdScreenBuffer({ rows: 2, cols: 4, cursorMode: "hollow" });
 

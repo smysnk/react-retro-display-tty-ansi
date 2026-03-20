@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { startTransition, useEffect, useMemo, useState } from "react";
 import type {
   CursorMode,
   RetroLcdController,
@@ -22,15 +22,18 @@ export const useRetroLcdTerminalRenderModel = ({
   cursorMode,
   requestedCursorMode,
   internalController
-}: UseRetroLcdTerminalRenderModelArgs): {
+  }: UseRetroLcdTerminalRenderModelArgs): {
   snapshot: RetroLcdScreenSnapshot;
   terminalController: RetroLcdController | null;
 } => {
   const terminalController =
     terminalProps?.controller ?? (terminalProps ? internalController : null);
+  const initialText = terminalProps?.session
+    ? ""
+    : terminalProps?.value ?? terminalProps?.initialBuffer ?? "";
   const [snapshot, setSnapshot] = useState<RetroLcdScreenSnapshot>(() =>
     buildTerminalSnapshot({
-      text: terminalProps?.value ?? terminalProps?.initialBuffer ?? "",
+      text: initialText,
       rows: geometry.rows,
       cols: geometry.cols,
       cursorMode,
@@ -43,24 +46,28 @@ export const useRetroLcdTerminalRenderModel = ({
       return;
     }
 
-    terminalController.resize(geometry.rows, geometry.cols);
-    if (requestedCursorMode) {
-      terminalController.setCursorMode(requestedCursorMode);
-    }
+    terminalController.batch(() => {
+      terminalController.resize(geometry.rows, geometry.cols);
+      if (requestedCursorMode) {
+        terminalController.setCursorMode(requestedCursorMode);
+      }
+    });
   }, [geometry.cols, geometry.rows, requestedCursorMode, terminalController]);
 
   useEffect(() => {
-    if (!terminalProps || terminalProps.controller) {
+    if (!terminalProps || terminalProps.controller || terminalProps.session) {
       return;
     }
 
-    internalController.reset();
-    internalController.setCursorMode(cursorMode);
+    internalController.batch(() => {
+      internalController.reset();
+      internalController.setCursorMode(cursorMode);
 
-    const initialText = terminalProps.value ?? terminalProps.initialBuffer ?? "";
-    if (initialText) {
-      internalController.write(initialText);
-    }
+      const initialText = terminalProps.value ?? terminalProps.initialBuffer ?? "";
+      if (initialText) {
+        internalController.write(initialText);
+      }
+    });
   }, [
     cursorMode,
     internalController,
@@ -72,7 +79,10 @@ export const useRetroLcdTerminalRenderModel = ({
   useEffect(() => {
     if (terminalController) {
       const syncSnapshot = () => {
-        setSnapshot(terminalController.getSnapshot());
+        const nextSnapshot = terminalController.getSnapshot();
+        startTransition(() => {
+          setSnapshot(nextSnapshot);
+        });
       };
 
       syncSnapshot();
@@ -81,7 +91,7 @@ export const useRetroLcdTerminalRenderModel = ({
 
     setSnapshot(
       buildTerminalSnapshot({
-        text: terminalProps?.value ?? terminalProps?.initialBuffer ?? "",
+        text: terminalProps?.session ? "" : terminalProps?.value ?? terminalProps?.initialBuffer ?? "",
         rows: geometry.rows,
         cols: geometry.cols,
         cursorMode,
@@ -95,6 +105,7 @@ export const useRetroLcdTerminalRenderModel = ({
     terminalProps?.bufferSize,
     terminalController,
     terminalProps?.initialBuffer,
+    terminalProps?.session,
     terminalProps?.value
   ]);
 

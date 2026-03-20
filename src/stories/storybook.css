@@ -121,6 +121,29 @@
   justify-content: center;
 }
 
+.sb-retro-live-tty-host {
+  width: min(100%, 920px);
+  max-width: 100%;
+  display: grid;
+  align-items: stretch;
+  justify-items: stretch;
+  border-radius: 24px;
+  transition:
+    width 260ms ease,
+    height 260ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.sb-retro-live-tty-host[data-session-state="open"] {
+  box-shadow: 0 0 0 1px rgba(151, 255, 155, 0.08);
+}
+
+.sb-retro-live-tty-host .retro-lcd {
+  width: 100%;
+  height: 100%;
+}
+
 .sb-retro-button {
   appearance: none;
   border: 1px solid rgba(255, 255, 255, 0.1);
