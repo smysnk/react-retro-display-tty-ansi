@@ -36,6 +36,8 @@ type UseRetroLcdGeometryOptions = {
   onGeometryChange?: (geometry: RetroLcdGeometry) => void;
 };
 
+const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+
 const measureCurrentGeometry = ({
   screenRef,
   probeRef,
@@ -103,9 +105,11 @@ export const useRetroLcdGeometry = ({
   cols,
   onGeometryChange
 }: UseRetroLcdGeometryOptions) => {
-  const [geometry, setGeometry] = useState(DEFAULT_GEOMETRY);
+  const [geometry, setGeometry] = useState(() =>
+    measureCurrentGeometry({ screenRef, probeRef, gridMode, rows, cols })
+  );
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     setGeometry(measureCurrentGeometry({ screenRef, probeRef, gridMode, rows, cols }));
   }, [cols, gridMode, probeRef, rows, screenRef]);
 
@@ -122,6 +126,25 @@ export const useRetroLcdGeometry = ({
 
     observer.observe(screenNode);
     return () => observer.disconnect();
+  }, [cols, gridMode, probeRef, rows, screenRef]);
+
+  useEffect(() => {
+    if (typeof document === "undefined" || !("fonts" in document) || !document.fonts?.ready) {
+      return;
+    }
+
+    let cancelled = false;
+    const syncGeometry = () => {
+      if (!cancelled) {
+        setGeometry(measureCurrentGeometry({ screenRef, probeRef, gridMode, rows, cols }));
+      }
+    };
+
+    void document.fonts.ready.then(syncGeometry);
+
+    return () => {
+      cancelled = true;
+    };
   }, [cols, gridMode, probeRef, rows, screenRef]);
 
   useEffect(() => {

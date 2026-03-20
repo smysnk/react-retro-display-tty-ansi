@@ -81,6 +81,11 @@
   justify-items: center;
 }
 
+.sb-retro-capture-host {
+  width: 100%;
+  display: grid;
+}
+
 .sb-retro-page--capture {
   min-height: auto;
   padding: 32px 24px;
@@ -271,6 +276,7 @@
 .sb-retro-auto-resize-frame {
   display: grid;
   justify-items: center;
+  align-items: center;
   transition:
     width 720ms ease,
     height 720ms ease;

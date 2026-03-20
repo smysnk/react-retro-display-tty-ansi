@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { progressRewriteTraceFixture } from "../core/terminal/conformance/fixtures/real-world/progress-rewrite.trace.fixture";
 import { shellSessionTraceFixture } from "../core/terminal/conformance/fixtures/real-world/shell-session.trace.fixture";
@@ -61,6 +61,13 @@ type ProbeSceneState = {
   displayColorMode: RetroLcdDisplayColorMode;
   borderStyleLabel: string;
   glyphStyleLabel: string;
+};
+
+type ProbeRedrawMeta = {
+  sequence: number;
+  reason: "live-update" | "transition-settle";
+  rows: number;
+  cols: number;
 };
 
 const wait = (duration: number) =>
@@ -211,6 +218,9 @@ const autoResizeProbeSizes: TerminalProbeSize[] = [
   { width: 840, height: 332 },
   { width: 640, height: 388 }
 ];
+const autoResizeProbeHoldAfterResizeMs = 250;
+const autoResizeProbeResizeMs = 720;
+const autoResizeProbeStepMs = 2400 + autoResizeProbeHoldAfterResizeMs;
 
 const displayColorModeDemoSteps: {
   displayColorMode: RetroLcdDisplayColorMode;
@@ -767,7 +777,7 @@ function EditableModeDemoStory() {
 
   return (
     <CaptureStage captureId="editable-drafting" maxWidth={860}>
-      <div ref={hostRef}>
+      <div ref={hostRef} className="sb-retro-capture-host">
         <RetroLcd
           mode="value"
           value={value}
@@ -1025,7 +1035,7 @@ function PromptModeDemoStory() {
 
   return (
     <CaptureStage captureId="prompt-interaction" maxWidth={860}>
-      <div ref={hostRef}>
+      <div ref={hostRef} className="sb-retro-capture-host">
         <RetroLcd
           mode="prompt"
           autoFocus
@@ -1310,6 +1320,7 @@ function AutoResizeProbeSurface({
   onReplyChange?: (reply: string) => void;
   onSceneChange?: (sceneState: ProbeSceneState) => void;
 }) {
+  const frameRef = useRef<HTMLDivElement | null>(null);
   const [controller] = useState(() =>
     createRetroLcdController({
       rows: 9,
@@ -1322,11 +1333,18 @@ function AutoResizeProbeSurface({
   const [displayModeIndex, setDisplayModeIndex] = useState(0);
   const [visualVariant, setVisualVariant] = useState(0);
   const [reportedGeometry, setReportedGeometry] = useState<RetroLcdGeometry | null>(null);
+  const [settledResizeTick, setSettledResizeTick] = useState(0);
+  const [redrawMeta, setRedrawMeta] = useState<ProbeRedrawMeta>({
+    sequence: 0,
+    reason: "live-update",
+    rows: 0,
+    cols: 0
+  });
 
   useEffect(() => {
     const timer = window.setInterval(() => {
       setSizeIndex((current) => (current + 1) % autoResizeProbeSizes.length);
-    }, 2400);
+    }, autoResizeProbeStepMs);
 
     return () => window.clearInterval(timer);
   }, []);
@@ -1385,39 +1403,101 @@ function AutoResizeProbeSurface({
     });
   }, [borderStyle.label, displayColorMode, glyphStyle.label, onSceneChange]);
 
+  const redrawProbe = useCallback(
+    (
+      geometry: RetroLcdGeometry,
+      reason: ProbeRedrawMeta["reason"]
+    ) => {
+      const reply = buildTerminalSizeReply(geometry.rows, geometry.cols);
+      const parsed = parseTerminalSizeReply(reply);
+
+      if (!parsed) {
+        return;
+      }
+
+      onReplyChange?.(reply);
+      controller.reset();
+      controller.resize(parsed.rows, parsed.cols);
+      drawTerminalProbeFrame(controller, parsed.rows, parsed.cols, {
+        displayColorMode,
+        borderStyle,
+        glyphStyle
+      });
+      setRedrawMeta((current) => ({
+        sequence: current.sequence + 1,
+        reason,
+        rows: parsed.rows,
+        cols: parsed.cols
+      }));
+    },
+    [borderStyle, controller, displayColorMode, glyphStyle, onReplyChange]
+  );
+
   useEffect(() => {
     if (!reportedGeometry) {
       return;
     }
 
-    const reply = buildTerminalSizeReply(reportedGeometry.rows, reportedGeometry.cols);
-    const parsed = parseTerminalSizeReply(reply);
+    redrawProbe(reportedGeometry, "live-update");
+  }, [redrawProbe, reportedGeometry]);
 
-    if (!parsed) {
+  useEffect(() => {
+    if (!reportedGeometry || settledResizeTick === 0) {
       return;
     }
 
-    onReplyChange?.(reply);
-    controller.reset();
-    controller.resize(parsed.rows, parsed.cols);
-    drawTerminalProbeFrame(controller, parsed.rows, parsed.cols, {
-      displayColorMode,
-      borderStyle,
-      glyphStyle
-    });
-  }, [borderStyle, controller, displayColorMode, glyphStyle, onReplyChange, reportedGeometry]);
+    redrawProbe(reportedGeometry, "transition-settle");
+  }, [redrawProbe, reportedGeometry, settledResizeTick]);
+
+  useEffect(() => {
+    const frameNode = frameRef.current;
+
+    if (!frameNode) {
+      return;
+    }
+
+    let rafId = 0;
+    let settleRafId = 0;
+
+    const handleTransitionEnd = (event: TransitionEvent) => {
+      if (event.propertyName !== "width") {
+        return;
+      }
+
+      window.cancelAnimationFrame(rafId);
+      window.cancelAnimationFrame(settleRafId);
+      rafId = window.requestAnimationFrame(() => {
+        settleRafId = window.requestAnimationFrame(() => {
+          setSettledResizeTick((current) => current + 1);
+        });
+      });
+    };
+
+    frameNode.addEventListener("transitionend", handleTransitionEnd);
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      window.cancelAnimationFrame(settleRafId);
+      frameNode.removeEventListener("transitionend", handleTransitionEnd);
+    };
+  }, []);
 
   const currentSize = autoResizeProbeSizes[sizeIndex] ?? autoResizeProbeSizes[0];
 
   return (
     <div className="sb-retro-auto-resize-stage">
       <div
+        ref={frameRef}
         className="sb-retro-auto-resize-frame"
+        data-probe-redraw-seq={redrawMeta.sequence}
+        data-probe-last-redraw-reason={redrawMeta.reason}
+        data-probe-last-redraw-rows={redrawMeta.rows}
+        data-probe-last-redraw-cols={redrawMeta.cols}
         style={{
           width: currentSize.width,
           height: currentSize.height
         }}
-        >
+      >
         <RetroLcd
           mode="terminal"
           controller={controller}

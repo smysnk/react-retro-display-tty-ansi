@@ -1,4 +1,4 @@
-[![Feature Tour Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi/main/docs/assets/react-retro-display-tty-ansi.webp)](https://github.com/user-attachments/assets/6b09540f-8670-4f14-880b-c3f2cbdb34f3)
+[![Feature Tour Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi/main/docs/assets/react-retro-display-tty-ansi.webp)](https://github.com/user-attachments/assets/c0ccd3ff-147b-4b8f-b214-47bddb2419d1)
 
 # react-retro-display-tty-ansi
 
@@ -79,7 +79,7 @@ Use `displaySurfaceMode` when the LCD itself should read like a light instrument
 dark night-ops surface. This is separate from the host page theme, so the same ANSI-rich
 terminal content can sit inside bright docs, dark dashboards, or a side-by-side comparison view.
 
-[![Light And Dark Hosts Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi/main/docs/assets/react-retro-display-tty-ansi-light-dark-hosts.webp)](https://github.com/user-attachments/assets/f8658ce6-e6b9-42f9-99cc-61d71d897e95)
+[![Light And Dark Hosts Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi/main/docs/assets/react-retro-display-tty-ansi-light-dark-hosts.webp)](https://github.com/user-attachments/assets/fb758db8-d014-46b3-96fc-cc649bf0c475)
 
 ```tsx
 <RetroScreen
@@ -117,7 +117,7 @@ same ANSI palette will still be remapped for readable contrast against each surf
 
 Use `mode="value"` when the display is just there to speak.
 
-[![Quiet Output Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi/main/docs/assets/react-retro-display-tty-ansi-quiet-output.webp)](https://github.com/user-attachments/assets/0d92a410-7151-4da8-bfc1-3b47151301b3)
+[![Quiet Output Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi/main/docs/assets/react-retro-display-tty-ansi-quiet-output.webp)](https://github.com/user-attachments/assets/df971b76-3de6-4686-833a-8fad19a66832)
 
 ```tsx
 <RetroScreen
@@ -130,7 +130,7 @@ Use `mode="value"` when the display is just there to speak.
 
 Turn on `editable` when you want the same surface to behave like a controlled input.
 
-[![Editable Drafting Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi/main/docs/assets/react-retro-display-tty-ansi-editable-drafting.webp)](https://github.com/user-attachments/assets/6ce552c8-dd19-433a-8b14-9e64f376a33c)
+[![Editable Drafting Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi/main/docs/assets/react-retro-display-tty-ansi-editable-drafting.webp)](https://github.com/user-attachments/assets/5670d23a-c794-46a0-bb40-784f04a2da14)
 
 ```tsx
 import { useState } from "react";
@@ -158,7 +158,7 @@ export function DraftPad() {
 
 Use a controller when the display should follow external writes over time.
 
-[![Terminal Output Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi/main/docs/assets/react-retro-display-tty-ansi-terminal-output.webp)](https://github.com/user-attachments/assets/79731222-0f78-482b-8684-dfc6aeb7d08c)
+[![Terminal Output Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi/main/docs/assets/react-retro-display-tty-ansi-terminal-output.webp)](https://github.com/user-attachments/assets/57258c51-5afd-4164-87dd-d30b85726a26)
 
 ```tsx
 import { useEffect } from "react";
@@ -191,7 +191,7 @@ or `initialBuffer`.
 
 Use `mode="prompt"` when the interface should feel like a guided shell.
 
-[![Prompt Interaction Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi/main/docs/assets/react-retro-display-tty-ansi-prompt-loop.webp)](https://github.com/user-attachments/assets/c346c616-14fd-4b84-813b-545cd5d92f21)
+[![Prompt Interaction Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi/main/docs/assets/react-retro-display-tty-ansi-prompt-loop.webp)](https://github.com/user-attachments/assets/75eec8ea-6da7-41f4-98be-f17e5284980a)
 
 ```tsx
 <RetroScreen
@@ -271,7 +271,7 @@ demo also cycles through tight screen padding, multiple border alphabets, oversi
 and every monochrome plus ANSI display mode so the same terminal program can be watched under
 different visual projections.
 
-[![Auto Resize Probe Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi/main/docs/assets/react-retro-display-tty-ansi-auto-resize-probe.webp)](https://github.com/user-attachments/assets/3cec7079-0a4b-4467-9c1b-84fea9875395)
+[![Auto Resize Probe Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi/main/docs/assets/react-retro-display-tty-ansi-auto-resize-probe.webp)](https://github.com/user-attachments/assets/09f872b1-8d27-4f76-9ed4-2d96e069f757)
 
 ```tsx
 import {
@@ -315,7 +315,7 @@ Use `displayColorMode` to decide how semantic terminal color should be projected
 The phosphor modes keep the retro LCD personality even when the source emits ANSI color. The ANSI
 modes preserve more of the source terminal palette.
 
-[![Display Color Modes Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi/main/docs/assets/react-retro-display-tty-ansi-display-color-modes.webp)](https://github.com/user-attachments/assets/c51b8e39-74e8-4a9f-add7-d26299886938)
+[![Display Color Modes Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi/main/docs/assets/react-retro-display-tty-ansi-display-color-modes.webp)](https://github.com/user-attachments/assets/3536a8f4-fe5d-401d-af79-1f2e707f2ce5)
 
 Available modes:
 
@@ -346,7 +346,7 @@ The terminal path is now tested against an xterm oracle and can faithfully repla
 character effects like carriage return rewrites, erase-in-line, scroll regions, insert-line
 updates, ANSI 16-color, indexed 256-color, and truecolor output.
 
-[![Control Character Replay Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi/main/docs/assets/react-retro-display-tty-ansi-control-character-replay.webp)](https://github.com/user-attachments/assets/35d6ba0e-cf4c-4ac5-8a5d-ebe090fa6b54)
+[![Control Character Replay Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi/main/docs/assets/react-retro-display-tty-ansi-control-character-replay.webp)](https://github.com/user-attachments/assets/682d8e92-7871-420e-9e6d-a6a92b60c0fe)
 
 ```tsx
 import {

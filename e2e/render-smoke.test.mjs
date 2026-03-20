@@ -14,6 +14,7 @@ test("core rendering stories paint stable retro surfaces in the browser", async 
 
   for (const story of stories) {
     await harness.gotoStory(story.id);
+    await page().waitForSelector(".retro-lcd");
 
     const summary = await page().locator(".retro-lcd").evaluate((root) => ({
       mode: root.getAttribute("data-mode"),
@@ -102,4 +103,37 @@ test("display color modes story covers every supported display palette and ANSI 
     truecolorColor: "rgb(17, 34, 51)",
     truecolorBackground: "rgb(68, 85, 102)"
   });
+});
+
+test("capture demos keep interactive surfaces expanded to the full frame", async () => {
+  const stories = [
+    {
+      id: "retroscreen--editable-mode-demo"
+    },
+    {
+      id: "retroscreen--prompt-mode-demo"
+    }
+  ];
+
+  for (const story of stories) {
+    await harness.gotoStory(story.id);
+    await page().waitForTimeout(1400);
+
+    const summary = await page().locator("[data-demo-capture]").evaluate((root) => {
+      const frameRect = root.getBoundingClientRect();
+      const lcd = root.querySelector(".retro-lcd");
+      const lcdRect = lcd?.getBoundingClientRect();
+      const text = (lcd?.querySelector(".retro-lcd__body")?.textContent ?? "").replace(/\u00a0/gu, " ");
+
+      return {
+        frameWidth: frameRect.width,
+        lcdWidth: lcdRect?.width ?? 0,
+        text
+      };
+    });
+
+    assert.ok(summary.frameWidth > 700, `${story.id} should expose the full capture width.`);
+    assert.ok(summary.lcdWidth > 700, `${story.id} should keep the RetroScreen expanded inside the capture frame.`);
+    assert.ok(summary.text.trim().length > 0, `${story.id} should render visible interactive content.`);
+  }
 });

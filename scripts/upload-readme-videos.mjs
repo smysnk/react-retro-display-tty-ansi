@@ -51,6 +51,29 @@ const videoEntries = [
   }
 ];
 
+const readmeVideoOnlyFilters = [
+  ...(process.env.README_VIDEO_ONLY ?? "")
+    .split(",")
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean),
+  ...process.argv
+    .filter((argument) => argument.startsWith("--only="))
+    .map((argument) => argument.slice("--only=".length).trim().toLowerCase())
+    .filter(Boolean)
+];
+
+const selectedVideoEntries = readmeVideoOnlyFilters.length > 0
+  ? videoEntries.filter((entry) => {
+      const matchValues = [entry.title, entry.file, basename(entry.file)].map((value) =>
+        value.toLowerCase()
+      );
+
+      return readmeVideoOnlyFilters.some((filter) =>
+        matchValues.some((value) => value.includes(filter))
+      );
+    })
+  : videoEntries;
+
 const defaultHeaders = {
   "User-Agent":
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
@@ -184,6 +207,7 @@ const printUsage = () => {
   GITHUB_COOKIE='cookie string from github.com while signed in' yarn readme:videos
   yarn readme:videos
   yarn readme:videos --browser-cookie
+  yarn readme:videos --only=editable --only=prompt
 
 This uploads the README demo MP4 files to GitHub user-attachments and rewrites README.md
 to use npm-safe animated WebP preview links that point at the uploaded videos.
@@ -193,7 +217,8 @@ GitHub session if one exists, or wait for you to log in before continuing.
 
 Optional environment variables:
   GITHUB_COOKIE_USER_DATA_DIR   Override the persistent browser profile path
-  GITHUB_COOKIE_WAIT_TIMEOUT_MS Override the login wait timeout in milliseconds`);
+  GITHUB_COOKIE_WAIT_TIMEOUT_MS Override the login wait timeout in milliseconds
+  README_VIDEO_ONLY             Comma-separated filters for limiting which videos are uploaded`);
 };
 
 const main = async () => {
@@ -208,9 +233,15 @@ const main = async () => {
       ? process.env.GITHUB_COOKIE
       : await getGitHubCookieFromBrowser({ log: console.log });
 
+  if (selectedVideoEntries.length === 0) {
+    throw new Error(
+      `No README videos matched the requested filter(s): ${readmeVideoOnlyFilters.join(", ")}`
+    );
+  }
+
   const uploads = [];
 
-  for (const entry of videoEntries) {
+  for (const entry of selectedVideoEntries) {
     const href = await uploadVideo(entry.file, githubCookie);
 
     if (!href) {

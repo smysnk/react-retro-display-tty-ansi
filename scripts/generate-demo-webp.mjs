@@ -306,6 +306,26 @@ const captures = [
   }
 ];
 
+const captureOnlyFilter = (
+  process.env.STORYBOOK_CAPTURE_ONLY ??
+  process.argv.find((argument) => argument.startsWith("--only="))?.slice("--only=".length) ??
+  ""
+)
+  .trim()
+  .toLowerCase();
+
+const selectedCaptures = captureOnlyFilter
+  ? captures.filter((capture) => {
+      const matchValues = [
+        capture.name,
+        capture.storyId,
+        ...capture.outputs.map((output) => output.file)
+      ].map((value) => value.toLowerCase());
+
+      return matchValues.some((value) => value.includes(captureOnlyFilter));
+    })
+  : captures;
+
 const captureStoryFrames = async (page, capture) => {
   const frameDir = await mkdtemp(join(tmpdir(), "retro-display-frames-"));
   const frameCount = Math.max(1, Math.ceil((capture.durationMs / 1000) * capture.fps));
@@ -366,6 +386,10 @@ const main = async () => {
   await ensureReadable(chromePath, "Chrome executable");
   await mkdir(outputDir, { recursive: true });
 
+  if (selectedCaptures.length === 0) {
+    throw new Error(`No demo capture matched "${captureOnlyFilter}".`);
+  }
+
   const server = createStaticServer();
   await new Promise((resolvePromise) => server.listen(port, resolvePromise));
 
@@ -386,7 +410,7 @@ const main = async () => {
       deviceScaleFactor: 1
     });
 
-    for (const capture of captures) {
+    for (const capture of selectedCaptures) {
       const { frameDir, frameCount } = await captureStoryFrames(page, capture);
 
       try {
