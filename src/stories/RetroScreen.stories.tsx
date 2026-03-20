@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentProps,
+  type RefObject,
+  type ReactNode
+} from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { progressRewriteTraceFixture } from "../core/terminal/conformance/fixtures/real-world/progress-rewrite.trace.fixture";
 import { shellSessionTraceFixture } from "../core/terminal/conformance/fixtures/real-world/shell-session.trace.fixture";
@@ -6,7 +15,7 @@ import { statusPaneTraceFixture } from "../core/terminal/conformance/fixtures/re
 import { createRetroLcdController } from "../core/terminal/controller";
 import { createRetroLcdWebSocketSession } from "../core/terminal/websocket-session";
 import type { RetroLcdDisplayColorMode, RetroLcdGeometry } from "../core/types";
-import { RetroScreen, RetroScreen as RetroLcd } from "../react/RetroScreen";
+import { RetroScreen } from "../react/RetroScreen";
 
 const STORY_COLOR = "#97ff9b";
 
@@ -83,7 +92,180 @@ type LiveTtyStageSize = {
   height: number;
 };
 
+type ScriptedResizeHandle =
+  | "right"
+  | "bottom"
+  | "bottom-right"
+  | "left"
+  | "top"
+  | "top-left";
+
+type DemoCursorRole = "pointer" | "ew-resize" | "ns-resize" | "nwse-resize";
+
+type DemoCursorState = {
+  visible: boolean;
+  x: number;
+  y: number;
+  role: DemoCursorRole;
+  dragging: boolean;
+};
+
+type ScriptedResizeStep = {
+  id: string;
+  label: string;
+  handle: ScriptedResizeHandle;
+  targetWidth?: number;
+  targetHeight?: number;
+  travelMs?: number;
+  dragMs?: number;
+  settleMs?: number;
+};
+
+type ScriptedResizePlaybackOptions = {
+  stageRef: RefObject<HTMLDivElement | null>;
+  targetRef: RefObject<HTMLDivElement | null>;
+  paused: boolean;
+  steps: readonly ScriptedResizeStep[];
+  loop?: boolean;
+  startDelayMs?: number;
+  onResizeFrame?: (size: { width: number; height: number }) => void;
+  onStepComplete?: (step: ScriptedResizeStep) => void;
+};
+
+type ResizablePanelLiveSurfaceProps = {
+  capture?: boolean;
+  leadingFocus?: boolean;
+  onPauseChange?: (paused: boolean) => void;
+  onActiveStepLabelChange?: (label: string) => void;
+  onGeometryChange?: (geometry: RetroLcdGeometry | null) => void;
+};
+
 const DEFAULT_LIVE_TTY_URL = "ws://127.0.0.1:8787";
+const initialDemoCursorState: DemoCursorState = {
+  visible: false,
+  x: 28,
+  y: 28,
+  role: "pointer",
+  dragging: false
+};
+const scriptedResizeCursorRoleByHandle: Record<ScriptedResizeHandle, DemoCursorRole> = {
+  right: "ew-resize",
+  bottom: "ns-resize",
+  "bottom-right": "nwse-resize",
+  left: "ew-resize",
+  top: "ns-resize",
+  "top-left": "nwse-resize"
+};
+const resizablePanelInitialSize = {
+  width: 672,
+  height: 328
+};
+const resizablePanelLiveSteps: ScriptedResizeStep[] = [
+  {
+    id: "right-grow",
+    label: "right edge",
+    handle: "right",
+    targetWidth: 760,
+    travelMs: 540,
+    dragMs: 1100,
+    settleMs: 720
+  },
+  {
+    id: "bottom-grow",
+    label: "bottom edge",
+    handle: "bottom",
+    targetHeight: 388,
+    travelMs: 420,
+    dragMs: 980,
+    settleMs: 680
+  },
+  {
+    id: "left-trim",
+    label: "left edge",
+    handle: "left",
+    targetWidth: 700,
+    travelMs: 480,
+    dragMs: 940,
+    settleMs: 660
+  },
+  {
+    id: "top-trim",
+    label: "top edge",
+    handle: "top",
+    targetHeight: 340,
+    travelMs: 420,
+    dragMs: 920,
+    settleMs: 640
+  },
+  {
+    id: "corner-grow",
+    label: "bottom-right corner",
+    handle: "bottom-right",
+    targetWidth: 812,
+    targetHeight: 408,
+    travelMs: 500,
+    dragMs: 1140,
+    settleMs: 760
+  },
+  {
+    id: "corner-return",
+    label: "top-left corner",
+    handle: "top-left",
+    targetWidth: resizablePanelInitialSize.width,
+    targetHeight: resizablePanelInitialSize.height,
+    travelMs: 500,
+    dragMs: 1180,
+    settleMs: 820
+  }
+];
+const resizablePanelLeadingSteps: ScriptedResizeStep[] = [
+  {
+    id: "top-left-grow",
+    label: "top-left corner",
+    handle: "top-left",
+    targetWidth: 792,
+    targetHeight: 392,
+    travelMs: 560,
+    dragMs: 1180,
+    settleMs: 760
+  },
+  {
+    id: "left-balance",
+    label: "left edge",
+    handle: "left",
+    targetWidth: 716,
+    travelMs: 420,
+    dragMs: 980,
+    settleMs: 680
+  },
+  {
+    id: "top-balance",
+    label: "top edge",
+    handle: "top",
+    targetHeight: 340,
+    travelMs: 420,
+    dragMs: 940,
+    settleMs: 660
+  },
+  {
+    id: "bottom-right-reset",
+    label: "bottom-right corner",
+    handle: "bottom-right",
+    targetWidth: resizablePanelInitialSize.width,
+    targetHeight: resizablePanelInitialSize.height,
+    travelMs: 520,
+    dragMs: 1160,
+    settleMs: 820
+  }
+];
+
+const RetroLcd = (props: ComponentProps<typeof RetroScreen>) => (
+  <RetroScreen
+    {...props}
+    resizable={props.resizable ?? true}
+    resizableLeadingEdges={props.resizableLeadingEdges ?? true}
+  />
+);
 
 const wait = (duration: number) =>
   new Promise<void>((resolve) => {
@@ -235,7 +417,6 @@ const autoResizeProbeSizes: TerminalProbeSize[] = [
 ];
 const autoResizeProbeHoldAfterResizeMs = 250;
 const autoResizeProbeResizeMs = 720;
-const autoResizeProbeStepMs = 2400 + autoResizeProbeHoldAfterResizeMs;
 const liveTtyStageSizes: LiveTtyStageSize[] = [
   { id: "compact", label: "Compact", width: 560, height: 280 },
   { id: "console", label: "Console", width: 720, height: 340 },
@@ -506,6 +687,326 @@ const parseTerminalSizeReply = (reply: string) => {
     rows: Number.parseInt(match[1] ?? "0", 10),
     cols: Number.parseInt(match[2] ?? "0", 10)
   };
+};
+
+const buildAutoResizeProbeSteps = (sizes: readonly TerminalProbeSize[]): ScriptedResizeStep[] => {
+  const targets = [...sizes.slice(1), sizes[0]].filter(
+    (size): size is TerminalProbeSize => size !== undefined
+  );
+
+  return targets.map((size, index) => ({
+    id: `probe-${index + 1}`,
+    label: `${size.width}x${size.height}`,
+    handle: index % 2 === 0 ? "bottom-right" : "top-left",
+    targetWidth: size.width,
+    targetHeight: size.height,
+    travelMs: 540,
+    dragMs: autoResizeProbeResizeMs,
+    settleMs: autoResizeProbeHoldAfterResizeMs
+  }));
+};
+
+const scriptedResizeHandleSelector = (handle: ScriptedResizeHandle) =>
+  `[data-resize-handle="${handle}"]`;
+
+const resolveStoryPanelNode = (targetNode: HTMLDivElement | null) => {
+  if (!targetNode) {
+    return null;
+  }
+
+  if (targetNode.matches(".retro-lcd")) {
+    return targetNode;
+  }
+
+  return targetNode.querySelector<HTMLDivElement>(".retro-lcd");
+};
+
+const getScriptedResizeDelta = (
+  handle: ScriptedResizeHandle,
+  panelRect: DOMRect,
+  targetWidth?: number,
+  targetHeight?: number
+) => {
+  const widthDelta =
+    targetWidth === undefined ? 0 : Math.round(targetWidth - panelRect.width);
+  const heightDelta =
+    targetHeight === undefined ? 0 : Math.round(targetHeight - panelRect.height);
+
+  switch (handle) {
+    case "right":
+      return { dx: widthDelta, dy: 0 };
+    case "left":
+      return { dx: -widthDelta, dy: 0 };
+    case "bottom":
+      return { dx: 0, dy: heightDelta };
+    case "top":
+      return { dx: 0, dy: -heightDelta };
+    case "top-left":
+      return { dx: -widthDelta, dy: -heightDelta };
+    default:
+      return { dx: widthDelta, dy: heightDelta };
+  }
+};
+
+const getDemoCursorOffset = (role: DemoCursorRole) =>
+  role === "pointer" ? { x: -5, y: -3 } : { x: -16, y: -16 };
+
+const renderDemoCursorSvg = (role: DemoCursorRole) => {
+  if (role === "pointer") {
+    return (
+      <svg viewBox="0 0 24 32" aria-hidden="true">
+        <path
+          d="M3 2.5 3.1 23.5 8.7 18.4 12.7 29.3 16.5 27.7 12.4 16.9 20.7 16.9Z"
+          fill="#f8fafc"
+          stroke="#0b1017"
+          strokeWidth="1.5"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
+  const rotation = role === "ns-resize" ? 90 : role === "nwse-resize" ? 45 : 0;
+
+  return (
+    <svg viewBox="0 0 28 28" aria-hidden="true">
+      <g transform={`rotate(${rotation} 14 14)`}>
+        <path
+          d="M3.5 14 9.6 7.9V11H18.4V7.9L24.5 14 18.4 20.1V17H9.6v3.1Z"
+          fill="#f8fafc"
+          stroke="#0b1017"
+          strokeWidth="1.5"
+          strokeLinejoin="round"
+        />
+      </g>
+    </svg>
+  );
+};
+
+function DemoMouseCursor({ state }: { state: DemoCursorState }) {
+  const offset = getDemoCursorOffset(state.role);
+
+  return (
+    <div
+      className="sb-retro-demo-cursor"
+      data-demo-cursor="true"
+      data-demo-cursor-role={state.role}
+      data-demo-cursor-dragging={state.dragging ? "true" : undefined}
+      style={{
+        opacity: state.visible ? 1 : 0,
+        transform: `translate(${Math.round(state.x + offset.x)}px, ${Math.round(state.y + offset.y)}px)`
+      }}
+    >
+      {renderDemoCursorSvg(state.role)}
+    </div>
+  );
+}
+
+const useScriptedResizePlayback = ({
+  stageRef,
+  targetRef,
+  paused,
+  steps,
+  loop = true,
+  startDelayMs = 900,
+  onResizeFrame,
+  onStepComplete
+}: ScriptedResizePlaybackOptions) => {
+  const [cursor, setCursor] = useState<DemoCursorState>(initialDemoCursorState);
+  const cursorRef = useRef(initialDemoCursorState);
+
+  useEffect(() => {
+    cursorRef.current = cursor;
+  }, [cursor]);
+
+  useEffect(() => {
+    if (paused) {
+      setCursor((current) => ({
+        ...current,
+        visible: false,
+        dragging: false,
+        role: "pointer"
+      }));
+      return;
+    }
+
+    let cancelled = false;
+    let rafId = 0;
+
+    const setCursorFromClientPoint = (
+      clientX: number,
+      clientY: number,
+      role: DemoCursorRole,
+      dragging: boolean
+    ) => {
+      const stageNode = stageRef.current;
+
+      if (!stageNode || cancelled) {
+        return;
+      }
+
+      const stageRect = stageNode.getBoundingClientRect();
+      const nextState: DemoCursorState = {
+        visible: true,
+        x: clientX - stageRect.left,
+        y: clientY - stageRect.top,
+        role,
+        dragging
+      };
+
+      cursorRef.current = nextState;
+      setCursor(nextState);
+    };
+
+    const animateCursor = (
+      from: { x: number; y: number },
+      to: { x: number; y: number },
+      durationMs: number,
+      role: DemoCursorRole,
+      dragging: boolean,
+      fromSize?: { width: number; height: number },
+      toSize?: { width: number; height: number }
+    ) =>
+      new Promise<void>((resolve) => {
+        if (cancelled) {
+          resolve();
+          return;
+        }
+
+        if (durationMs <= 0) {
+          setCursorFromClientPoint(to.x, to.y, role, dragging);
+          if (fromSize && toSize) {
+            onResizeFrame?.(toSize);
+          }
+          resolve();
+          return;
+        }
+
+        const startedAt = performance.now();
+
+        const tick = (timestamp: number) => {
+          if (cancelled) {
+            resolve();
+            return;
+          }
+
+          const progress = Math.min(1, (timestamp - startedAt) / durationMs);
+          const nextX = from.x + (to.x - from.x) * progress;
+          const nextY = from.y + (to.y - from.y) * progress;
+
+          setCursorFromClientPoint(nextX, nextY, role, dragging);
+
+          if (fromSize && toSize) {
+            onResizeFrame?.({
+              width: Math.round(fromSize.width + (toSize.width - fromSize.width) * progress),
+              height: Math.round(fromSize.height + (toSize.height - fromSize.height) * progress)
+            });
+          }
+
+          if (progress < 1) {
+            rafId = window.requestAnimationFrame(tick);
+            return;
+          }
+
+          resolve();
+        };
+
+        rafId = window.requestAnimationFrame(tick);
+      });
+
+    const run = async () => {
+      await wait(startDelayMs);
+      let previousPoint: { x: number; y: number } | null = null;
+
+      while (!cancelled) {
+        for (const step of steps) {
+          if (cancelled) {
+            return;
+          }
+
+          const panelNode = resolveStoryPanelNode(targetRef.current);
+          const handleNode = panelNode?.querySelector<HTMLElement>(
+            scriptedResizeHandleSelector(step.handle)
+          );
+
+          if (!panelNode || !handleNode) {
+            await wait(180);
+            continue;
+          }
+
+          const panelRect = panelNode.getBoundingClientRect();
+          const handleRect = handleNode.getBoundingClientRect();
+          const startPoint = {
+            x: handleRect.left + handleRect.width / 2,
+            y: handleRect.top + handleRect.height / 2
+          };
+          const { dx, dy } = getScriptedResizeDelta(
+            step.handle,
+            panelRect,
+            step.targetWidth,
+            step.targetHeight
+          );
+          const endPoint = {
+            x: startPoint.x + dx,
+            y: startPoint.y + dy
+          };
+          const targetSize = {
+            width: Math.round(step.targetWidth ?? panelRect.width),
+            height: Math.round(step.targetHeight ?? panelRect.height)
+          };
+          const approachPoint = previousPoint ?? {
+            x: startPoint.x - 132,
+            y: startPoint.y - 96
+          };
+          const cursorRole = scriptedResizeCursorRoleByHandle[step.handle];
+
+          await animateCursor(
+            approachPoint,
+            startPoint,
+            step.travelMs ?? 420,
+            "pointer",
+            false
+          );
+
+          if (cancelled) {
+            return;
+          }
+
+          setCursorFromClientPoint(startPoint.x, startPoint.y, cursorRole, false);
+          await animateCursor(
+            startPoint,
+            endPoint,
+            step.dragMs ?? 980,
+            cursorRole,
+            true,
+            {
+              width: Math.round(panelRect.width),
+              height: Math.round(panelRect.height)
+            },
+            targetSize
+          );
+          onResizeFrame?.(targetSize);
+          setCursorFromClientPoint(endPoint.x, endPoint.y, cursorRole, false);
+          previousPoint = endPoint;
+          onStepComplete?.(step);
+          await wait(step.settleMs ?? 700);
+        }
+
+        if (!loop) {
+          break;
+        }
+      }
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(rafId);
+    };
+  }, [loop, onResizeFrame, onStepComplete, paused, stageRef, startDelayMs, steps, targetRef]);
+
+  return cursor;
 };
 
 const resolveLiveTtyDemoConfig = (): LiveTtyDemoConfig | null => {
@@ -861,6 +1362,148 @@ function EditableNotebookStory() {
           onSubmit={(nextValue) => {
             setSubmitted(nextValue.length > 0 ? nextValue : "(empty)");
           }}
+        />
+      </Stage>
+    </StoryShell>
+  );
+}
+
+function EditorSelectionLabStory() {
+  const [value, setValue] = useState("ABCD");
+  const [selection, setSelection] = useState("0:0");
+
+  return (
+    <StoryShell
+      kicker="Editor Mode"
+      title="Select directly on the screen and edit from the same session."
+      copy="Editor mode keeps the retro surface in charge of layout while still supporting text selection and destructive editing from keyboard input."
+      footer={
+        <div className="sb-retro-status">
+          Value: <code>{value}</code> Selection: <code>{selection}</code>
+        </div>
+      }
+    >
+      <Stage maxWidth={520}>
+        <RetroLcd
+          mode="editor"
+          value={value}
+          onChange={setValue}
+          onSelectionChange={(nextSelection) =>
+            setSelection(nextSelection ? `${nextSelection.start}:${nextSelection.end}` : "null")
+          }
+          editable
+          autoFocus
+          color={STORY_COLOR}
+          cursorMode="solid"
+          gridMode="static"
+          rows={3}
+          cols={4}
+        />
+      </Stage>
+    </StoryShell>
+  );
+}
+
+function EditorSelectionWrappedStory() {
+  const [value, setValue] = useState("ABCDEFGHIJKL");
+  const [selection, setSelection] = useState("0:0");
+
+  return (
+    <StoryShell
+      kicker="Editor Mode"
+      title="Wrapped editor selections stay aligned with the display grid."
+      copy="This fixture keeps the editor in a tight static grid so browser tests can drag across wrapped lines and verify that deletion preserves the wrapped layout."
+      footer={
+        <div className="sb-retro-status">
+          Value: <code>{value}</code> Selection: <code>{selection}</code>
+        </div>
+      }
+    >
+      <Stage maxWidth={520}>
+        <RetroLcd
+          mode="editor"
+          value={value}
+          onChange={setValue}
+          onSelectionChange={(nextSelection) =>
+            setSelection(nextSelection ? `${nextSelection.start}:${nextSelection.end}` : "null")
+          }
+          editable
+          autoFocus
+          color={STORY_COLOR}
+          cursorMode="solid"
+          gridMode="static"
+          rows={4}
+          cols={4}
+        />
+      </Stage>
+    </StoryShell>
+  );
+}
+
+function EditorWordSelectionLabStory() {
+  const [value, setValue] = useState("retro display tty");
+  const [selection, setSelection] = useState("0:0");
+
+  return (
+    <StoryShell
+      kicker="Editor Mode"
+      title="Keyboard and pointer selection can snap to word boundaries."
+      copy="This fixture gives the browser suite a stable multi-word sentence so it can verify double-click selection, word-wise keyboard extension, and follow-up destructive edits."
+      footer={
+        <div className="sb-retro-status">
+          Value: <code>{value}</code> Selection: <code>{selection}</code>
+        </div>
+      }
+    >
+      <Stage maxWidth={620}>
+        <RetroLcd
+          mode="editor"
+          value={value}
+          onChange={setValue}
+          onSelectionChange={(nextSelection) =>
+            setSelection(nextSelection ? `${nextSelection.start}:${nextSelection.end}` : "null")
+          }
+          editable
+          autoFocus
+          color={STORY_COLOR}
+          cursorMode="solid"
+          gridMode="static"
+          rows={4}
+          cols={18}
+        />
+      </Stage>
+    </StoryShell>
+  );
+}
+
+function EditorSelectionReadOnlyStory() {
+  const [selection, setSelection] = useState("0:0");
+
+  return (
+    <StoryShell
+      kicker="Editor Mode"
+      title="Read-only editor surfaces can still expose selection without mutating content."
+      copy="This fixture keeps the editor visually interactive while refusing actual edits, which is useful for copy-oriented read-only transcripts."
+      footer={
+        <div className="sb-retro-status">
+          Selection: <code>{selection}</code>
+        </div>
+      }
+    >
+      <Stage maxWidth={520}>
+        <RetroLcd
+          mode="editor"
+          value="ABCD"
+          onSelectionChange={(nextSelection) =>
+            setSelection(nextSelection ? `${nextSelection.start}:${nextSelection.end}` : "null")
+          }
+          editable={false}
+          autoFocus
+          color={STORY_COLOR}
+          cursorMode="solid"
+          gridMode="static"
+          rows={3}
+          cols={4}
         />
       </Stage>
     </StoryShell>
@@ -1520,14 +2163,20 @@ function AutoResizeProbeStory() {
     borderStyleLabel: probeBorderStyles[0]?.label ?? "ascii",
     glyphStyleLabel: probeMonochromeGlyphStyles[0]?.label ?? "classic blocks"
   });
+  const [resizePaused, setResizePaused] = useState(false);
+  const [activeResizeLabel, setActiveResizeLabel] = useState(
+    `${autoResizeProbeSizes[0]?.width ?? 0}x${autoResizeProbeSizes[0]?.height ?? 0}`
+  );
 
   return (
     <StoryShell
       kicker="Auto Resize Probe"
       title="Let a terminal program redraw itself from the screen's reported geometry."
-      copy="This demo simulates a terminal app issuing a size query, receiving a terminal-style rows/cols reply, and repainting the whole scene with ANSI cursor movement. The screen keeps a deliberately tight padding, cycles through every monochrome and ANSI display mode, and randomly swaps border alphabets plus oversized text styles while the DOM element resizes."
+      copy="This demo simulates a terminal app issuing a size query, receiving a terminal-style rows/cols reply, and repainting the whole scene with ANSI cursor movement. A visible mouse cursor grabs the real resize handles, the screen keeps a deliberately tight padding, and the probe still cycles through every monochrome and ANSI display mode while border alphabets plus oversized text styles shuffle underneath."
       footer={
         <div className="sb-retro-status">
+          <span className="sb-retro-measure">resize: <code>{resizePaused ? "paused" : "auto"}</code></span>
+          <span className="sb-retro-measure">drag: <code>{activeResizeLabel}</code></span>
           <span className="sb-retro-measure">mode: <code>{sceneState.displayColorMode}</code></span>
           <span className="sb-retro-measure">border: <code>{sceneState.borderStyleLabel}</code></span>
           <span className="sb-retro-measure">glyphs: <code>{sceneState.glyphStyleLabel}</code></span>
@@ -1540,19 +2189,29 @@ function AutoResizeProbeStory() {
         </div>
       }
     >
-      <AutoResizeProbeSurface onReplyChange={setLastReply} onSceneChange={setSceneState} />
+      <AutoResizeProbeSurface
+        onReplyChange={setLastReply}
+        onSceneChange={setSceneState}
+        onResizePauseChange={setResizePaused}
+        onActiveResizeLabelChange={setActiveResizeLabel}
+      />
     </StoryShell>
   );
 }
 
 function AutoResizeProbeSurface({
   onReplyChange,
-  onSceneChange
+  onSceneChange,
+  onResizePauseChange,
+  onActiveResizeLabelChange
 }: {
   onReplyChange?: (reply: string) => void;
   onSceneChange?: (sceneState: ProbeSceneState) => void;
+  onResizePauseChange?: (paused: boolean) => void;
+  onActiveResizeLabelChange?: (label: string) => void;
 }) {
-  const frameRef = useRef<HTMLDivElement | null>(null);
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const panelHostRef = useRef<HTMLDivElement | null>(null);
   const [controller] = useState(() =>
     createRetroLcdController({
       rows: 9,
@@ -1561,9 +2220,11 @@ function AutoResizeProbeSurface({
       cursorMode: "solid"
     })
   );
-  const [sizeIndex, setSizeIndex] = useState(0);
+  const [sizeVariant, setSizeVariant] = useState(0);
   const [displayModeIndex, setDisplayModeIndex] = useState(0);
   const [visualVariant, setVisualVariant] = useState(0);
+  const [resizePaused, setResizePaused] = useState(false);
+  const [scriptedSize, setScriptedSize] = useState(() => autoResizeProbeSizes[0] ?? { width: 760, height: 360 });
   const [reportedGeometry, setReportedGeometry] = useState<RetroLcdGeometry | null>(null);
   const [settledResizeTick, setSettledResizeTick] = useState(0);
   const [redrawMeta, setRedrawMeta] = useState<ProbeRedrawMeta>({
@@ -1574,12 +2235,8 @@ function AutoResizeProbeSurface({
   });
 
   useEffect(() => {
-    const timer = window.setInterval(() => {
-      setSizeIndex((current) => (current + 1) % autoResizeProbeSizes.length);
-    }, autoResizeProbeStepMs);
-
-    return () => window.clearInterval(timer);
-  }, []);
+    onResizePauseChange?.(resizePaused);
+  }, [onResizePauseChange, resizePaused]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -1616,11 +2273,49 @@ function AutoResizeProbeSurface({
     };
   }, []);
 
+  useEffect(() => {
+    const pauseAutoResize = () => {
+      setResizePaused(true);
+    };
+
+    window.addEventListener("resize", pauseAutoResize);
+    return () => window.removeEventListener("resize", pauseAutoResize);
+  }, []);
+
+  const scriptedResizeSteps = useMemo(
+    () => buildAutoResizeProbeSteps(autoResizeProbeSizes),
+    []
+  );
+  const handleProbeResizeStepComplete = useCallback(
+    (step: ScriptedResizeStep) => {
+      setSizeVariant((current) => current + 1);
+      setSettledResizeTick((current) => current + 1);
+      onActiveResizeLabelChange?.(step.label);
+    },
+    [onActiveResizeLabelChange]
+  );
+  const cursor = useScriptedResizePlayback({
+    stageRef,
+    targetRef: panelHostRef,
+    paused: resizePaused,
+    steps: scriptedResizeSteps,
+    onResizeFrame: setScriptedSize,
+    onStepComplete: handleProbeResizeStepComplete
+  });
+
+  useEffect(() => {
+    const initialStep = scriptedResizeSteps[0];
+
+    if (initialStep) {
+      onActiveResizeLabelChange?.(initialStep.label);
+    }
+  }, [onActiveResizeLabelChange, scriptedResizeSteps]);
+
   const displayColorMode = probeDisplayColorModes[displayModeIndex] ?? probeDisplayColorModes[0];
   const borderStyle = probeBorderStyles[visualVariant % probeBorderStyles.length] ?? probeBorderStyles[0];
   const monochromeGlyphStyle =
     probeMonochromeGlyphStyles[
-      (visualVariant + Math.floor(sizeIndex / 2)) % probeMonochromeGlyphStyles.length
+      (visualVariant + Math.floor(sizeVariant / 2)) % probeMonochromeGlyphStyles.length
     ] ?? probeMonochromeGlyphStyles[0];
   const glyphStyle =
     displayColorMode === "ansi-classic" || displayColorMode === "ansi-extended"
@@ -1681,54 +2376,29 @@ function AutoResizeProbeSurface({
     redrawProbe(reportedGeometry, "transition-settle");
   }, [redrawProbe, reportedGeometry, settledResizeTick]);
 
-  useEffect(() => {
-    const frameNode = frameRef.current;
-
-    if (!frameNode) {
-      return;
-    }
-
-    let rafId = 0;
-    let settleRafId = 0;
-
-    const handleTransitionEnd = (event: TransitionEvent) => {
-      if (event.propertyName !== "width") {
-        return;
-      }
-
-      window.cancelAnimationFrame(rafId);
-      window.cancelAnimationFrame(settleRafId);
-      rafId = window.requestAnimationFrame(() => {
-        settleRafId = window.requestAnimationFrame(() => {
-          setSettledResizeTick((current) => current + 1);
-        });
-      });
-    };
-
-    frameNode.addEventListener("transitionend", handleTransitionEnd);
-
-    return () => {
-      window.cancelAnimationFrame(rafId);
-      window.cancelAnimationFrame(settleRafId);
-      frameNode.removeEventListener("transitionend", handleTransitionEnd);
-    };
-  }, []);
-
-  const currentSize = autoResizeProbeSizes[sizeIndex] ?? autoResizeProbeSizes[0];
-
   return (
-    <div className="sb-retro-auto-resize-stage">
+    <div
+      ref={stageRef}
+      className="sb-retro-auto-resize-stage sb-retro-resize-demo-stage"
+      data-demo-resize-state={resizePaused ? "paused" : "auto"}
+      onMouseDownCapture={(event) => {
+        if (event.nativeEvent.isTrusted) {
+          setResizePaused(true);
+        }
+      }}
+      onTouchStartCapture={(event) => {
+        if (event.nativeEvent.isTrusted) {
+          setResizePaused(true);
+        }
+      }}
+    >
       <div
-        ref={frameRef}
-        className="sb-retro-auto-resize-frame"
+        ref={panelHostRef}
+        className="sb-retro-auto-resize-host"
         data-probe-redraw-seq={redrawMeta.sequence}
         data-probe-last-redraw-reason={redrawMeta.reason}
         data-probe-last-redraw-rows={redrawMeta.rows}
         data-probe-last-redraw-cols={redrawMeta.cols}
-        style={{
-          width: currentSize.width,
-          height: currentSize.height
-        }}
       >
         <RetroLcd
           mode="terminal"
@@ -1737,11 +2407,12 @@ function AutoResizeProbeSurface({
           displayPadding={{ block: 8, inline: 10 }}
           onGeometryChange={setReportedGeometry}
           style={{
-            width: "100%",
-            height: "100%"
+            width: scriptedSize.width,
+            height: scriptedSize.height
           }}
         />
       </div>
+      <DemoMouseCursor state={cursor} />
     </div>
   );
 }
@@ -1751,6 +2422,182 @@ function AutoResizeProbeDemoStory() {
     <CaptureStage captureId="auto-resize-probe" maxWidth={920}>
       <div className="sb-retro-auto-resize-capture-shell">
         <AutoResizeProbeSurface />
+      </div>
+    </CaptureStage>
+  );
+}
+
+function ResizablePanelLiveSurface({
+  capture = false,
+  leadingFocus = false,
+  onPauseChange,
+  onActiveStepLabelChange,
+  onGeometryChange
+}: ResizablePanelLiveSurfaceProps) {
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const panelHostRef = useRef<HTMLDivElement | null>(null);
+  const [geometry, setGeometry] = useState<RetroLcdGeometry | null>(null);
+  const [paused, setPaused] = useState(false);
+  const [scriptedSize, setScriptedSize] = useState(resizablePanelInitialSize);
+  const steps = useMemo(
+    () => (leadingFocus ? resizablePanelLeadingSteps : resizablePanelLiveSteps),
+    [leadingFocus]
+  );
+  const [activeStepLabel, setActiveStepLabel] = useState(
+    steps[0]?.label ?? "right edge"
+  );
+  const handleResizableStepComplete = useCallback(
+    (step: ScriptedResizeStep) => {
+      setActiveStepLabel(step.label);
+      onActiveStepLabelChange?.(step.label);
+    },
+    [onActiveStepLabelChange]
+  );
+  const cursor = useScriptedResizePlayback({
+    stageRef,
+    targetRef: panelHostRef,
+    paused,
+    steps,
+    startDelayMs: capture ? 520 : 880,
+    onResizeFrame: setScriptedSize,
+    onStepComplete: handleResizableStepComplete
+  });
+
+  useEffect(() => {
+    onPauseChange?.(paused);
+  }, [onPauseChange, paused]);
+
+  useEffect(() => {
+    onGeometryChange?.(geometry);
+  }, [geometry, onGeometryChange]);
+
+  useEffect(() => {
+    const initialStep = steps[0];
+
+    if (initialStep) {
+      setActiveStepLabel(initialStep.label);
+      onActiveStepLabelChange?.(initialStep.label);
+    }
+  }, [onActiveStepLabelChange, steps]);
+
+  const value = [
+    leadingFocus
+      ? "Leading-edge handles are live here too."
+      : "All resize handles are live in this panel.",
+    "",
+    `auto drag: ${paused ? "paused" : "running"}`,
+    `active handle: ${activeStepLabel}`,
+    geometry ? `grid: ${geometry.cols} cols x ${geometry.rows} rows` : "grid: measuring",
+    "Click or drag anywhere to pause the scripted pass."
+  ].join("\n");
+
+  return (
+    <div
+      ref={stageRef}
+      className="sb-retro-resize-demo-stage"
+      data-demo-resize-state={paused ? "paused" : "auto"}
+      onMouseDownCapture={(event) => {
+        if (event.nativeEvent.isTrusted) {
+          setPaused(true);
+        }
+      }}
+      onTouchStartCapture={(event) => {
+        if (event.nativeEvent.isTrusted) {
+          setPaused(true);
+        }
+      }}
+    >
+      <div ref={panelHostRef} className="sb-retro-resize-demo-host">
+        <RetroLcd
+          mode="terminal"
+          resizable="both"
+          resizableLeadingEdges
+          displayPadding={{ block: 12, inline: 14 }}
+          value={value}
+          onGeometryChange={setGeometry}
+          style={{
+            width: scriptedSize.width,
+            height: scriptedSize.height
+          }}
+        />
+      </div>
+      <DemoMouseCursor state={cursor} />
+    </div>
+  );
+}
+
+function ResizablePanelStory() {
+  const [paused, setPaused] = useState(false);
+  const [activeHandleLabel, setActiveHandleLabel] = useState(
+    resizablePanelLiveSteps[0]?.label ?? "right edge"
+  );
+  const [geometry, setGeometry] = useState<RetroLcdGeometry | null>(null);
+
+  return (
+    <StoryShell
+      kicker="Resizable Panel"
+      title="Let the glass stretch with the same handles users get at runtime."
+      copy="Enable `resizable` when the panel itself should be draggable. This live Storybook surface now shows a visible mouse cursor grabbing the real resize handles, so the docs reflect the same interaction path the component ships with."
+      footer={
+        <div className="sb-retro-status">
+          <span className="sb-retro-measure">demo: <code>{paused ? "paused" : "auto"}</code></span>
+          <span className="sb-retro-measure">handle: <code>{activeHandleLabel}</code></span>
+          <span className="sb-retro-measure">
+            grid: <code>{geometry ? `${geometry.cols} x ${geometry.rows}` : "measuring"}</code>
+          </span>
+        </div>
+      }
+    >
+      <Stage>
+        <ResizablePanelLiveSurface
+          onPauseChange={setPaused}
+          onActiveStepLabelChange={setActiveHandleLabel}
+          onGeometryChange={setGeometry}
+        />
+      </Stage>
+    </StoryShell>
+  );
+}
+
+function ResizablePanelLeadingEdgesStory() {
+  const [paused, setPaused] = useState(false);
+  const [activeHandleLabel, setActiveHandleLabel] = useState(
+    resizablePanelLeadingSteps[0]?.label ?? "top-left corner"
+  );
+  const [geometry, setGeometry] = useState<RetroLcdGeometry | null>(null);
+
+  return (
+    <StoryShell
+      kicker="Leading-Edge Resize"
+      title="Top and left handles can be part of the same live interaction surface."
+      copy="Set `resizableLeadingEdges` when you want left, top, and top-left handles in play. This demo intentionally spends most of its time on those leading handles so you can see them lengthen the overall panel without inventing a separate layout model."
+      footer={
+        <div className="sb-retro-status">
+          <span className="sb-retro-measure">demo: <code>{paused ? "paused" : "auto"}</code></span>
+          <span className="sb-retro-measure">handle: <code>{activeHandleLabel}</code></span>
+          <span className="sb-retro-measure">
+            grid: <code>{geometry ? `${geometry.cols} x ${geometry.rows}` : "measuring"}</code>
+          </span>
+        </div>
+      }
+    >
+      <Stage>
+        <ResizablePanelLiveSurface
+          leadingFocus
+          onPauseChange={setPaused}
+          onActiveStepLabelChange={setActiveHandleLabel}
+          onGeometryChange={setGeometry}
+        />
+      </Stage>
+    </StoryShell>
+  );
+}
+
+function ResizablePanelDemoStory() {
+  return (
+    <CaptureStage captureId="resizable-panel" maxWidth={920}>
+      <div className="sb-retro-resizable-capture-shell">
+        <ResizablePanelLiveSurface capture />
       </div>
     </CaptureStage>
   );
@@ -2207,6 +3054,22 @@ export const EditableNotebook: Story = {
   render: () => <EditableNotebookStory />
 };
 
+export const EditorSelectionLab: Story = {
+  render: () => <EditorSelectionLabStory />
+};
+
+export const EditorSelectionWrapped: Story = {
+  render: () => <EditorSelectionWrappedStory />
+};
+
+export const EditorWordSelectionLab: Story = {
+  render: () => <EditorWordSelectionLabStory />
+};
+
+export const EditorSelectionReadOnly: Story = {
+  render: () => <EditorSelectionReadOnlyStory />
+};
+
 export const TerminalStream: Story = {
   render: () => <TerminalStreamStory />
 };
@@ -2248,6 +3111,14 @@ export const PromptLoop: Story = {
 
 export const ResponsivePanel: Story = {
   render: () => <ResponsivePanelStory />
+};
+
+export const ResizablePanel: Story = {
+  render: () => <ResizablePanelStory />
+};
+
+export const ResizablePanelLeadingEdges: Story = {
+  render: () => <ResizablePanelLeadingEdgesStory />
 };
 
 export const AutoResizeProbe: Story = {
@@ -2386,6 +3257,19 @@ export const AutoResizeProbeDemo: Story = {
     }
   },
   render: () => <AutoResizeProbeDemoStory />
+};
+
+export const ResizablePanelDemo: Story = {
+  name: "Capture / Resizable Panel Demo",
+  parameters: {
+    controls: {
+      disable: true
+    },
+    docs: {
+      disable: true
+    }
+  },
+  render: () => <ResizablePanelDemoStory />
 };
 
 export const LiveTtyTerminalBridgeDemo: Story = {

@@ -1,6 +1,7 @@
 export { RetroScreen, RetroScreen as RetroLcd } from "./react/RetroScreen";
 export { useRetroScreenTerminalBridge } from "./react/useRetroScreenTerminalBridge";
 export { useRetroLcdController } from "./react/useRetroScreenController";
+export { useRetroLcdEditorSession } from "./react/useRetroScreenEditorSession";
 export { useRetroLcdGeometry } from "./react/useRetroScreenGeometry";
 export { useRetroLcdPromptSession } from "./react/useRetroScreenPromptSession";
 export type {
@@ -9,7 +10,9 @@ export type {
   RetroLcdDisplaySurfaceMode,
   RetroLcdDisplayPadding,
   RetroLcdDisplayPaddingValue,
+  RetroLcdResizeMode,
   RetroLcdController,
+  RetroLcdEditorModeProps,
   RetroLcdGeometry,
   RetroLcdPromptCommandResult,
   RetroLcdProps,
@@ -21,6 +24,20 @@ export type {
 } from "./core/types";
 export { measureGrid } from "./core/geometry/measure-grid";
 export { wrapTextToColumns } from "./core/geometry/wrap";
+export {
+  collapseRetroLcdTextSelectionToEnd,
+  collapseRetroLcdTextSelectionToStart,
+  clampRetroLcdTextOffset,
+  createRetroLcdTextSelection,
+  deleteRetroLcdSelectedText,
+  findRetroLcdNextWordBoundary,
+  findRetroLcdPreviousWordBoundary,
+  getRetroLcdWordSelectionAtOffset,
+  isRetroLcdTextSelectionCollapsed,
+  normalizeRetroLcdTextSelection,
+  replaceRetroLcdSelectedText
+} from "./core/editor/selection";
+export { createRetroLcdEditorSession } from "./core/editor/editor-session";
 export { createRetroLcdController } from "./core/terminal/controller";
 export { createRetroLcdPromptSession } from "./core/terminal/prompt-session";
 export {
@@ -43,6 +60,14 @@ export {
 } from "./core/terminal/paste-encoder";
 export { RetroLcdAnsiParser } from "./core/terminal/ansi-parser";
 export { RetroLcdScreenBuffer } from "./core/terminal/screen-buffer";
+export type {
+  RetroLcdEditorSession,
+  RetroLcdEditorSessionOptions,
+  RetroLcdEditorSessionState
+} from "./core/editor/editor-session";
+export type {
+  RetroLcdTextSelection
+} from "./core/editor/selection";
 export type {
   RetroLcdTerminalHostAdapter,
   RetroLcdTerminalHostKeyEvent,

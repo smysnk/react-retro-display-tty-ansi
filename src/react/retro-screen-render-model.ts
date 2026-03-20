@@ -1,6 +1,10 @@
-import { wrapTextToColumns } from "../core/geometry/wrap";
+import {
+  wrapTextToCellRows,
+  wrapTextToColumns
+} from "../core/geometry/wrap";
+import { normalizeRetroLcdTextSelection, type RetroLcdTextSelection } from "../core/editor/selection";
 import { RetroLcdScreenBuffer } from "../core/terminal/screen-buffer";
-import type { RetroLcdCell, RetroLcdScreenSnapshot } from "../core/terminal/types";
+import type { RetroLcdCell, RetroLcdCellStyle, RetroLcdScreenSnapshot } from "../core/terminal/types";
 import type { CursorMode, RetroLcdGeometry, RetroLcdValueModeProps } from "../core/types";
 
 export type RetroLcdCursorRenderState = {
@@ -9,12 +13,46 @@ export type RetroLcdCursorRenderState = {
   mode: CursorMode;
 };
 
+export type RetroLcdRenderCell = RetroLcdCell & {
+  sourceOffset: number | null;
+  isSelected: boolean;
+};
+
 export type RetroLcdRenderModel = {
   lines: string[];
-  cells?: RetroLcdCell[][];
+  cells?: RetroLcdRenderCell[][];
   cursor: RetroLcdCursorRenderState | null;
   isDimmed: boolean;
 };
+
+const DEFAULT_RENDER_CELL_STYLE: RetroLcdCellStyle = {
+  intensity: "normal",
+  inverse: false,
+  conceal: false,
+  blink: false,
+  foreground: {
+    mode: "default",
+    value: 0
+  },
+  background: {
+    mode: "default",
+    value: 0
+  }
+};
+
+const createRenderCell = (
+  char: string,
+  options: {
+    sourceOffset: number | null;
+    isSelected?: boolean;
+    style?: RetroLcdCellStyle;
+  }
+): RetroLcdRenderCell => ({
+  char,
+  style: options.style ?? DEFAULT_RENDER_CELL_STYLE,
+  sourceOffset: options.sourceOffset,
+  isSelected: Boolean(options.isSelected)
+});
 
 export const normalizeLines = (lines: string[], rows: number) => {
   const nextLines = [...lines];
@@ -26,13 +64,25 @@ export const normalizeLines = (lines: string[], rows: number) => {
   return nextLines.slice(0, rows);
 };
 
+const normalizeCellRows = <T,>(rowsValue: T[][], rows: number) => {
+  const nextRows = [...rowsValue];
+
+  while (nextRows.length < rows) {
+    nextRows.push([]);
+  }
+
+  return nextRows.slice(0, rows);
+};
+
 export const buildTextRenderModel = ({
   text,
   geometry,
   cursorMode,
   cursorOffset,
   cursorVisible,
-  dimmed
+  dimmed,
+  selection,
+  includeSourceOffsets
 }: {
   text: string;
   geometry: RetroLcdGeometry;
@@ -40,26 +90,44 @@ export const buildTextRenderModel = ({
   cursorOffset?: number;
   cursorVisible?: boolean;
   dimmed?: boolean;
+  selection?: RetroLcdTextSelection | null;
+  includeSourceOffsets?: boolean;
 }): RetroLcdRenderModel => {
-  const wrappedLines = wrapTextToColumns(text, { cols: geometry.cols });
-  const totalLines = [...wrappedLines];
+  const normalizedSelection = selection
+    ? normalizeRetroLcdTextSelection(selection, text.length)
+    : null;
+  const wrappedCellRows = wrapTextToCellRows(text, { cols: geometry.cols });
+  const totalCells = wrappedCellRows.map((row) =>
+    row.map((cell) =>
+      createRenderCell(cell.char, {
+        sourceOffset: cell.sourceOffset,
+        isSelected: normalizedSelection
+          ? cell.sourceOffset >= normalizedSelection.start &&
+            cell.sourceOffset < normalizedSelection.end
+          : false
+      })
+    )
+  );
+  const totalLines = totalCells.map((line) => line.map((cell) => cell.char).join(""));
+  const shouldExposeCells = Boolean(includeSourceOffsets || normalizedSelection);
 
   let cursor: RetroLcdCursorRenderState | null = null;
   let windowStart = 0;
 
   if (cursorVisible) {
-    const cursorLines = wrapTextToColumns(text.slice(0, cursorOffset ?? text.length), {
+    const cursorRows = wrapTextToCellRows(text.slice(0, cursorOffset ?? text.length), {
       cols: geometry.cols
     });
-    let cursorRow = cursorLines.length - 1;
-    let cursorCol = cursorLines[cursorRow]?.length ?? 0;
+    let cursorRow = cursorRows.length - 1;
+    let cursorCol = cursorRows[cursorRow]?.length ?? 0;
 
     if (cursorCol >= geometry.cols) {
       cursorRow += 1;
       cursorCol = 0;
     }
 
-    while (totalLines.length <= cursorRow) {
+    while (totalCells.length <= cursorRow) {
+      totalCells.push([]);
       totalLines.push("");
     }
 
@@ -81,6 +149,9 @@ export const buildTextRenderModel = ({
 
   return {
     lines: normalizeLines(totalLines.slice(windowStart, windowStart + geometry.rows), geometry.rows),
+    cells: shouldExposeCells
+      ? normalizeCellRows(totalCells.slice(windowStart, windowStart + geometry.rows), geometry.rows)
+      : undefined,
     cursor,
     isDimmed: Boolean(dimmed)
   };
@@ -145,7 +216,14 @@ export const snapshotToRenderModel = (
 
   return {
     lines: normalizeLines(viewportCells.map((line) => trimRenderedLine(line)), snapshot.rows),
-    cells: viewportCells,
+    cells: viewportCells.map((line) =>
+      line.map((cell) =>
+        createRenderCell(cell.char, {
+          sourceOffset: null,
+          style: cell.style
+        })
+      )
+    ),
     cursor: cursorVisible
       ? {
           row: cursorAbsoluteRow - windowStart,

@@ -199,6 +199,17 @@
   animation: retro-lcd-cell-blink 1.2s steps(1, end) infinite;
 }
 
+.retro-lcd__cell--selected {
+  background: color-mix(in srgb, var(--retro-lcd-color), black 72%);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--retro-lcd-color), transparent 72%),
+    0 0 8px color-mix(in srgb, var(--retro-lcd-color), transparent 86%);
+}
+
+.retro-lcd[data-display-surface-mode="light"] .retro-lcd__cell--selected {
+  background: color-mix(in srgb, var(--retro-lcd-color), white 70%);
+}
+
 .retro-lcd__cursor {
   position: absolute;
   z-index: 2;
@@ -238,6 +249,159 @@
   box-shadow:
     inset 0 0 0 1px color-mix(in srgb, var(--retro-lcd-color-dim), transparent 72%),
     0 0 8px color-mix(in srgb, var(--retro-lcd-color-dim), transparent 88%);
+}
+
+.retro-lcd__resize-handle {
+  position: absolute;
+  z-index: 6;
+  opacity: 0;
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+  touch-action: none;
+}
+
+.retro-lcd__resize-handle::before {
+  content: "";
+  position: absolute;
+  background: color-mix(in srgb, var(--retro-lcd-color), transparent 36%);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--retro-lcd-color), transparent 60%),
+    0 0 12px color-mix(in srgb, var(--retro-lcd-color), transparent 82%);
+}
+
+.retro-lcd[data-display-surface-mode="light"] .retro-lcd__resize-handle::before {
+  background: color-mix(in srgb, var(--retro-lcd-color), white 42%);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--retro-lcd-color), transparent 72%),
+    0 0 10px color-mix(in srgb, var(--retro-lcd-color), transparent 90%);
+}
+
+.retro-lcd__resize-handle:hover,
+.retro-lcd__resize-handle[data-active="true"] {
+  opacity: 1;
+}
+
+.retro-lcd[data-resizing="true"] .retro-lcd__resize-handle {
+  opacity: 0;
+}
+
+.retro-lcd[data-resizing="true"] .retro-lcd__resize-handle[data-active="true"] {
+  opacity: 1;
+}
+
+.retro-lcd__resize-handle--width {
+  top: 16px;
+  right: -1px;
+  bottom: 16px;
+  width: 18px;
+  cursor: ew-resize;
+}
+
+.retro-lcd__resize-handle--width::before {
+  top: 8px;
+  right: 6px;
+  bottom: 8px;
+  width: 4px;
+  border-radius: 999px;
+}
+
+.retro-lcd__resize-handle--height {
+  left: 16px;
+  right: 16px;
+  bottom: -1px;
+  height: 18px;
+  cursor: ns-resize;
+}
+
+.retro-lcd__resize-handle--height::before {
+  right: 10px;
+  bottom: 6px;
+  left: 10px;
+  height: 4px;
+  border-radius: 999px;
+}
+
+.retro-lcd__resize-handle--corner {
+  right: -1px;
+  bottom: -1px;
+  width: 28px;
+  height: 28px;
+  cursor: nwse-resize;
+}
+
+.retro-lcd__resize-handle--corner::before {
+  right: 6px;
+  bottom: 6px;
+  width: 14px;
+  height: 14px;
+  border-right: 4px solid color-mix(in srgb, var(--retro-lcd-color), transparent 36%);
+  border-bottom: 4px solid color-mix(in srgb, var(--retro-lcd-color), transparent 36%);
+  border-radius: 0 0 6px 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.retro-lcd[data-display-surface-mode="light"] .retro-lcd__resize-handle--corner::before {
+  border-right-color: color-mix(in srgb, var(--retro-lcd-color), white 42%);
+  border-bottom-color: color-mix(in srgb, var(--retro-lcd-color), white 42%);
+}
+
+.retro-lcd__resize-handle--left {
+  top: 16px;
+  left: -1px;
+  bottom: 16px;
+  width: 18px;
+  cursor: ew-resize;
+}
+
+.retro-lcd__resize-handle--left::before {
+  top: 8px;
+  left: 6px;
+  bottom: 8px;
+  width: 4px;
+  border-radius: 999px;
+}
+
+.retro-lcd__resize-handle--top {
+  top: -1px;
+  right: 16px;
+  left: 16px;
+  height: 18px;
+  cursor: ns-resize;
+}
+
+.retro-lcd__resize-handle--top::before {
+  top: 6px;
+  right: 10px;
+  left: 10px;
+  height: 4px;
+  border-radius: 999px;
+}
+
+.retro-lcd__resize-handle--top-left {
+  top: -1px;
+  left: -1px;
+  width: 28px;
+  height: 28px;
+  cursor: nwse-resize;
+}
+
+.retro-lcd__resize-handle--top-left::before {
+  top: 6px;
+  left: 6px;
+  width: 14px;
+  height: 14px;
+  border-top: 4px solid color-mix(in srgb, var(--retro-lcd-color), transparent 36%);
+  border-left: 4px solid color-mix(in srgb, var(--retro-lcd-color), transparent 36%);
+  border-radius: 6px 0 0 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.retro-lcd[data-display-surface-mode="light"] .retro-lcd__resize-handle--top-left::before {
+  border-top-color: color-mix(in srgb, var(--retro-lcd-color), white 42%);
+  border-left-color: color-mix(in srgb, var(--retro-lcd-color), white 42%);
 }
 
 .retro-lcd__input {

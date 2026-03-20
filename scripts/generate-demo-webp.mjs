@@ -61,6 +61,14 @@ const autoResizeProbeMp4File = resolve(
   outputDir,
   "react-retro-display-tty-ansi-auto-resize-probe.mp4"
 );
+const resizablePanelWebpFile = resolve(
+  outputDir,
+  "react-retro-display-tty-ansi-resizable-panel.webp"
+);
+const resizablePanelMp4File = resolve(
+  outputDir,
+  "react-retro-display-tty-ansi-resizable-panel.mp4"
+);
 const liveTtyTerminalBridgeWebpFile = resolve(
   outputDir,
   "react-retro-display-tty-ansi-live-tty-terminal-bridge.webp"
@@ -315,6 +323,18 @@ const captures = [
     outputs: [
       { type: "webp", file: autoResizeProbeWebpFile },
       { type: "mp4", file: autoResizeProbeMp4File }
+    ]
+  },
+  {
+    name: "resizable panel",
+    storyId: "retroscreen--resizable-panel-demo",
+    selector: "[data-demo-capture='resizable-panel']",
+    waitMs: 260,
+    fps: 16,
+    durationMs: 10800,
+    outputs: [
+      { type: "webp", file: resizablePanelWebpFile },
+      { type: "mp4", file: resizablePanelMp4File }
     ]
   },
   {

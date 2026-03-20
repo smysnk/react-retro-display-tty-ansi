@@ -15,6 +15,17 @@ const getVisibleLines = (container: HTMLElement) =>
     (line.textContent ?? "").replace(/\u00a0/gu, " ")
   );
 
+const createClipboardData = () => {
+  const store = new Map<string, string>();
+
+  return {
+    setData: vi.fn((type: string, value: string) => {
+      store.set(type, value);
+    }),
+    getData: vi.fn((type: string) => store.get(type) ?? "")
+  };
+};
+
 const mockScreenRect = (container: HTMLElement, rect: DOMRectInit) => {
   const screenNode = container.querySelector(".retro-lcd__grid") as HTMLDivElement | null;
   expect(screenNode).not.toBeNull();
@@ -134,6 +145,177 @@ describe("RetroLcd", () => {
       "data-cursor-mode",
       "hollow"
     );
+  });
+
+  it("supports width-only resizing when configured", () => {
+    const { container } = render(<RetroLcd mode="value" value="Resize me" resizable="width" />);
+
+    const root = container.querySelector(".retro-lcd") as HTMLDivElement | null;
+    const widthHandle = container.querySelector(
+      '[data-resize-handle="right"]'
+    ) as HTMLDivElement | null;
+
+    expect(root).not.toBeNull();
+    expect(widthHandle).not.toBeNull();
+    expect(root).toHaveAttribute("data-resizable-mode", "width");
+    expect(container.querySelector('[data-resize-handle="bottom"]')).toBeNull();
+    expect(container.querySelector('[data-resize-handle="left"]')).toBeNull();
+
+    vi.spyOn(root!, "getBoundingClientRect").mockImplementation(
+      () =>
+        ({
+          x: 0,
+          y: 0,
+          left: 0,
+          top: 0,
+          right: 640,
+          bottom: 280,
+          width: 640,
+          height: 280,
+          toJSON: () => ({})
+        }) as DOMRect
+    );
+
+    fireEvent.mouseDown(widthHandle!, {
+      button: 0,
+      clientX: 640,
+      clientY: 120
+    });
+    fireEvent.mouseMove(window, {
+      clientX: 704,
+      clientY: 120
+    });
+    fireEvent.mouseUp(window);
+
+    expect(root!.style.width).toBe("704px");
+    expect(root!.style.height).toBe("");
+  });
+
+  it("preserves explicit width and height styles before any manual resize begins", () => {
+    const { container } = render(
+      <RetroLcd
+        mode="value"
+        value="Resize me"
+        resizable="both"
+        style={{ width: 672, height: 328 }}
+      />
+    );
+
+    const root = container.querySelector(".retro-lcd") as HTMLDivElement | null;
+
+    expect(root).not.toBeNull();
+    expect(root!.style.width).toBe("672px");
+    expect(root!.style.height).toBe("328px");
+  });
+
+  it("keeps leading-edge handles disabled unless explicitly configured", () => {
+    const { container } = render(<RetroLcd mode="value" value="Resize me" resizable="both" />);
+
+    expect(container.querySelector('[data-resize-handle="left"]')).toBeNull();
+    expect(container.querySelector('[data-resize-handle="top"]')).toBeNull();
+    expect(container.querySelector('[data-resize-handle="top-left"]')).toBeNull();
+  });
+
+  it("supports corner resizing when both axes are enabled", () => {
+    const { container } = render(<RetroLcd mode="value" value="Resize me" resizable />);
+
+    const root = container.querySelector(".retro-lcd") as HTMLDivElement | null;
+    const cornerHandle = container.querySelector(
+      '[data-resize-handle="bottom-right"]'
+    ) as HTMLDivElement | null;
+
+    expect(root).not.toBeNull();
+    expect(cornerHandle).not.toBeNull();
+    expect(root).toHaveAttribute("data-resizable-mode", "both");
+
+    vi.spyOn(root!, "getBoundingClientRect").mockImplementation(
+      () =>
+        ({
+          x: 0,
+          y: 0,
+          left: 0,
+          top: 0,
+          right: 620,
+          bottom: 260,
+          width: 620,
+          height: 260,
+          toJSON: () => ({})
+        }) as DOMRect
+    );
+
+    fireEvent.mouseDown(cornerHandle!, {
+      button: 0,
+      clientX: 620,
+      clientY: 260
+    });
+    fireEvent.mouseMove(window, {
+      clientX: 710,
+      clientY: 340
+    });
+    fireEvent.mouseUp(window);
+
+    expect(root!.style.width).toBe("710px");
+    expect(root!.style.height).toBe("340px");
+  });
+
+  it("supports explicit leading-edge resize handles", () => {
+    const { container } = render(
+      <RetroLcd mode="value" value="Resize me" resizable="both" resizableLeadingEdges />
+    );
+
+    const root = container.querySelector(".retro-lcd") as HTMLDivElement | null;
+    const leftHandle = container.querySelector(
+      '[data-resize-handle="left"]'
+    ) as HTMLDivElement | null;
+    const topHandle = container.querySelector(
+      '[data-resize-handle="top"]'
+    ) as HTMLDivElement | null;
+
+    expect(root).not.toBeNull();
+    expect(leftHandle).not.toBeNull();
+    expect(topHandle).not.toBeNull();
+    expect(root).toHaveAttribute("data-resizable-leading-edges", "true");
+
+    vi.spyOn(root!, "getBoundingClientRect").mockImplementation(
+      () =>
+        ({
+          x: 0,
+          y: 0,
+          left: 0,
+          top: 0,
+          right: 620,
+          bottom: 260,
+          width: 620,
+          height: 260,
+          toJSON: () => ({})
+        }) as DOMRect
+    );
+
+    fireEvent.mouseDown(leftHandle!, {
+      button: 0,
+      clientX: 0,
+      clientY: 120
+    });
+    fireEvent.mouseMove(window, {
+      clientX: -80,
+      clientY: 120
+    });
+    fireEvent.mouseUp(window);
+
+    expect(root!.style.width).toBe("700px");
+
+    fireEvent.mouseDown(topHandle!, {
+      button: 0,
+      clientX: 120,
+      clientY: 0
+    });
+    fireEvent.mouseMove(window, {
+      clientX: 120,
+      clientY: -70
+    });
+    fireEvent.mouseUp(window);
+
+    expect(root!.style.height).toBe("330px");
   });
 
   it("bridges a live terminal session into terminal mode and resizes it with the grid", async () => {
@@ -996,6 +1178,223 @@ describe("RetroLcd", () => {
 
     expect(cursor!.style.getPropertyValue("--retro-lcd-cursor-row")).toBe(String(expectedRow));
     expect(cursor!.style.getPropertyValue("--retro-lcd-cursor-col")).toBe(String(expectedCol));
+  });
+
+  it("supports mouse drag selection in editor mode", async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <RetroLcd mode="editor" value="ABCD" editable autoFocus gridMode="static" rows={3} cols={4} />
+    );
+
+    mockScreenRect(container, {
+      x: 0,
+      y: 0,
+      width: 48,
+      height: 72
+    });
+
+    const viewport = container.querySelector(".retro-lcd__viewport") as HTMLDivElement | null;
+    const input = container.querySelector(".retro-lcd__input") as HTMLTextAreaElement | null;
+    expect(viewport).not.toBeNull();
+    expect(input).not.toBeNull();
+
+    fireEvent.mouseDown(viewport!, {
+      clientX: 13,
+      clientY: 12
+    });
+    fireEvent.mouseMove(viewport!, {
+      clientX: 35,
+      clientY: 12
+    });
+    fireEvent.mouseUp(viewport!, {
+      clientX: 35,
+      clientY: 12
+    });
+
+    const selectedCells = Array.from(container.querySelectorAll(".retro-lcd__cell--selected"));
+    expect(selectedCells.map((cell) => cell.getAttribute("data-source-offset"))).toEqual(["1", "2"]);
+    expect(document.activeElement).toBe(input);
+
+    await user.keyboard("{Backspace}");
+
+    expect(getBodyText(container)).toContain("AD");
+    expect(container.querySelectorAll(".retro-lcd__cell--selected")).toHaveLength(0);
+  });
+
+  it("deletes reverse-drag editor selections with the Delete key", async () => {
+    const user = userEvent.setup();
+    const Harness = () => {
+      const [value, setValue] = useState("ABCD");
+
+      return (
+        <RetroLcd
+          mode="editor"
+          value={value}
+          onChange={setValue}
+          autoFocus
+          gridMode="static"
+          rows={3}
+          cols={4}
+        />
+      );
+    };
+    const { container } = render(<Harness />);
+
+    mockScreenRect(container, {
+      x: 0,
+      y: 0,
+      width: 48,
+      height: 72
+    });
+
+    const viewport = container.querySelector(".retro-lcd__viewport") as HTMLDivElement | null;
+    expect(viewport).not.toBeNull();
+
+    fireEvent.mouseDown(viewport!, {
+      clientX: 35,
+      clientY: 12
+    });
+    fireEvent.mouseMove(viewport!, {
+      clientX: 13,
+      clientY: 12
+    });
+    fireEvent.mouseUp(viewport!, {
+      clientX: 13,
+      clientY: 12
+    });
+
+    const selectedCells = Array.from(container.querySelectorAll(".retro-lcd__cell--selected"));
+    expect(selectedCells.map((cell) => cell.getAttribute("data-source-offset"))).toEqual(["1", "2"]);
+
+    await user.keyboard("{Delete}");
+
+    expect(getBodyText(container)).toContain("AD");
+    expect(container.querySelectorAll(".retro-lcd__cell--selected")).toHaveLength(0);
+  });
+
+  it("supports keyboard word selection shortcuts in editor mode", () => {
+    const { container } = render(
+      <RetroLcd
+        mode="editor"
+        value="retro display tty"
+        editable
+        autoFocus
+        gridMode="static"
+        rows={4}
+        cols={18}
+      />
+    );
+
+    const input = container.querySelector(".retro-lcd__input") as HTMLTextAreaElement | null;
+    expect(input).not.toBeNull();
+
+    act(() => {
+      input!.focus();
+      input!.setSelectionRange(0, 0);
+      fireEvent.select(input!);
+    });
+
+    fireEvent.keyDown(input!, {
+      key: "ArrowRight",
+      ctrlKey: true,
+      shiftKey: true
+    });
+
+    expect(input!.selectionStart).toBe(0);
+    expect(input!.selectionEnd).toBe(5);
+    expect(
+      Array.from(container.querySelectorAll(".retro-lcd__cell--selected")).map((cell) =>
+        cell.getAttribute("data-source-offset")
+      )
+    ).toEqual(["0", "1", "2", "3", "4"]);
+  });
+
+  it("supports clipboard copy, cut, and paste in editor mode", () => {
+    const Harness = () => {
+      const [value, setValue] = useState("retro display tty");
+
+      return (
+        <RetroLcd
+          mode="editor"
+          value={value}
+          onChange={setValue}
+          editable
+          autoFocus
+          gridMode="static"
+          rows={4}
+          cols={18}
+        />
+      );
+    };
+    const { container } = render(<Harness />);
+
+    const input = container.querySelector(".retro-lcd__input") as HTMLTextAreaElement | null;
+    expect(input).not.toBeNull();
+
+    act(() => {
+      input!.focus();
+      input!.setSelectionRange(6, 13);
+      fireEvent.select(input!);
+    });
+
+    const copyData = createClipboardData();
+    fireEvent.copy(input!, { clipboardData: copyData });
+    expect(copyData.setData).toHaveBeenCalledWith("text/plain", "display");
+
+    const cutData = createClipboardData();
+    fireEvent.cut(input!, { clipboardData: cutData });
+    expect(cutData.setData).toHaveBeenCalledWith("text/plain", "display");
+    expect(input!.value).toBe("retro  tty");
+
+    act(() => {
+      input!.focus();
+      input!.setSelectionRange(6, 6);
+      fireEvent.select(input!);
+    });
+
+    const pasteData = createClipboardData();
+    pasteData.getData.mockReturnValue("signal");
+    fireEvent.paste(input!, { clipboardData: pasteData });
+    expect(input!.value).toBe("retro signal tty");
+  });
+
+  it("double-click selects a whole word in editor mode", () => {
+    const { container } = render(
+      <RetroLcd
+        mode="editor"
+        value="retro display tty"
+        editable
+        autoFocus
+        gridMode="static"
+        rows={4}
+        cols={18}
+      />
+    );
+
+    mockScreenRect(container, {
+      x: 0,
+      y: 0,
+      width: 216,
+      height: 96
+    });
+
+    const viewport = container.querySelector(".retro-lcd__viewport") as HTMLDivElement | null;
+    const input = container.querySelector(".retro-lcd__input") as HTMLTextAreaElement | null;
+    expect(viewport).not.toBeNull();
+    expect(input).not.toBeNull();
+
+    fireEvent.doubleClick(viewport!, {
+      clientX: 102,
+      clientY: 12
+    });
+
+    expect(input!.selectionStart).toBe(6);
+    expect(input!.selectionEnd).toBe(13);
+    expect(
+      Array.from(container.querySelectorAll(".retro-lcd__cell--selected")).map((cell) =>
+        cell.getAttribute("data-source-offset")
+      )
+    ).toEqual(["6", "7", "8", "9", "10", "11", "12"]);
   });
 
   it("pages through terminal scrollback and restores auto-follow at the bottom", () => {

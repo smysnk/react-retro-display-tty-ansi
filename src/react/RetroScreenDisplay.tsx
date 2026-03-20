@@ -17,6 +17,7 @@ import type {
 import {
   getCellCharacter,
   getLineDisplayText,
+  type RetroLcdRenderCell,
   type RetroLcdRenderModel
 } from "./retro-screen-render-model";
 import { getCellPresentationStyle } from "./retro-screen-display-color";
@@ -24,14 +25,15 @@ import { getCellPresentationStyle } from "./retro-screen-display-color";
 const joinClassNames = (...classNames: Array<string | undefined>) =>
   classNames.filter(Boolean).join(" ");
 
-const getCellClassName = (cell: RetroLcdCell) =>
+const getCellClassName = (cell: RetroLcdRenderCell) =>
   joinClassNames(
     "retro-lcd__cell",
     cell.style.intensity === "bold" ? "retro-lcd__cell--bold" : undefined,
     cell.style.intensity === "faint" ? "retro-lcd__cell--faint" : undefined,
     cell.style.inverse ? "retro-lcd__cell--inverse" : undefined,
     cell.style.conceal ? "retro-lcd__cell--conceal" : undefined,
-    cell.style.blink ? "retro-lcd__cell--blink" : undefined
+    cell.style.blink ? "retro-lcd__cell--blink" : undefined,
+    cell.isSelected ? "retro-lcd__cell--selected" : undefined
   );
 
 type RetroScreenDisplayProps = {
@@ -51,6 +53,7 @@ type RetroScreenDisplayProps = {
   onViewportMouseDown?: MouseEventHandler<HTMLDivElement>;
   onViewportMouseMove?: MouseEventHandler<HTMLDivElement>;
   onViewportMouseUp?: MouseEventHandler<HTMLDivElement>;
+  onViewportDoubleClick?: MouseEventHandler<HTMLDivElement>;
   onViewportContextMenu?: MouseEventHandler<HTMLDivElement>;
   onViewportWheel?: WheelEventHandler<HTMLDivElement>;
   viewportTabIndex?: number;
@@ -74,6 +77,7 @@ export function RetroScreenDisplay({
   onViewportMouseDown,
   onViewportMouseMove,
   onViewportMouseUp,
+  onViewportDoubleClick,
   onViewportContextMenu,
   onViewportWheel,
   viewportTabIndex,
@@ -93,6 +97,7 @@ export function RetroScreenDisplay({
         onMouseDown={onViewportMouseDown}
         onMouseMove={onViewportMouseMove}
         onMouseUp={onViewportMouseUp}
+        onDoubleClick={onViewportDoubleClick}
         onContextMenu={onViewportContextMenu}
         onWheel={onViewportWheel}
         tabIndex={viewportTabIndex}
@@ -115,6 +120,7 @@ export function RetroScreenDisplay({
                       <span
                         className={getCellClassName(cell)}
                         key={`${rowIndex}-${colIndex}-${cell.char}`}
+                        data-source-offset={cell.sourceOffset ?? undefined}
                         style={getCellPresentationStyle(cell, displayColorMode, displaySurfaceMode)}
                       >
                         {getCellCharacter(cell)}

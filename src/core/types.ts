@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import type { RetroLcdTextSelection } from "./editor/selection";
 import type { RetroLcdScreenSnapshot, RetroLcdWriteOptions } from "./terminal/types";
 import type { RetroLcdTerminalHostKeyEvent } from "./terminal/host-adapter";
 import type { RetroLcdTerminalMouseEvent } from "./terminal/mouse-encoder";
@@ -11,6 +12,7 @@ import type {
 export type CursorMode = "solid" | "hollow";
 export type RetroLcdGridMode = "auto" | "static";
 export type RetroLcdDisplaySurfaceMode = "dark" | "light";
+export type RetroLcdResizeMode = "width" | "height" | "both";
 export type RetroLcdDisplayPaddingValue = number | string;
 export type RetroLcdDisplayPadding =
   | RetroLcdDisplayPaddingValue
@@ -45,6 +47,8 @@ export type RetroLcdSharedProps = {
   displayColorMode?: RetroLcdDisplayColorMode;
   displaySurfaceMode?: RetroLcdDisplaySurfaceMode;
   displayPadding?: RetroLcdDisplayPadding;
+  resizable?: boolean | RetroLcdResizeMode;
+  resizableLeadingEdges?: boolean;
   cursorMode?: CursorMode;
   gridMode?: RetroLcdGridMode;
   rows?: number;
@@ -80,6 +84,15 @@ export type RetroLcdValueModeProps = RetroLcdSharedProps & {
   placeholder?: string;
   onChange?: (value: string) => void;
   onSubmit?: (value: string) => void;
+};
+
+export type RetroLcdEditorModeProps = RetroLcdSharedProps & {
+  mode: "editor";
+  value: string;
+  editable?: boolean;
+  placeholder?: string;
+  onChange?: (value: string) => void;
+  onSelectionChange?: (selection: RetroLcdTextSelection | null) => void;
 };
 
 export type RetroLcdTerminalModeProps = RetroLcdSharedProps & {
@@ -130,6 +143,7 @@ export type RetroLcdPromptModeProps = RetroLcdSharedProps & {
 
 export type RetroLcdProps =
   | RetroLcdValueModeProps
+  | RetroLcdEditorModeProps
   | RetroLcdTerminalModeProps
   | RetroLcdPromptModeProps;
 

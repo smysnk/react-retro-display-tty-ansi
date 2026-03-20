@@ -8,6 +8,7 @@ const page = () => harness.page;
 test("core rendering stories paint stable retro surfaces in the browser", async () => {
   const stories = [
     { id: "retroscreen--calm-readout", mode: "value" },
+    { id: "retroscreen--editor-selection-lab", mode: "editor" },
     { id: "retroscreen--terminal-stream", mode: "terminal" },
     { id: "retroscreen--prompt-loop", mode: "prompt" }
   ];
@@ -135,5 +136,64 @@ test("capture demos keep interactive surfaces expanded to the full frame", async
     assert.ok(summary.frameWidth > 700, `${story.id} should expose the full capture width.`);
     assert.ok(summary.lcdWidth > 700, `${story.id} should keep the RetroScreen expanded inside the capture frame.`);
     assert.ok(summary.text.trim().length > 0, `${story.id} should render visible interactive content.`);
+  }
+});
+
+test("resize-focused demos show a live cursor overlay and real panel motion", async () => {
+  const stories = [
+    {
+      id: "retroscreen--auto-resize-probe-demo"
+    },
+    {
+      id: "retroscreen--resizable-panel-demo"
+    }
+  ];
+
+  for (const story of stories) {
+    await harness.gotoStory(story.id);
+    await page().waitForSelector('[data-demo-cursor="true"]');
+    await page().waitForFunction(() => {
+      const cursor = document.querySelector('[data-demo-cursor="true"]');
+      return cursor instanceof HTMLElement && Number(getComputedStyle(cursor).opacity) > 0.9;
+    });
+    await page().waitForFunction(() => {
+      const cursor = document.querySelector('[data-demo-cursor="true"]');
+      return cursor?.getAttribute("data-demo-cursor-role") !== "pointer";
+    });
+
+    const initial = await page().locator("[data-demo-capture]").evaluate((root) => {
+      const cursor = root.querySelector('[data-demo-cursor="true"]');
+      const panel = root.querySelector(".retro-lcd");
+      const panelRect = panel?.getBoundingClientRect();
+
+      return {
+        cursorVisible:
+          cursor instanceof HTMLElement ? Number(getComputedStyle(cursor).opacity) > 0.9 : false,
+        cursorRole: cursor?.getAttribute("data-demo-cursor-role") ?? "",
+        panelWidth: panelRect?.width ?? 0,
+        panelHeight: panelRect?.height ?? 0
+      };
+    });
+
+    await page().waitForTimeout(1800);
+
+    const next = await page().locator("[data-demo-capture]").evaluate((root) => {
+      const cursor = root.querySelector('[data-demo-cursor="true"]');
+      const panel = root.querySelector(".retro-lcd");
+      const panelRect = panel?.getBoundingClientRect();
+
+      return {
+        cursorRole: cursor?.getAttribute("data-demo-cursor-role") ?? "",
+        panelWidth: panelRect?.width ?? 0,
+        panelHeight: panelRect?.height ?? 0
+      };
+    });
+
+    assert.ok(initial.cursorVisible, `${story.id} should show the scripted cursor overlay.`);
+    assert.ok(
+      Math.abs(next.panelWidth - initial.panelWidth) > 20 ||
+        Math.abs(next.panelHeight - initial.panelHeight) > 20,
+      `${story.id} should visibly resize the panel during the demo.`
+    );
   }
 });

@@ -75,6 +75,36 @@ more. The prop accepts:
 Because rows and columns are measured from the visible screen area, tighter padding yields a
 denser grid and looser padding yields fewer cells.
 
+## Resizable Panels
+
+Use `resizable` when the panel itself should be draggable instead of only responding to layout
+changes around it. The live Storybook demo now shows a visible mouse cursor grabbing the real
+handles, including the optional leading-edge handles, so the docs match the shipped interaction.
+
+[![Resizable Panel Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi/main/docs/assets/react-retro-display-tty-ansi-resizable-panel.webp)](https://github.com/user-attachments/assets/227b03f2-23a1-43eb-91b1-e326988313da)
+
+```tsx
+<RetroScreen
+  mode="terminal"
+  resizable="both"
+  resizableLeadingEdges
+  displayPadding={{ block: 12, inline: 14 }}
+  value={[
+    "All resize handles are live here.",
+    "",
+    "Drag left, right, top, bottom, or either corner.",
+    "Rows and columns recompute as the panel changes size."
+  ].join("\n")}
+/>
+```
+
+Reach for:
+
+- `resizable="width"` when the panel should only stretch sideways
+- `resizable="height"` when it should stack or collapse vertically
+- `resizable` or `resizable="both"` for freeform terminal panes
+- `resizableLeadingEdges` when left, top, and top-left handles should join the same interaction surface
+
 ## Light And Dark Surface Modes
 
 Use `displaySurfaceMode` when the LCD itself should read like a light instrument panel or a
@@ -338,12 +368,13 @@ scrollback while new lines arrive, and auto-follow recovery back to the live tai
 When rows and columns matter to the program inside the display, listen to `onGeometryChange`,
 turn that measurement into a terminal-style reply, and redraw from the reported size. The demo
 below simulates a terminal app issuing `CSI 18 t`, receiving `CSI 8;<rows>;<cols>t`, then
-repainting a full border and centered dimensions every time the DOM element resizes. The current
-demo also cycles through tight screen padding, multiple border alphabets, oversized glyph styles,
-and every monochrome plus ANSI display mode so the same terminal program can be watched under
+repainting a full border and centered dimensions every time the panel resizes. The current demo
+shows a visible cursor dragging the real resize handles, pauses if you intervene manually, and
+still cycles through tight screen padding, multiple border alphabets, oversized glyph styles,
+plus every monochrome and ANSI display mode so the same terminal program can be watched under
 different visual projections.
 
-[![Auto Resize Probe Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi/main/docs/assets/react-retro-display-tty-ansi-auto-resize-probe.webp)](https://github.com/user-attachments/assets/09f872b1-8d27-4f76-9ed4-2d96e069f757)
+[![Auto Resize Probe Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi/main/docs/assets/react-retro-display-tty-ansi-auto-resize-probe.webp)](https://github.com/user-attachments/assets/2dfd68d7-284c-4895-ad5f-fb513cb09c80)
 
 ```tsx
 import {
@@ -474,6 +505,7 @@ It includes stories for the main user journeys:
 - editable drafting
 - controller-fed terminal output
 - display buffer paging and follow mode
+- resizable live panels with scripted handle demos
 - auto-resize geometry probing
 - live TTY bridge wiring
 - ANSI styling

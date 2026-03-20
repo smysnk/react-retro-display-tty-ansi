@@ -10,7 +10,7 @@ export default {
   },
   workspaceDiscovery: {
     provider: "manual",
-    packages: ["library", "terminal", "tty", "docs", "quality"]
+    packages: ["library", "terminal", "tty", "docs", "browser", "quality"]
   },
   execution: {
     continueOnError: true,
@@ -90,6 +90,19 @@ export default {
       command: ["yarn", "storybook:build"],
       module: "docs",
       theme: "storybook",
+      coverage: {
+        enabled: false
+      }
+    },
+    {
+      id: "browser-e2e",
+      label: "Browser E2E",
+      adapter: "shell",
+      package: "browser",
+      cwd: rootDir,
+      command: ["yarn", "test:e2e:built"],
+      module: "runtime",
+      theme: "browser",
       coverage: {
         enabled: false
       }

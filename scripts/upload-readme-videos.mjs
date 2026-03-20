@@ -50,6 +50,10 @@ const videoEntries = [
     file: resolve(rootDir, "docs/assets/react-retro-display-tty-ansi-auto-resize-probe.mp4")
   },
   {
+    title: "Resizable Panel Demo",
+    file: resolve(rootDir, "docs/assets/react-retro-display-tty-ansi-resizable-panel.mp4")
+  },
+  {
     title: "Live Tty Terminal Bridge Demo",
     file: resolve(rootDir, "docs/assets/react-retro-display-tty-ansi-live-tty-terminal-bridge.mp4")
   }
