@@ -3241,8 +3241,3 @@ export const DisplayColorModes: Story = {
 export const LightDarkHosts: Story = {
   render: () => <LightDarkHostsStory />
 };
-
-export const LiveTtyTerminalBridge: Story = {
-  name: "Live Tty Terminal Bridge",
-  render: () => <LiveTtyTerminalBridgeStory />
-};

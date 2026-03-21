@@ -128,7 +128,7 @@ test("render smoke stories stay stable in the browser", async (t) => {
   );
 
   await t.test("bad apple ansi story loads the Mistigris asset at native 80x25 geometry", async () => {
-    await harness.gotoStory("retroscreen-ansi-display-buffer--bad-apple-ansi");
+    await harness.gotoStory("retroscreen-display-buffer--bad-apple-ansi");
 
     await page().waitForFunction(
       () => {
@@ -217,10 +217,10 @@ test("render smoke stories stay stable in the browser", async (t) => {
   await t.test("resize-focused demos show a live cursor overlay and real panel motion", async () => {
     const stories = [
       {
-        id: "retroscreen-resize-responsive--auto-resize-probe-capture"
+        id: "retroscreen-responsive--auto-resize-probe-capture"
       },
       {
-        id: "retroscreen-resize-responsive--resizable-panel-capture"
+        id: "retroscreen-responsive--resizable-panel-capture"
       }
     ];
 

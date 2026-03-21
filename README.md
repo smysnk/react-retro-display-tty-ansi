@@ -453,7 +453,7 @@ air between scanlines.
 Credit for the original ANSI release goes to [Mistigris](https://mistigris.org/).
 
 Open it here:
-[smysnk.github.io/react-retro-display-tty-ansi/?path=/story/retroscreen-ansi-display-buffer--bad-apple-ansi](https://smysnk.github.io/react-retro-display-tty-ansi/?path=/story/retroscreen-ansi-display-buffer--bad-apple-ansi)
+[smysnk.github.io/react-retro-display-tty-ansi/?path=/story/retroscreen-display-buffer--bad-apple-ansi](https://smysnk.github.io/react-retro-display-tty-ansi/?path=/story/retroscreen-display-buffer--bad-apple-ansi)
 
 The Storybook demo is backed by the bundled asset at
 [src/stories/assets/bad-apple.ans](/Users/josh/play/react-retro-display/src/stories/assets/bad-apple.ans).

@@ -315,7 +315,7 @@ const captures = [
   },
   {
     name: "auto resize probe",
-    storyId: "retroscreen-resize-responsive--auto-resize-probe-capture",
+    storyId: "retroscreen-responsive--auto-resize-probe-capture",
     selector: "[data-demo-capture='auto-resize-probe']",
     waitMs: 240,
     fps: 16,
@@ -327,7 +327,7 @@ const captures = [
   },
   {
     name: "resizable panel",
-    storyId: "retroscreen-resize-responsive--resizable-panel-capture",
+    storyId: "retroscreen-responsive--resizable-panel-capture",
     selector: "[data-demo-capture='resizable-panel']",
     waitMs: 260,
     fps: 16,

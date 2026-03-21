@@ -50,7 +50,7 @@ const moveMouseToViewportCenter = async (viewport) => {
 };
 
 test("display buffer story pages through history and preserves the visible window while follow mode is off", async () => {
-  await harness.gotoStory("retroscreen-ansi-display-buffer--display-buffer");
+  await harness.gotoStory("retroscreen-display-buffer--display-buffer");
 
   await page().waitForFunction(() => {
     const root = document.querySelector(".retro-lcd");
@@ -128,7 +128,7 @@ test("display buffer story pages through history and preserves the visible windo
 });
 
 test("display buffer story supports mouse-wheel scrolling and wheel-based recovery to the live tail", async () => {
-  await harness.gotoStory("retroscreen-ansi-display-buffer--display-buffer");
+  await harness.gotoStory("retroscreen-display-buffer--display-buffer");
 
   await page().waitForFunction(() => {
     const root = document.querySelector(".retro-lcd");

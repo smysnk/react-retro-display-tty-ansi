@@ -54,7 +54,7 @@ const waitForAutoResizeProbeReady = async ({ timeoutMs = 30000, stepMs = 200 } =
 };
 
 test("auto-resize probe uses a visible scripted cursor to live-resize the panel without cutting the rendered frame", async () => {
-  await harness.gotoStory("retroscreen-resize-responsive--auto-resize-probe");
+  await harness.gotoStory("retroscreen-responsive--auto-resize-probe-capture");
 
   const initialState = await waitForAutoResizeProbeReady();
 
