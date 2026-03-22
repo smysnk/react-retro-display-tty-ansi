@@ -1,8 +1,8 @@
-import type { RetroLcdScreenSnapshot, RetroLcdCell } from "../types";
+import type { RetroScreenScreenSnapshot, RetroScreenCell } from "../types";
 import type {
-  RetroLcdNormalizedCell,
-  RetroLcdNormalizedCellStyle,
-  RetroLcdNormalizedTerminalSnapshot
+  RetroScreenNormalizedCell,
+  RetroScreenNormalizedCellStyle,
+  RetroScreenNormalizedTerminalSnapshot
 } from "./types";
 
 const DEFAULT_COLOR = {
@@ -10,7 +10,7 @@ const DEFAULT_COLOR = {
   value: 0
 };
 
-const normalizeCellStyle = (cell: RetroLcdCell): RetroLcdNormalizedCellStyle => ({
+const normalizeCellStyle = (cell: RetroScreenCell): RetroScreenNormalizedCellStyle => ({
   bold: cell.style.bold,
   faint: cell.style.faint,
   inverse: cell.style.inverse,
@@ -22,15 +22,15 @@ const normalizeCellStyle = (cell: RetroLcdCell): RetroLcdNormalizedCellStyle => 
     cell.style.background.mode === "default" ? DEFAULT_COLOR : { ...cell.style.background }
 });
 
-const normalizeCell = (cell: RetroLcdCell): RetroLcdNormalizedCell => ({
+const normalizeCell = (cell: RetroScreenCell): RetroScreenNormalizedCell => ({
   char: cell.char,
   width: 1,
   style: normalizeCellStyle(cell)
 });
 
-export const normalizeRetroLcdSnapshot = (
-  snapshot: RetroLcdScreenSnapshot
-): RetroLcdNormalizedTerminalSnapshot => ({
+export const normalizeRetroScreenSnapshot = (
+  snapshot: RetroScreenScreenSnapshot
+): RetroScreenNormalizedTerminalSnapshot => ({
   source: "retro-lcd",
   rows: snapshot.rows,
   cols: snapshot.cols,

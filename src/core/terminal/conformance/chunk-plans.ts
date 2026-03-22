@@ -1,7 +1,7 @@
-import type { RetroLcdConformanceChunkMode, RetroLcdTerminalFixture } from "./types";
+import type { RetroScreenConformanceChunkMode, RetroScreenTerminalFixture } from "./types";
 
-type RetroLcdResolvedChunkRun = {
-  chunkMode: RetroLcdConformanceChunkMode;
+type RetroScreenResolvedChunkRun = {
+  chunkMode: RetroScreenConformanceChunkMode;
   chunkLabel: string;
   randomSeed?: number;
   chunks: string[];
@@ -32,7 +32,7 @@ const splitRandomly = (text: string, seed: number) => {
   return chunks.length > 0 ? chunks : [text];
 };
 
-export const formatChunkReproduction = (fixture: RetroLcdTerminalFixture, chunks: string[]) => {
+export const formatChunkReproduction = (fixture: RetroScreenTerminalFixture, chunks: string[]) => {
   const chunkList =
     chunks.length === 0 ? "[]" : `[\n${chunks.map((chunk) => `    ${escapeChunk(chunk)}`).join(",\n")}\n  ]`;
 
@@ -47,10 +47,10 @@ export const formatChunkReproduction = (fixture: RetroLcdTerminalFixture, chunks
   ].join("\n");
 };
 
-export const resolveChunkRuns = (fixture: RetroLcdTerminalFixture): RetroLcdResolvedChunkRun[] => {
+export const resolveChunkRuns = (fixture: RetroScreenTerminalFixture): RetroScreenResolvedChunkRun[] => {
   const chunkModes = fixture.chunkModes ?? ["fixture"];
   const joined = fixture.chunks.join("");
-  const runs: RetroLcdResolvedChunkRun[] = chunkModes.map((chunkMode) => {
+  const runs: RetroScreenResolvedChunkRun[] = chunkModes.map((chunkMode) => {
     switch (chunkMode) {
       case "joined":
         return {

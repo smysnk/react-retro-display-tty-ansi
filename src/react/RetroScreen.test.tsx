@@ -2,10 +2,10 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { useState } from "react";
-import { RetroScreen as RetroLcd } from "./RetroScreen";
-import { createRetroLcdController } from "../core/terminal/controller";
+import { RetroScreen } from "./RetroScreen";
+import { createRetroScreenController } from "../core/terminal/controller";
 import { wrapTextToColumns } from "../core/geometry/wrap";
-import type { RetroLcdTerminalSession, RetroLcdTerminalSessionEvent } from "../core/terminal/session-types";
+import type { RetroScreenTerminalSession, RetroScreenTerminalSessionEvent } from "../core/terminal/session-types";
 
 const getBodyText = (container: HTMLElement) =>
   container.querySelector(".retro-lcd__body")?.textContent?.replace(/\u00a0/gu, " ") ?? "";
@@ -46,9 +46,9 @@ const mockScreenRect = (container: HTMLElement, rect: DOMRectInit) => {
 };
 
 const createMockTerminalSession = (
-  initialState: RetroLcdTerminalSession["getState"] extends () => infer T ? T : never = "idle"
+  initialState: RetroScreenTerminalSession["getState"] extends () => infer T ? T : never = "idle"
 ) => {
-  let listener: ((event: RetroLcdTerminalSessionEvent) => void) | null = null;
+  let listener: ((event: RetroScreenTerminalSessionEvent) => void) | null = null;
 
   return {
     connect: vi.fn(),
@@ -56,7 +56,7 @@ const createMockTerminalSession = (
     resize: vi.fn(),
     close: vi.fn(),
     getState: vi.fn(() => initialState),
-    subscribe: vi.fn((nextListener: (event: RetroLcdTerminalSessionEvent) => void) => {
+    subscribe: vi.fn((nextListener: (event: RetroScreenTerminalSessionEvent) => void) => {
       listener = nextListener;
       return () => {
         if (listener === nextListener) {
@@ -64,11 +64,11 @@ const createMockTerminalSession = (
         }
       };
     }),
-    emit(event: RetroLcdTerminalSessionEvent) {
+    emit(event: RetroScreenTerminalSessionEvent) {
       listener?.(event);
     }
-  } satisfies RetroLcdTerminalSession & {
-    emit: (event: RetroLcdTerminalSessionEvent) => void;
+  } satisfies RetroScreenTerminalSession & {
+    emit: (event: RetroScreenTerminalSessionEvent) => void;
   };
 };
 
@@ -105,16 +105,16 @@ const getContrastRatio = (foreground: string, background: string) => {
   return (brighter + 0.05) / (darker + 0.05);
 };
 
-describe("RetroLcd", () => {
+describe("RetroScreen", () => {
   it("renders value mode text", () => {
-    render(<RetroLcd mode="value" value="HELLO LCD" />);
+    render(<RetroScreen mode="value" value="HELLO LCD" />);
 
     expect(screen.getByText("HELLO LCD")).toBeInTheDocument();
   });
 
   it("wraps long value-mode text into measured columns", () => {
     const text = "X".repeat(50);
-    const { container } = render(<RetroLcd mode="value" value={text} />);
+    const { container } = render(<RetroScreen mode="value" value={text} />);
 
     const lines = Array.from(container.querySelectorAll(".retro-lcd__line"))
       .map((line) => line.textContent)
@@ -125,12 +125,12 @@ describe("RetroLcd", () => {
   });
 
   it("renders terminal mode buffer text and updates from a controller", () => {
-    const controller = createRetroLcdController({
+    const controller = createRetroScreenController({
       rows: 3,
       cols: 24,
       cursorMode: "hollow"
     });
-    const { container } = render(<RetroLcd mode="terminal" controller={controller} />);
+    const { container } = render(<RetroScreen mode="terminal" controller={controller} />);
 
     act(() => {
       controller.write("line one");
@@ -148,7 +148,7 @@ describe("RetroLcd", () => {
   });
 
   it("supports width-only resizing when configured", () => {
-    const { container } = render(<RetroLcd mode="value" value="Resize me" resizable="width" />);
+    const { container } = render(<RetroScreen mode="value" value="Resize me" resizable="width" />);
 
     const root = container.querySelector(".retro-lcd") as HTMLDivElement | null;
     const widthHandle = container.querySelector(
@@ -193,7 +193,7 @@ describe("RetroLcd", () => {
 
   it("preserves explicit width and height styles before any manual resize begins", () => {
     const { container } = render(
-      <RetroLcd
+      <RetroScreen
         mode="value"
         value="Resize me"
         resizable="both"
@@ -209,7 +209,7 @@ describe("RetroLcd", () => {
   });
 
   it("keeps leading-edge handles disabled unless explicitly configured", () => {
-    const { container } = render(<RetroLcd mode="value" value="Resize me" resizable="both" />);
+    const { container } = render(<RetroScreen mode="value" value="Resize me" resizable="both" />);
 
     expect(container.querySelector('[data-resize-handle="left"]')).toBeNull();
     expect(container.querySelector('[data-resize-handle="top"]')).toBeNull();
@@ -217,7 +217,7 @@ describe("RetroLcd", () => {
   });
 
   it("supports corner resizing when both axes are enabled", () => {
-    const { container } = render(<RetroLcd mode="value" value="Resize me" resizable />);
+    const { container } = render(<RetroScreen mode="value" value="Resize me" resizable />);
 
     const root = container.querySelector(".retro-lcd") as HTMLDivElement | null;
     const cornerHandle = container.querySelector(
@@ -260,7 +260,7 @@ describe("RetroLcd", () => {
 
   it("supports explicit leading-edge resize handles", () => {
     const { container } = render(
-      <RetroLcd mode="value" value="Resize me" resizable="both" resizableLeadingEdges />
+      <RetroScreen mode="value" value="Resize me" resizable="both" resizableLeadingEdges />
     );
 
     const root = container.querySelector(".retro-lcd") as HTMLDivElement | null;
@@ -323,7 +323,7 @@ describe("RetroLcd", () => {
     const onSessionEvent = vi.fn();
     const onSessionStateChange = vi.fn();
     const { container, rerender } = render(
-      <RetroLcd
+      <RetroScreen
         mode="terminal"
         session={session}
         gridMode="static"
@@ -350,7 +350,7 @@ describe("RetroLcd", () => {
     expect(onSessionStateChange).toHaveBeenCalledWith("open");
 
     rerender(
-      <RetroLcd
+      <RetroScreen
         mode="terminal"
         session={session}
         gridMode="static"
@@ -367,7 +367,7 @@ describe("RetroLcd", () => {
   it("exposes session metadata hooks and closes the session on unmount", () => {
     const session = createMockTerminalSession("open");
     const { container, unmount } = render(
-      <RetroLcd mode="terminal" session={session} gridMode="static" rows={4} cols={12} />
+      <RetroScreen mode="terminal" session={session} gridMode="static" rows={4} cols={12} />
     );
 
     const root = container.querySelector(".retro-lcd") as HTMLElement | null;
@@ -393,7 +393,7 @@ describe("RetroLcd", () => {
     const onTerminalData = vi.fn();
     const onTerminalKeyDown = vi.fn();
     const { container } = render(
-      <RetroLcd
+      <RetroScreen
         mode="terminal"
         session={session}
         gridMode="static"
@@ -426,7 +426,7 @@ describe("RetroLcd", () => {
 
   it("keeps PageUp local when terminal keyboard capture is disabled", () => {
     const session = createMockTerminalSession();
-    const controller = createRetroLcdController({ rows: 3, cols: 12, scrollback: 12 });
+    const controller = createRetroScreenController({ rows: 3, cols: 12, scrollback: 12 });
 
     act(() => {
       controller.write(
@@ -435,7 +435,7 @@ describe("RetroLcd", () => {
     });
 
     const { container } = render(
-      <RetroLcd
+      <RetroScreen
         mode="terminal"
         session={session}
         controller={controller}
@@ -462,7 +462,7 @@ describe("RetroLcd", () => {
 
   it("routes PageUp to terminal input when keyboard capture is enabled", () => {
     const session = createMockTerminalSession();
-    const controller = createRetroLcdController({ rows: 3, cols: 12, scrollback: 12 });
+    const controller = createRetroScreenController({ rows: 3, cols: 12, scrollback: 12 });
 
     act(() => {
       controller.write(
@@ -471,7 +471,7 @@ describe("RetroLcd", () => {
     });
 
     const { container } = render(
-      <RetroLcd
+      <RetroScreen
         mode="terminal"
         session={session}
         controller={controller}
@@ -496,9 +496,9 @@ describe("RetroLcd", () => {
 
   it("uses application cursor key sequences when the host enables application cursor mode", () => {
     const session = createMockTerminalSession();
-    const controller = createRetroLcdController({ rows: 3, cols: 12 });
+    const controller = createRetroScreenController({ rows: 3, cols: 12 });
     const { container } = render(
-      <RetroLcd
+      <RetroScreen
         mode="terminal"
         session={session}
         controller={controller}
@@ -526,7 +526,7 @@ describe("RetroLcd", () => {
   it("can emit terminal input even without a live session", () => {
     const onTerminalData = vi.fn();
     const { container } = render(
-      <RetroLcd
+      <RetroScreen
         mode="terminal"
         captureKeyboard
         onTerminalData={onTerminalData}
@@ -549,10 +549,10 @@ describe("RetroLcd", () => {
 
   it("wraps pasted terminal text when the host enables bracketed paste mode", () => {
     const session = createMockTerminalSession();
-    const controller = createRetroLcdController({ rows: 3, cols: 12 });
+    const controller = createRetroScreenController({ rows: 3, cols: 12 });
     const onTerminalData = vi.fn();
     const { container } = render(
-      <RetroLcd
+      <RetroScreen
         mode="terminal"
         session={session}
         controller={controller}
@@ -586,10 +586,10 @@ describe("RetroLcd", () => {
 
   it("reports focus changes to the terminal when focus reporting mode is enabled", () => {
     const session = createMockTerminalSession();
-    const controller = createRetroLcdController({ rows: 3, cols: 12 });
+    const controller = createRetroScreenController({ rows: 3, cols: 12 });
     const onTerminalData = vi.fn();
     const { container } = render(
-      <RetroLcd
+      <RetroScreen
         mode="terminal"
         session={session}
         controller={controller}
@@ -618,7 +618,7 @@ describe("RetroLcd", () => {
 
   it("encodes terminal mouse press, drag, and release events when the host enables mouse tracking", () => {
     const session = createMockTerminalSession();
-    const controller = createRetroLcdController({ rows: 3, cols: 4 });
+    const controller = createRetroScreenController({ rows: 3, cols: 4 });
     const onTerminalMouse = vi.fn();
     const props = {
       mode: "terminal" as const,
@@ -629,7 +629,7 @@ describe("RetroLcd", () => {
       rows: 3,
       cols: 4
     };
-    const { container, rerender } = render(<RetroLcd {...props} />);
+    const { container, rerender } = render(<RetroScreen {...props} />);
 
     mockScreenRect(container, {
       x: 0,
@@ -637,7 +637,7 @@ describe("RetroLcd", () => {
       width: 40,
       height: 30
     });
-    rerender(<RetroLcd {...props} />);
+    rerender(<RetroScreen {...props} />);
 
     act(() => {
       controller.write("\u001b[?1002h\u001b[?1006h");
@@ -699,7 +699,7 @@ describe("RetroLcd", () => {
 
   it("forwards wheel events to the terminal when mouse reporting is active", () => {
     const session = createMockTerminalSession();
-    const controller = createRetroLcdController({ rows: 2, cols: 12, scrollback: 12 });
+    const controller = createRetroScreenController({ rows: 2, cols: 12, scrollback: 12 });
     const props = {
       mode: "terminal" as const,
       session,
@@ -708,7 +708,7 @@ describe("RetroLcd", () => {
       rows: 2,
       cols: 12
     };
-    const { container, rerender } = render(<RetroLcd {...props} />);
+    const { container, rerender } = render(<RetroScreen {...props} />);
 
     mockScreenRect(container, {
       x: 0,
@@ -716,7 +716,7 @@ describe("RetroLcd", () => {
       width: 120,
       height: 20
     });
-    rerender(<RetroLcd {...props} />);
+    rerender(<RetroScreen {...props} />);
 
     act(() => {
       controller.write(
@@ -741,7 +741,7 @@ describe("RetroLcd", () => {
 
   it("can keep wheel scrolling local while mouse reporting is active", () => {
     const session = createMockTerminalSession();
-    const controller = createRetroLcdController({ rows: 2, cols: 12, scrollback: 12 });
+    const controller = createRetroScreenController({ rows: 2, cols: 12, scrollback: 12 });
     const props = {
       mode: "terminal" as const,
       session,
@@ -751,7 +751,7 @@ describe("RetroLcd", () => {
       rows: 2,
       cols: 12
     };
-    const { container, rerender } = render(<RetroLcd {...props} />);
+    const { container, rerender } = render(<RetroScreen {...props} />);
 
     mockScreenRect(container, {
       x: 0,
@@ -759,7 +759,7 @@ describe("RetroLcd", () => {
       width: 120,
       height: 20
     });
-    rerender(<RetroLcd {...props} />);
+    rerender(<RetroScreen {...props} />);
 
     act(() => {
       controller.write(
@@ -784,10 +784,10 @@ describe("RetroLcd", () => {
 
   it("does not emit focus reports when captureFocusReport is disabled", () => {
     const session = createMockTerminalSession();
-    const controller = createRetroLcdController({ rows: 3, cols: 12 });
+    const controller = createRetroScreenController({ rows: 3, cols: 12 });
     const onTerminalData = vi.fn();
     const { container } = render(
-      <RetroLcd
+      <RetroScreen
         mode="terminal"
         session={session}
         controller={controller}
@@ -815,7 +815,7 @@ describe("RetroLcd", () => {
 
   it("autofocuses the terminal viewport in terminal mode", () => {
     const { container } = render(
-      <RetroLcd mode="terminal" autoFocus gridMode="static" rows={3} cols={12} />
+      <RetroScreen mode="terminal" autoFocus gridMode="static" rows={3} cols={12} />
     );
 
     const viewport = container.querySelector(".retro-lcd__viewport") as HTMLDivElement | null;
@@ -824,8 +824,8 @@ describe("RetroLcd", () => {
   });
 
   it("renders ansi cell styles from terminal snapshots", () => {
-    const controller = createRetroLcdController({ rows: 2, cols: 8 });
-    const { container } = render(<RetroLcd mode="terminal" controller={controller} />);
+    const controller = createRetroScreenController({ rows: 2, cols: 8 });
+    const { container } = render(<RetroScreen mode="terminal" controller={controller} />);
 
     act(() => {
       controller.write("\u001b[1mA\u001b[2mB\u001b[7mC\u001b[8mD\u001b[5mE");
@@ -839,9 +839,9 @@ describe("RetroLcd", () => {
   });
 
   it("projects ANSI semantic colors through the ansi-classic display mode", () => {
-    const controller = createRetroLcdController({ rows: 2, cols: 8 });
+    const controller = createRetroScreenController({ rows: 2, cols: 8 });
     const { container } = render(
-      <RetroLcd mode="terminal" controller={controller} displayColorMode="ansi-classic" />
+      <RetroScreen mode="terminal" controller={controller} displayColorMode="ansi-classic" />
     );
 
     act(() => {
@@ -855,9 +855,9 @@ describe("RetroLcd", () => {
   });
 
   it("projects indexed and truecolor cells through the ansi-extended display mode", () => {
-    const controller = createRetroLcdController({ rows: 2, cols: 8 });
+    const controller = createRetroScreenController({ rows: 2, cols: 8 });
     const { container } = render(
-      <RetroLcd mode="terminal" controller={controller} displayColorMode="ansi-extended" />
+      <RetroScreen mode="terminal" controller={controller} displayColorMode="ansi-extended" />
     );
 
     act(() => {
@@ -873,7 +873,7 @@ describe("RetroLcd", () => {
 
   it("switches to a light surface mode while keeping the phosphor accent readable", () => {
     const { container } = render(
-      <RetroLcd
+      <RetroScreen
         mode="value"
         value="grid"
         displayColorMode="phosphor-green"
@@ -889,9 +889,9 @@ describe("RetroLcd", () => {
   });
 
   it("keeps ansi foreground and background colors legible in light surface mode", () => {
-    const controller = createRetroLcdController({ rows: 2, cols: 8 });
+    const controller = createRetroScreenController({ rows: 2, cols: 8 });
     const { container } = render(
-      <RetroLcd
+      <RetroScreen
         mode="terminal"
         controller={controller}
         displayColorMode="ansi-extended"
@@ -911,7 +911,7 @@ describe("RetroLcd", () => {
   });
 
   it("renders prompt mode with the default prompt character", () => {
-    const { container } = render(<RetroLcd mode="prompt" value="status" />);
+    const { container } = render(<RetroScreen mode="prompt" value="status" />);
 
     expect(getBodyText(container)).toContain("> status");
   });
@@ -922,7 +922,7 @@ describe("RetroLcd", () => {
       accepted: true as const,
       response: ["alpha", "beta"]
     }));
-    const view = render(<RetroLcd mode="prompt" onCommand={onCommand} autoFocus />);
+    const view = render(<RetroScreen mode="prompt" onCommand={onCommand} autoFocus />);
     const { container } = view;
 
     const input = container.querySelector(".retro-lcd__input") as HTMLTextAreaElement | null;
@@ -941,7 +941,7 @@ describe("RetroLcd", () => {
   it("submits rejected prompt commands with ERROR", async () => {
     const user = userEvent.setup();
     const view = render(
-      <RetroLcd
+      <RetroScreen
         mode="prompt"
         onCommand={async () => ({
           accepted: false as const
@@ -964,7 +964,7 @@ describe("RetroLcd", () => {
   it("applies the configured color and emits geometry", () => {
     const onGeometryChange = vi.fn();
     const { container } = render(
-      <RetroLcd
+      <RetroScreen
         mode="value"
         value="grid"
         color="#66ff88"
@@ -985,7 +985,7 @@ describe("RetroLcd", () => {
   });
 
   it("supports uniform and side-specific display padding", () => {
-    const uniformView = render(<RetroLcd mode="value" value="grid" displayPadding={10} />);
+    const uniformView = render(<RetroScreen mode="value" value="grid" displayPadding={10} />);
     const uniformRoot = uniformView.container.querySelector(".retro-lcd") as HTMLElement | null;
 
     expect(uniformRoot?.style.getPropertyValue("--retro-lcd-padding-top")).toBe("10px");
@@ -994,7 +994,7 @@ describe("RetroLcd", () => {
     uniformView.unmount();
 
     const sideView = render(
-      <RetroLcd
+      <RetroScreen
         mode="value"
         value="grid"
         displayPadding={{ block: 12, inline: "1.5rem", top: 6 }}
@@ -1010,7 +1010,7 @@ describe("RetroLcd", () => {
 
   it("supports scaling the rendered glyphs inside each screen cell", () => {
     const { container } = render(
-      <RetroLcd mode="value" value="grid" displayFontScale={1.22} displayRowScale={1.08} />
+      <RetroScreen mode="value" value="grid" displayFontScale={1.22} displayRowScale={1.08} />
     );
 
     const root = container.querySelector(".retro-lcd") as HTMLElement | null;
@@ -1021,7 +1021,7 @@ describe("RetroLcd", () => {
   it("supports a static grid mode with caller-supplied rows and columns", () => {
     const onGeometryChange = vi.fn();
     const { container } = render(
-      <RetroLcd
+      <RetroScreen
         mode="value"
         value="grid"
         gridMode="static"
@@ -1044,7 +1044,7 @@ describe("RetroLcd", () => {
   });
 
   it("switches the base palette when a phosphor display color mode is selected", () => {
-    const { container } = render(<RetroLcd mode="value" value="grid" displayColorMode="phosphor-amber" />);
+    const { container } = render(<RetroScreen mode="value" value="grid" displayColorMode="phosphor-amber" />);
 
     const root = container.querySelector(".retro-lcd");
     expect(root?.style.getPropertyValue("--retro-lcd-color")).toBe("#ffc96b");
@@ -1053,7 +1053,7 @@ describe("RetroLcd", () => {
 
   it("shows a solid cursor for focused editable value mode", () => {
     const { container } = render(
-      <RetroLcd mode="value" value="draft" editable autoFocus cursorMode="solid" />
+      <RetroScreen mode="value" value="draft" editable autoFocus cursorMode="solid" />
     );
 
     expect(container.querySelector(".retro-lcd__cursor")).toHaveAttribute(
@@ -1064,7 +1064,7 @@ describe("RetroLcd", () => {
 
   it("renders placeholder dimming with the same color as faint ansi cells", () => {
     const placeholderView = render(
-      <RetroLcd mode="value" value="" placeholder="What are you thinking about?" />
+      <RetroScreen mode="value" value="" placeholder="What are you thinking about?" />
     );
 
     const placeholderLine = placeholderView.container.querySelector(
@@ -1075,8 +1075,8 @@ describe("RetroLcd", () => {
 
     placeholderView.unmount();
 
-    const controller = createRetroLcdController({ rows: 2, cols: 24 });
-    const faintView = render(<RetroLcd mode="terminal" controller={controller} />);
+    const controller = createRetroScreenController({ rows: 2, cols: 24 });
+    const faintView = render(<RetroScreen mode="terminal" controller={controller} />);
 
     act(() => {
       controller.write("\u001b[2mOK\u001b[0m");
@@ -1091,8 +1091,8 @@ describe("RetroLcd", () => {
   });
 
   it("updates the rendered cursor mode when the controller changes it", () => {
-    const controller = createRetroLcdController({ rows: 2, cols: 12, cursorMode: "solid" });
-    const view = render(<RetroLcd mode="terminal" controller={controller} />);
+    const controller = createRetroScreenController({ rows: 2, cols: 12, cursorMode: "solid" });
+    const view = render(<RetroScreen mode="terminal" controller={controller} />);
 
     act(() => {
       controller.write("status");
@@ -1117,7 +1117,7 @@ describe("RetroLcd", () => {
       const [value, setValue] = useState("");
 
       return (
-        <RetroLcd
+        <RetroScreen
           mode="value"
           value={value}
           editable
@@ -1147,7 +1147,7 @@ describe("RetroLcd", () => {
     const onFocusChange = vi.fn();
     render(
       <>
-        <RetroLcd mode="value" value="" editable onFocusChange={onFocusChange} />
+        <RetroScreen mode="value" value="" editable onFocusChange={onFocusChange} />
         <button type="button">outside</button>
       </>
     );
@@ -1159,10 +1159,44 @@ describe("RetroLcd", () => {
     expect(onFocusChange).toHaveBeenNthCalledWith(2, false);
   });
 
+  it("enables a focus glow by default and tracks the active focus state", async () => {
+    const user = userEvent.setup();
+    const view = render(
+      <>
+        <RetroScreen mode="value" value="" editable />
+        <button type="button">outside</button>
+      </>
+    );
+
+    const root = view.container.querySelector(".retro-lcd") as HTMLDivElement | null;
+    expect(root).not.toBeNull();
+    expect(root?.getAttribute("data-focus-glow")).toBe("true");
+    expect(root?.getAttribute("data-focused")).toBe("false");
+
+    await user.click(screen.getByLabelText("Retro LCD input"));
+    expect(root?.getAttribute("data-focused")).toBe("true");
+
+    await user.click(screen.getByRole("button", { name: "outside" }));
+    expect(root?.getAttribute("data-focused")).toBe("false");
+  });
+
+  it("allows the focus glow to be disabled explicitly", async () => {
+    const user = userEvent.setup();
+    const view = render(<RetroScreen mode="value" value="" editable focusGlow={false} />);
+    const root = view.container.querySelector(".retro-lcd") as HTMLDivElement | null;
+
+    expect(root).not.toBeNull();
+    expect(root?.getAttribute("data-focus-glow")).toBe("false");
+
+    await user.click(screen.getByLabelText("Retro LCD input"));
+    expect(root?.getAttribute("data-focused")).toBe("true");
+    expect(root?.getAttribute("data-focus-glow")).toBe("false");
+  });
+
   it("keeps the cursor at the end when editable text is appended externally", () => {
     const appendedValue = "Compose inline.\nPress Enter when the thought lands.";
     const { container, rerender } = render(
-      <RetroLcd mode="value" value="Compose inline." editable autoFocus />
+      <RetroScreen mode="value" value="Compose inline." editable autoFocus />
     );
 
     const input = container.querySelector(".retro-lcd__input") as HTMLTextAreaElement | null;
@@ -1173,7 +1207,7 @@ describe("RetroLcd", () => {
       input!.setSelectionRange(input!.value.length, input!.value.length);
     });
 
-    rerender(<RetroLcd mode="value" value={appendedValue} editable autoFocus />);
+    rerender(<RetroScreen mode="value" value={appendedValue} editable autoFocus />);
 
     const root = container.querySelector(".retro-lcd") as HTMLElement | null;
     const cursor = container.querySelector(".retro-lcd__cursor") as HTMLElement | null;
@@ -1193,7 +1227,7 @@ describe("RetroLcd", () => {
   it("supports mouse drag selection in editor mode", async () => {
     const user = userEvent.setup();
     const { container } = render(
-      <RetroLcd mode="editor" value="ABCD" editable autoFocus gridMode="static" rows={3} cols={4} />
+      <RetroScreen mode="editor" value="ABCD" editable autoFocus gridMode="static" rows={3} cols={4} />
     );
 
     mockScreenRect(container, {
@@ -1237,7 +1271,7 @@ describe("RetroLcd", () => {
       const [value, setValue] = useState("ABCD");
 
       return (
-        <RetroLcd
+        <RetroScreen
           mode="editor"
           value={value}
           onChange={setValue}
@@ -1284,7 +1318,7 @@ describe("RetroLcd", () => {
 
   it("supports keyboard word selection shortcuts in editor mode", () => {
     const { container } = render(
-      <RetroLcd
+      <RetroScreen
         mode="editor"
         value="retro display tty"
         editable
@@ -1324,7 +1358,7 @@ describe("RetroLcd", () => {
       const [value, setValue] = useState("retro display tty");
 
       return (
-        <RetroLcd
+        <RetroScreen
           mode="editor"
           value={value}
           onChange={setValue}
@@ -1370,7 +1404,7 @@ describe("RetroLcd", () => {
 
   it("double-click selects a whole word in editor mode", () => {
     const { container } = render(
-      <RetroLcd
+      <RetroScreen
         mode="editor"
         value="retro display tty"
         editable
@@ -1408,8 +1442,8 @@ describe("RetroLcd", () => {
   });
 
   it("pages through terminal scrollback and restores auto-follow at the bottom", () => {
-    const controller = createRetroLcdController({ rows: 3, cols: 12, scrollback: 12 });
-    const { container } = render(<RetroLcd mode="terminal" controller={controller} />);
+    const controller = createRetroScreenController({ rows: 3, cols: 12, scrollback: 12 });
+    const { container } = render(<RetroScreen mode="terminal" controller={controller} />);
 
     act(() => {
       controller.write(
@@ -1446,8 +1480,8 @@ describe("RetroLcd", () => {
   });
 
   it("supports mouse-wheel scrolling and keeps the viewport anchored while auto-follow is off", () => {
-    const controller = createRetroLcdController({ rows: 2, cols: 12, scrollback: 12 });
-    const { container } = render(<RetroLcd mode="terminal" controller={controller} />);
+    const controller = createRetroScreenController({ rows: 2, cols: 12, scrollback: 12 });
+    const { container } = render(<RetroScreen mode="terminal" controller={controller} />);
 
     act(() => {
       controller.write(
@@ -1489,7 +1523,7 @@ describe("RetroLcd", () => {
 
   it("limits internal terminal scrollback when bufferSize is configured", () => {
     const { container } = render(
-      <RetroLcd
+      <RetroScreen
         mode="terminal"
         bufferSize={2}
         value={Array.from({ length: 12 }, (_, index) => `line-${index + 1}`).join("\r\n")}
@@ -1502,9 +1536,9 @@ describe("RetroLcd", () => {
   });
 
   it("renders alternate-screen terminal output without exposing primary scrollback", () => {
-    const controller = createRetroLcdController({ rows: 2, cols: 8, scrollback: 8 });
+    const controller = createRetroScreenController({ rows: 2, cols: 8, scrollback: 8 });
     const { container } = render(
-      <RetroLcd mode="terminal" controller={controller} gridMode="static" rows={2} cols={8} />
+      <RetroScreen mode="terminal" controller={controller} gridMode="static" rows={2} cols={8} />
     );
 
     act(() => {

@@ -69,6 +69,14 @@ const resizablePanelMp4File = resolve(
   outputDir,
   "react-retro-display-tty-ansi-resizable-panel.mp4"
 );
+const badAppleAnsiWebpFile = resolve(
+  outputDir,
+  "react-retro-display-tty-ansi-bad-apple-ansi.webp"
+);
+const badAppleAnsiMp4File = resolve(
+  outputDir,
+  "react-retro-display-tty-ansi-bad-apple-ansi.mp4"
+);
 const liveTtyTerminalBridgeWebpFile = resolve(
   outputDir,
   "react-retro-display-tty-ansi-live-tty-terminal-bridge.webp"
@@ -335,6 +343,18 @@ const captures = [
     outputs: [
       { type: "webp", file: resizablePanelWebpFile },
       { type: "mp4", file: resizablePanelMp4File }
+    ]
+  },
+  {
+    name: "bad apple ansi",
+    storyId: "retroscreen-capture--bad-apple-ansi",
+    selector: "[data-demo-capture='ansi-art-bad-apple']",
+    waitMs: 350,
+    fps: 16,
+    durationMs: 30000,
+    outputs: [
+      { type: "webp", file: badAppleAnsiWebpFile },
+      { type: "mp4", file: badAppleAnsiMp4File }
     ]
   },
   {

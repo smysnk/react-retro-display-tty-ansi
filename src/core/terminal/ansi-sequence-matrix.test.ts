@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { RetroLcdAnsiParser } from "./ansi-parser";
+import { RetroScreenAnsiParser } from "./ansi-parser";
 import {
   ansiSupportGapLedger,
   ansiSupportedSequenceCases
@@ -66,13 +66,13 @@ describe("ANSI sequence support matrix", () => {
   });
 });
 
-describe("RetroLcdAnsiParser support matrix", () => {
+describe("RetroScreenAnsiParser support matrix", () => {
   for (const entry of ansiSupportedSequenceCases) {
     it(`parses ${entry.id}`, () => {
       const handlers = {
         command: vi.fn()
       };
-      const parser = new RetroLcdAnsiParser(handlers);
+      const parser = new RetroScreenAnsiParser(handlers);
 
       parser.feed(entry.sequence);
 

@@ -1,38 +1,38 @@
 import type { CSSProperties } from "react";
-import type { RetroLcdTextSelection } from "./editor/selection";
-import type { RetroLcdScreenSnapshot, RetroLcdWriteOptions } from "./terminal/types";
-import type { RetroLcdTerminalHostKeyEvent } from "./terminal/host-adapter";
-import type { RetroLcdTerminalMouseEvent } from "./terminal/mouse-encoder";
+import type { RetroScreenTextSelection } from "./editor/selection";
+import type { RetroScreenScreenSnapshot, RetroScreenWriteOptions } from "./terminal/types";
+import type { RetroScreenTerminalHostKeyEvent } from "./terminal/host-adapter";
+import type { RetroScreenTerminalMouseEvent } from "./terminal/mouse-encoder";
 import type {
-  RetroLcdTerminalSession,
-  RetroLcdTerminalSessionEvent,
-  RetroLcdTerminalSessionState
+  RetroScreenTerminalSession,
+  RetroScreenTerminalSessionEvent,
+  RetroScreenTerminalSessionState
 } from "./terminal/session-types";
 
 export type CursorMode = "solid" | "hollow";
-export type RetroLcdGridMode = "auto" | "static";
-export type RetroLcdDisplaySurfaceMode = "dark" | "light";
-export type RetroLcdResizeMode = "width" | "height" | "both";
-export type RetroLcdDisplayPaddingValue = number | string;
-export type RetroLcdDisplayPadding =
-  | RetroLcdDisplayPaddingValue
+export type RetroScreenGridMode = "auto" | "static";
+export type RetroScreenDisplaySurfaceMode = "dark" | "light";
+export type RetroScreenResizeMode = "width" | "height" | "both";
+export type RetroScreenDisplayPaddingValue = number | string;
+export type RetroScreenDisplayPadding =
+  | RetroScreenDisplayPaddingValue
   | {
-      block?: RetroLcdDisplayPaddingValue;
-      inline?: RetroLcdDisplayPaddingValue;
-      top?: RetroLcdDisplayPaddingValue;
-      right?: RetroLcdDisplayPaddingValue;
-      bottom?: RetroLcdDisplayPaddingValue;
-      left?: RetroLcdDisplayPaddingValue;
+      block?: RetroScreenDisplayPaddingValue;
+      inline?: RetroScreenDisplayPaddingValue;
+      top?: RetroScreenDisplayPaddingValue;
+      right?: RetroScreenDisplayPaddingValue;
+      bottom?: RetroScreenDisplayPaddingValue;
+      left?: RetroScreenDisplayPaddingValue;
     };
 
-export type RetroLcdDisplayColorMode =
+export type RetroScreenDisplayColorMode =
   | "phosphor-green"
   | "phosphor-amber"
   | "phosphor-ice"
   | "ansi-classic"
   | "ansi-extended";
 
-export type RetroLcdGeometry = {
+export type RetroScreenGeometry = {
   rows: number;
   cols: number;
   cellWidth: number;
@@ -42,29 +42,30 @@ export type RetroLcdGeometry = {
   fontSize: number;
 };
 
-export type RetroLcdSharedProps = {
+export type RetroScreenSharedProps = {
   color?: string;
-  displayColorMode?: RetroLcdDisplayColorMode;
-  displaySurfaceMode?: RetroLcdDisplaySurfaceMode;
-  displayPadding?: RetroLcdDisplayPadding;
+  displayColorMode?: RetroScreenDisplayColorMode;
+  displaySurfaceMode?: RetroScreenDisplaySurfaceMode;
+  displayPadding?: RetroScreenDisplayPadding;
   displayFontScale?: number;
   displayRowScale?: number;
-  resizable?: boolean | RetroLcdResizeMode;
+  focusGlow?: boolean;
+  resizable?: boolean | RetroScreenResizeMode;
   resizableLeadingEdges?: boolean;
   cursorMode?: CursorMode;
-  gridMode?: RetroLcdGridMode;
+  gridMode?: RetroScreenGridMode;
   rows?: number;
   cols?: number;
   className?: string;
   style?: CSSProperties;
   autoFocus?: boolean;
   onFocusChange?: (focused: boolean) => void;
-  onGeometryChange?: (geometry: RetroLcdGeometry) => void;
+  onGeometryChange?: (geometry: RetroScreenGeometry) => void;
 };
 
-export type RetroLcdController = {
-  write: (data: string, options?: RetroLcdWriteOptions) => void;
-  writeMany: (chunks: readonly RetroLcdWriteChunk[]) => void;
+export type RetroScreenController = {
+  write: (data: string, options?: RetroScreenWriteOptions) => void;
+  writeMany: (chunks: readonly RetroScreenWriteChunk[]) => void;
   writeln: (line: string) => void;
   clear: () => void;
   reset: () => void;
@@ -75,11 +76,11 @@ export type RetroLcdController = {
   resize: (rows: number, cols: number) => void;
   setCursorVisible: (visible: boolean) => void;
   setCursorMode: (mode: CursorMode) => void;
-  getSnapshot: () => RetroLcdScreenSnapshot;
+  getSnapshot: () => RetroScreenScreenSnapshot;
   subscribe: (listener: () => void) => () => void;
 };
 
-export type RetroLcdValueModeProps = RetroLcdSharedProps & {
+export type RetroScreenValueModeProps = RetroScreenSharedProps & {
   mode: "value";
   value: string;
   editable?: boolean;
@@ -88,21 +89,21 @@ export type RetroLcdValueModeProps = RetroLcdSharedProps & {
   onSubmit?: (value: string) => void;
 };
 
-export type RetroLcdEditorModeProps = RetroLcdSharedProps & {
+export type RetroScreenEditorModeProps = RetroScreenSharedProps & {
   mode: "editor";
   value: string;
   editable?: boolean;
   placeholder?: string;
   onChange?: (value: string) => void;
-  onSelectionChange?: (selection: RetroLcdTextSelection | null) => void;
+  onSelectionChange?: (selection: RetroScreenTextSelection | null) => void;
 };
 
-export type RetroLcdTerminalModeProps = RetroLcdSharedProps & {
+export type RetroScreenTerminalModeProps = RetroScreenSharedProps & {
   mode: "terminal";
   value?: string;
   initialBuffer?: string;
-  controller?: RetroLcdController;
-  session?: RetroLcdTerminalSession;
+  controller?: RetroScreenController;
+  session?: RetroScreenTerminalSession;
   closeSessionOnUnmount?: boolean;
   bufferSize?: number;
   defaultAutoFollow?: boolean;
@@ -112,15 +113,15 @@ export type RetroLcdTerminalModeProps = RetroLcdSharedProps & {
   captureFocusReport?: boolean;
   terminalFocusable?: boolean;
   localScrollbackWhenMouseActive?: boolean;
-  onSessionEvent?: (event: RetroLcdTerminalSessionEvent) => void;
-  onSessionStateChange?: (state: RetroLcdTerminalSessionState) => void;
+  onSessionEvent?: (event: RetroScreenTerminalSessionEvent) => void;
+  onSessionStateChange?: (state: RetroScreenTerminalSessionState) => void;
   onTerminalData?: (data: string | Uint8Array) => void;
-  onTerminalKeyDown?: (event: RetroLcdTerminalHostKeyEvent) => void;
-  onTerminalKeyUp?: (event: RetroLcdTerminalHostKeyEvent) => void;
-  onTerminalMouse?: (event: RetroLcdTerminalMouseEvent & { encodedData: string }) => void;
+  onTerminalKeyDown?: (event: RetroScreenTerminalHostKeyEvent) => void;
+  onTerminalKeyUp?: (event: RetroScreenTerminalHostKeyEvent) => void;
+  onTerminalMouse?: (event: RetroScreenTerminalMouseEvent & { encodedData: string }) => void;
 };
 
-export type RetroLcdPromptCommandResult =
+export type RetroScreenPromptCommandResult =
   | {
       accepted: true;
       response?: string | string[];
@@ -130,7 +131,7 @@ export type RetroLcdPromptCommandResult =
       response?: string | string[];
     };
 
-export type RetroLcdPromptModeProps = RetroLcdSharedProps & {
+export type RetroScreenPromptModeProps = RetroScreenSharedProps & {
   mode: "prompt";
   value?: string;
   promptChar?: string;
@@ -140,18 +141,18 @@ export type RetroLcdPromptModeProps = RetroLcdSharedProps & {
   defaultAutoFollow?: boolean;
   onCommand?: (
     command: string
-  ) => RetroLcdPromptCommandResult | Promise<RetroLcdPromptCommandResult>;
+  ) => RetroScreenPromptCommandResult | Promise<RetroScreenPromptCommandResult>;
 };
 
-export type RetroLcdProps =
-  | RetroLcdValueModeProps
-  | RetroLcdEditorModeProps
-  | RetroLcdTerminalModeProps
-  | RetroLcdPromptModeProps;
+export type RetroScreenProps =
+  | RetroScreenValueModeProps
+  | RetroScreenEditorModeProps
+  | RetroScreenTerminalModeProps
+  | RetroScreenPromptModeProps;
 
-export type RetroLcdWriteChunk =
+export type RetroScreenWriteChunk =
   | string
   | {
       data: string;
-      options?: RetroLcdWriteOptions;
+      options?: RetroScreenWriteOptions;
     };

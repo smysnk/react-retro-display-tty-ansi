@@ -1,14 +1,14 @@
 import { useEffect, useMemo } from "react";
-import { createRetroLcdController } from "../core/terminal/controller";
-import type { RetroLcdController } from "../core/types";
-import type { RetroLcdScreenBufferOptions } from "../core/terminal/types";
+import { createRetroScreenController } from "../core/terminal/controller";
+import type { RetroScreenController } from "../core/types";
+import type { RetroScreenScreenBufferOptions } from "../core/terminal/types";
 
-export const useRetroLcdController = (
-  options: Partial<RetroLcdScreenBufferOptions> = {}
-): RetroLcdController => {
+export const useRetroScreenController = (
+  options: Partial<RetroScreenScreenBufferOptions> = {}
+): RetroScreenController => {
   const controller = useMemo(
     () =>
-      createRetroLcdController({
+      createRetroScreenController({
         scrollback: options.scrollback,
         tabWidth: options.tabWidth
       }),

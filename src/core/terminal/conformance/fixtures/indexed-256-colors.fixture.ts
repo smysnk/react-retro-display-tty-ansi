@@ -1,6 +1,6 @@
-import type { RetroLcdTerminalFixture } from "../types";
+import type { RetroScreenTerminalFixture } from "../types";
 
-export const indexed256ColorsFixture: RetroLcdTerminalFixture = {
+export const indexed256ColorsFixture: RetroScreenTerminalFixture = {
   name: "indexed-256-colors",
   description:
     "Extended indexed SGR colors should preserve their 256-color palette indices in the terminal snapshot.",

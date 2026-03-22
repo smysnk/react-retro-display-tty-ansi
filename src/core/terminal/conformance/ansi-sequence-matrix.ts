@@ -1,4 +1,4 @@
-import type { RetroLcdTerminalCommand } from "../commands";
+import type { RetroScreenTerminalCommand } from "../commands";
 import { ansi16ColorsFixture } from "./fixtures/ansi-16-colors.fixture";
 import {
   ansiCommandMatrixFixtures,
@@ -32,36 +32,36 @@ import { partialCsiCursorBackwardFixture } from "./fixtures/partial-csi-cursor-b
 import { scrollRegionShiftFixture } from "./fixtures/scroll-region-shift.fixture";
 import { truecolorFixture } from "./fixtures/truecolor.fixture";
 import type {
-  RetroLcdConformanceClassification,
-  RetroLcdTerminalFixture
+  RetroScreenConformanceClassification,
+  RetroScreenTerminalFixture
 } from "./types";
 
-export type RetroLcdAnsiSequenceFamily =
+export type RetroScreenAnsiSequenceFamily =
   | "c0"
   | "escape"
   | "csi"
   | "csi-private"
   | "sgr";
 
-export type RetroLcdAnsiCoverageLevel =
+export type RetroScreenAnsiCoverageLevel =
   | "parser-only"
   | "oracle-backed"
   | "host-facing";
 
-export type RetroLcdAnsiSequenceCase = {
+export type RetroScreenAnsiSequenceCase = {
   id: string;
-  family: RetroLcdAnsiSequenceFamily;
+  family: RetroScreenAnsiSequenceFamily;
   description: string;
   sequence: string;
-  expectedCommands: RetroLcdTerminalCommand[];
-  coverage: RetroLcdAnsiCoverageLevel;
-  fixture?: RetroLcdTerminalFixture;
+  expectedCommands: RetroScreenTerminalCommand[];
+  coverage: RetroScreenAnsiCoverageLevel;
+  fixture?: RetroScreenTerminalFixture;
 };
 
-export type RetroLcdAnsiSupportGap = {
+export type RetroScreenAnsiSupportGap = {
   id: string;
-  family: RetroLcdAnsiSequenceFamily | "extended";
-  classification: RetroLcdConformanceClassification;
+  family: RetroScreenAnsiSequenceFamily | "extended";
+  classification: RetroScreenConformanceClassification;
   description: string;
   examples: string[];
 };
@@ -583,7 +583,7 @@ export const ansiSupportedSequenceCases = [
     coverage: "oracle-backed",
     fixture: resetToInitialStateFixture
   }
-] satisfies RetroLcdAnsiSequenceCase[];
+] satisfies RetroScreenAnsiSequenceCase[];
 
 export const ansiOracleFixtures = [
   ...ansiCommandMatrixFixtures,
@@ -607,7 +607,7 @@ export const ansiOracleFixtures = [
 ].filter(
   (fixture, index, fixtures) =>
     fixtures.findIndex((candidate) => candidate.name === fixture.name) === index
-) satisfies RetroLcdTerminalFixture[];
+) satisfies RetroScreenTerminalFixture[];
 
 export const ansiSupportGapLedger = [
   {
@@ -690,4 +690,4 @@ export const ansiSupportGapLedger = [
       "Only a targeted subset of DEC private modes is implemented; the rest are tracked explicitly as future conformance work.",
     examples: ["\u001b[?5h", "\u001b[?66h", "\u001b[?1048h"]
   }
-] satisfies RetroLcdAnsiSupportGap[];
+] satisfies RetroScreenAnsiSupportGap[];

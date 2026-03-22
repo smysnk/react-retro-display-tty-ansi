@@ -1,6 +1,6 @@
-import type { RetroLcdTerminalFixture } from "../types";
+import type { RetroScreenTerminalFixture } from "../types";
 
-export const deleteLinesFixture: RetroLcdTerminalFixture = {
+export const deleteLinesFixture: RetroScreenTerminalFixture = {
   name: "delete-lines",
   description: "CSI M should delete lines within the active scroll region and pull lines upward.",
   classification: "implemented",

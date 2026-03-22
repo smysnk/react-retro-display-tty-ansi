@@ -1,6 +1,6 @@
-import type { RetroLcdTerminalFixture } from "../types";
+import type { RetroScreenTerminalFixture } from "../types";
 
-export const truecolorFixture: RetroLcdTerminalFixture = {
+export const truecolorFixture: RetroScreenTerminalFixture = {
   name: "truecolor",
   description:
     "Truecolor SGR sequences should preserve 24-bit RGB foreground and background values.",

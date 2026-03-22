@@ -1,6 +1,6 @@
-import type { RetroLcdTerminalFixture } from "../types";
+import type { RetroScreenTerminalFixture } from "../types";
 
-export const insertCharsFixture: RetroLcdTerminalFixture = {
+export const insertCharsFixture: RetroScreenTerminalFixture = {
   name: "insert-chars",
   description: "CSI @ should insert blank cells at the cursor and shift the row content right.",
   classification: "implemented",

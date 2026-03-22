@@ -1,12 +1,12 @@
-export type RetroLcdConformanceClassification =
+export type RetroScreenConformanceClassification =
   | "implemented"
   | "intentionally-ignored"
   | "host-only"
   | "deferred";
 
-export type RetroLcdConformanceChunkMode = "fixture" | "joined" | "byte" | "random";
+export type RetroScreenConformanceChunkMode = "fixture" | "joined" | "byte" | "random";
 
-export type RetroLcdNormalizedColor =
+export type RetroScreenNormalizedColor =
   | {
       mode: "default";
       value: 0;
@@ -20,35 +20,35 @@ export type RetroLcdNormalizedColor =
       value: number;
     };
 
-export type RetroLcdNormalizedCellStyle = {
+export type RetroScreenNormalizedCellStyle = {
   bold: boolean;
   faint: boolean;
   inverse: boolean;
   conceal: boolean;
   blink: boolean;
-  foreground: RetroLcdNormalizedColor;
-  background: RetroLcdNormalizedColor;
+  foreground: RetroScreenNormalizedColor;
+  background: RetroScreenNormalizedColor;
 };
 
-export type RetroLcdNormalizedCell = {
+export type RetroScreenNormalizedCell = {
   char: string;
   width: number;
-  style: RetroLcdNormalizedCellStyle;
+  style: RetroScreenNormalizedCellStyle;
 };
 
-export type RetroLcdNormalizedCursorState = {
+export type RetroScreenNormalizedCursorState = {
   row: number;
   col: number;
   visible: boolean | null;
 };
 
-export type RetroLcdNormalizedModes = {
+export type RetroScreenNormalizedModes = {
   insertMode: boolean | null;
   originMode: boolean | null;
   wraparoundMode: boolean | null;
 };
 
-export type RetroLcdNormalizedTerminalSnapshot = {
+export type RetroScreenNormalizedTerminalSnapshot = {
   source: "retro-lcd" | "xterm-headless";
   rows: number;
   cols: number;
@@ -57,33 +57,33 @@ export type RetroLcdNormalizedTerminalSnapshot = {
   lines: string[];
   rawLines: string[];
   wrapped: boolean[];
-  cells: RetroLcdNormalizedCell[][];
+  cells: RetroScreenNormalizedCell[][];
   scrollback: string[];
-  cursor: RetroLcdNormalizedCursorState;
+  cursor: RetroScreenNormalizedCursorState;
   pendingWrap: boolean | null;
-  modes: RetroLcdNormalizedModes;
+  modes: RetroScreenNormalizedModes;
 };
 
-export type RetroLcdTerminalFixture = {
+export type RetroScreenTerminalFixture = {
   name: string;
   description: string;
-  classification: RetroLcdConformanceClassification;
+  classification: RetroScreenConformanceClassification;
   rows: number;
   cols: number;
   scrollback?: number;
   chunks: string[];
-  chunkModes?: RetroLcdConformanceChunkMode[];
+  chunkModes?: RetroScreenConformanceChunkMode[];
   randomChunkSeeds?: number[];
 };
 
-export type RetroLcdFixtureRunResult = {
-  chunkMode: RetroLcdConformanceChunkMode;
+export type RetroScreenFixtureRunResult = {
+  chunkMode: RetroScreenConformanceChunkMode;
   chunkLabel: string;
   randomSeed?: number;
   resolvedChunks: string[];
   reproduction: string;
-  fixture: RetroLcdTerminalFixture;
-  retroLcd: RetroLcdNormalizedTerminalSnapshot;
-  xterm: RetroLcdNormalizedTerminalSnapshot;
+  fixture: RetroScreenTerminalFixture;
+  retroScreen: RetroScreenNormalizedTerminalSnapshot;
+  xterm: RetroScreenNormalizedTerminalSnapshot;
   diffs: string[];
 };

@@ -31,6 +31,10 @@ const videoEntries = [
     file: resolve(rootDir, "docs/assets/react-retro-display-tty-ansi-prompt-loop.mp4")
   },
   {
+    title: "Bad Apple ANSI Demo",
+    file: resolve(rootDir, "docs/assets/react-retro-display-tty-ansi-bad-apple-ansi.mp4")
+  },
+  {
     title: "Display Color Modes Demo",
     file: resolve(rootDir, "docs/assets/react-retro-display-tty-ansi-display-color-modes.mp4")
   },

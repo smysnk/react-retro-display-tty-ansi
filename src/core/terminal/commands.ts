@@ -1,21 +1,21 @@
-export type RetroLcdCsiIdentifier = {
+export type RetroScreenCsiIdentifier = {
   prefix?: string;
   intermediates?: string;
   final: string;
 };
 
-export type RetroLcdEscapeIdentifier = {
+export type RetroScreenEscapeIdentifier = {
   intermediates?: string;
   final: string;
 };
 
-export type RetroLcdModeChangeCommand = {
+export type RetroScreenModeChangeCommand = {
   type: "setMode" | "resetMode";
-  identifier: RetroLcdCsiIdentifier;
+  identifier: RetroScreenCsiIdentifier;
   params: number[];
 };
 
-export type RetroLcdTerminalCommand =
+export type RetroScreenTerminalCommand =
   | { type: "print"; char: string }
   | { type: "lineFeed" }
   | { type: "carriageReturn" }
@@ -44,6 +44,6 @@ export type RetroLcdTerminalCommand =
   | { type: "nextLine" }
   | { type: "reverseIndex" }
   | { type: "resetToInitialState" }
-  | RetroLcdModeChangeCommand
-  | { type: "unknownEscape"; identifier: RetroLcdEscapeIdentifier }
-  | { type: "unknownCsi"; identifier: RetroLcdCsiIdentifier; params: number[] };
+  | RetroScreenModeChangeCommand
+  | { type: "unknownEscape"; identifier: RetroScreenEscapeIdentifier }
+  | { type: "unknownCsi"; identifier: RetroScreenCsiIdentifier; params: number[] };

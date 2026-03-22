@@ -1,6 +1,6 @@
-import type { RetroLcdTerminalFixture } from "../types";
+import type { RetroScreenTerminalFixture } from "../types";
 
-export const ansi16ColorsFixture: RetroLcdTerminalFixture = {
+export const ansi16ColorsFixture: RetroScreenTerminalFixture = {
   name: "ansi-16-colors",
   description:
     "ANSI 16-color SGR sequences should preserve semantic foreground and background palette indices.",

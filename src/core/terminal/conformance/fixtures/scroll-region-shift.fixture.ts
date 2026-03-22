@@ -1,6 +1,6 @@
-import type { RetroLcdTerminalFixture } from "../types";
+import type { RetroScreenTerminalFixture } from "../types";
 
-export const scrollRegionShiftFixture: RetroLcdTerminalFixture = {
+export const scrollRegionShiftFixture: RetroScreenTerminalFixture = {
   name: "scroll-region-shift",
   description: "CSI S and CSI T should shift only the active scroll region upward and downward.",
   classification: "implemented",

@@ -2,30 +2,30 @@ import {
   wrapTextToCellRows,
   wrapTextToColumns
 } from "../core/geometry/wrap";
-import { normalizeRetroLcdTextSelection, type RetroLcdTextSelection } from "../core/editor/selection";
-import { RetroLcdScreenBuffer } from "../core/terminal/screen-buffer";
-import type { RetroLcdCell, RetroLcdCellStyle, RetroLcdScreenSnapshot } from "../core/terminal/types";
-import type { CursorMode, RetroLcdGeometry, RetroLcdValueModeProps } from "../core/types";
+import { normalizeRetroScreenTextSelection, type RetroScreenTextSelection } from "../core/editor/selection";
+import { RetroScreenScreenBuffer } from "../core/terminal/screen-buffer";
+import type { RetroScreenCell, RetroScreenCellStyle, RetroScreenScreenSnapshot } from "../core/terminal/types";
+import type { CursorMode, RetroScreenGeometry, RetroScreenValueModeProps } from "../core/types";
 
-export type RetroLcdCursorRenderState = {
+export type RetroScreenCursorRenderState = {
   row: number;
   col: number;
   mode: CursorMode;
 };
 
-export type RetroLcdRenderCell = RetroLcdCell & {
+export type RetroScreenRenderCell = RetroScreenCell & {
   sourceOffset: number | null;
   isSelected: boolean;
 };
 
-export type RetroLcdRenderModel = {
+export type RetroScreenRenderModel = {
   lines: string[];
-  cells?: RetroLcdRenderCell[][];
-  cursor: RetroLcdCursorRenderState | null;
+  cells?: RetroScreenRenderCell[][];
+  cursor: RetroScreenCursorRenderState | null;
   isDimmed: boolean;
 };
 
-const DEFAULT_RENDER_CELL_STYLE: RetroLcdCellStyle = {
+const DEFAULT_RENDER_CELL_STYLE: RetroScreenCellStyle = {
   intensity: "normal",
   bold: false,
   faint: false,
@@ -47,9 +47,9 @@ const createRenderCell = (
   options: {
     sourceOffset: number | null;
     isSelected?: boolean;
-    style?: RetroLcdCellStyle;
+    style?: RetroScreenCellStyle;
   }
-): RetroLcdRenderCell => ({
+): RetroScreenRenderCell => ({
   char,
   style: options.style ?? DEFAULT_RENDER_CELL_STYLE,
   sourceOffset: options.sourceOffset,
@@ -87,16 +87,16 @@ export const buildTextRenderModel = ({
   includeSourceOffsets
 }: {
   text: string;
-  geometry: RetroLcdGeometry;
+  geometry: RetroScreenGeometry;
   cursorMode: CursorMode;
   cursorOffset?: number;
   cursorVisible?: boolean;
   dimmed?: boolean;
-  selection?: RetroLcdTextSelection | null;
+  selection?: RetroScreenTextSelection | null;
   includeSourceOffsets?: boolean;
-}): RetroLcdRenderModel => {
+}): RetroScreenRenderModel => {
   const normalizedSelection = selection
-    ? normalizeRetroLcdTextSelection(selection, text.length)
+    ? normalizeRetroScreenTextSelection(selection, text.length)
     : null;
   const wrappedCellRows = wrapTextToCellRows(text, { cols: geometry.cols });
   const totalCells = wrappedCellRows.map((row) =>
@@ -113,7 +113,7 @@ export const buildTextRenderModel = ({
   const totalLines = totalCells.map((line) => line.map((cell) => cell.char).join(""));
   const shouldExposeCells = Boolean(includeSourceOffsets || normalizedSelection);
 
-  let cursor: RetroLcdCursorRenderState | null = null;
+  let cursor: RetroScreenCursorRenderState | null = null;
   let windowStart = 0;
 
   if (cursorVisible) {
@@ -171,8 +171,8 @@ export const buildTerminalSnapshot = ({
   cols: number;
   cursorMode: CursorMode;
   scrollback?: number;
-}): RetroLcdScreenSnapshot => {
-  const buffer = new RetroLcdScreenBuffer({
+}): RetroScreenScreenSnapshot => {
+  const buffer = new RetroScreenScreenBuffer({
     rows,
     cols,
     cursorMode,
@@ -186,26 +186,26 @@ export const buildTerminalSnapshot = ({
   return buffer.getSnapshot();
 };
 
-const trimRenderedLine = (line: RetroLcdCell[]) =>
+const trimRenderedLine = (line: RetroScreenCell[]) =>
   line
     .map((cell) => cell.char)
     .join("")
     .replace(/\s+$/u, "");
 
-export const getSnapshotMaxScrollOffset = (snapshot: RetroLcdScreenSnapshot) =>
+export const getSnapshotMaxScrollOffset = (snapshot: RetroScreenScreenSnapshot) =>
   Math.max(0, snapshot.scrollbackCells.length);
 
 export const clampSnapshotScrollOffset = (
-  snapshot: RetroLcdScreenSnapshot,
+  snapshot: RetroScreenScreenSnapshot,
   scrollOffset: number
 ) => Math.max(0, Math.min(getSnapshotMaxScrollOffset(snapshot), Math.floor(scrollOffset) || 0));
 
 export const snapshotToRenderModel = (
-  snapshot: RetroLcdScreenSnapshot,
+  snapshot: RetroScreenScreenSnapshot,
   options: {
     scrollOffset?: number;
   } = {}
-): RetroLcdRenderModel => {
+): RetroScreenRenderModel => {
   const scrollOffset = clampSnapshotScrollOffset(snapshot, options.scrollOffset ?? 0);
   const bufferCells = [...snapshot.scrollbackCells, ...snapshot.cells];
   const windowStart = Math.max(0, bufferCells.length - snapshot.rows - scrollOffset);
@@ -237,7 +237,7 @@ export const snapshotToRenderModel = (
   };
 };
 
-export const getValueDisplayText = (props: RetroLcdValueModeProps, focused: boolean) => {
+export const getValueDisplayText = (props: RetroScreenValueModeProps, focused: boolean) => {
   if (props.value.length > 0) {
     return {
       text: props.value,
@@ -253,7 +253,7 @@ export const getValueDisplayText = (props: RetroLcdValueModeProps, focused: bool
 
 export const getLineDisplayText = (line: string) => (line.length > 0 ? line : "\u00a0");
 
-export const getCellCharacter = (cell: RetroLcdCell) => {
+export const getCellCharacter = (cell: RetroScreenCell) => {
   if (cell.style.conceal) {
     return "\u00a0";
   }

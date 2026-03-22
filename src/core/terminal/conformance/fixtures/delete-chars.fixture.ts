@@ -1,6 +1,6 @@
-import type { RetroLcdTerminalFixture } from "../types";
+import type { RetroScreenTerminalFixture } from "../types";
 
-export const deleteCharsFixture: RetroLcdTerminalFixture = {
+export const deleteCharsFixture: RetroScreenTerminalFixture = {
   name: "delete-chars",
   description: "CSI P should delete characters at the cursor and pull the remainder of the row left.",
   classification: "implemented",

@@ -1,6 +1,6 @@
-import type { RetroLcdTerminalFixture } from "../types";
+import type { RetroScreenTerminalFixture } from "../types";
 
-export const lineFeedFixture: RetroLcdTerminalFixture = {
+export const lineFeedFixture: RetroScreenTerminalFixture = {
   name: "line-feed",
   description:
     "LF should advance the cursor to the next row without forcing a carriage return.",
@@ -11,7 +11,7 @@ export const lineFeedFixture: RetroLcdTerminalFixture = {
   chunkModes: ["fixture", "joined", "byte"]
 };
 
-export const carriageReturnFixture: RetroLcdTerminalFixture = {
+export const carriageReturnFixture: RetroScreenTerminalFixture = {
   name: "carriage-return",
   description: "CR should return to column zero and overwrite from the start of the row.",
   classification: "implemented",
@@ -21,7 +21,7 @@ export const carriageReturnFixture: RetroLcdTerminalFixture = {
   chunkModes: ["fixture", "joined", "byte"]
 };
 
-export const tabExpansionFixture: RetroLcdTerminalFixture = {
+export const tabExpansionFixture: RetroScreenTerminalFixture = {
   name: "tab-expansion",
   description: "HT should advance to the next tab stop using terminal tab spacing.",
   classification: "implemented",
@@ -31,7 +31,7 @@ export const tabExpansionFixture: RetroLcdTerminalFixture = {
   chunkModes: ["fixture", "joined", "byte"]
 };
 
-export const cursorUpFixture: RetroLcdTerminalFixture = {
+export const cursorUpFixture: RetroScreenTerminalFixture = {
   name: "cursor-up",
   description: "CSI A should move the cursor upward while preserving the current column.",
   classification: "implemented",
@@ -41,7 +41,7 @@ export const cursorUpFixture: RetroLcdTerminalFixture = {
   chunkModes: ["fixture", "joined", "byte"]
 };
 
-export const cursorDownFixture: RetroLcdTerminalFixture = {
+export const cursorDownFixture: RetroScreenTerminalFixture = {
   name: "cursor-down",
   description: "CSI B should move the cursor downward while preserving the current column.",
   classification: "implemented",
@@ -51,7 +51,7 @@ export const cursorDownFixture: RetroLcdTerminalFixture = {
   chunkModes: ["fixture", "joined", "byte"]
 };
 
-export const cursorForwardFixture: RetroLcdTerminalFixture = {
+export const cursorForwardFixture: RetroScreenTerminalFixture = {
   name: "cursor-forward",
   description: "CSI C should move the cursor forward within the active row.",
   classification: "implemented",
@@ -61,7 +61,7 @@ export const cursorForwardFixture: RetroLcdTerminalFixture = {
   chunkModes: ["fixture", "joined", "byte"]
 };
 
-export const cursorPositionFixture: RetroLcdTerminalFixture = {
+export const cursorPositionFixture: RetroScreenTerminalFixture = {
   name: "cursor-position",
   description: "CSI H and CSI f should position the cursor using 1-based row and column values.",
   classification: "implemented",
@@ -71,7 +71,7 @@ export const cursorPositionFixture: RetroLcdTerminalFixture = {
   chunkModes: ["fixture", "joined", "byte"]
 };
 
-export const eraseInLineFixture: RetroLcdTerminalFixture = {
+export const eraseInLineFixture: RetroScreenTerminalFixture = {
   name: "erase-in-line",
   description: "CSI K should erase the active row from the cursor through the end of the line.",
   classification: "implemented",
@@ -81,7 +81,7 @@ export const eraseInLineFixture: RetroLcdTerminalFixture = {
   chunkModes: ["fixture", "joined", "byte"]
 };
 
-export const eraseInDisplayFixture: RetroLcdTerminalFixture = {
+export const eraseInDisplayFixture: RetroScreenTerminalFixture = {
   name: "erase-in-display",
   description: "CSI 2J should clear the visible display without changing terminal geometry.",
   classification: "implemented",
@@ -91,7 +91,7 @@ export const eraseInDisplayFixture: RetroLcdTerminalFixture = {
   chunkModes: ["fixture", "joined", "byte"]
 };
 
-export const ansiSaveRestoreFixture: RetroLcdTerminalFixture = {
+export const ansiSaveRestoreFixture: RetroScreenTerminalFixture = {
   name: "ansi-save-restore",
   description: "CSI s and CSI u should save and restore the current cursor position.",
   classification: "implemented",
@@ -101,7 +101,7 @@ export const ansiSaveRestoreFixture: RetroLcdTerminalFixture = {
   chunkModes: ["fixture", "joined", "byte"]
 };
 
-export const resetToInitialStateFixture: RetroLcdTerminalFixture = {
+export const resetToInitialStateFixture: RetroScreenTerminalFixture = {
   name: "reset-to-initial-state",
   description: "ESC c should reset the terminal state and clear the current display.",
   classification: "implemented",
@@ -111,7 +111,7 @@ export const resetToInitialStateFixture: RetroLcdTerminalFixture = {
   chunkModes: ["fixture", "joined", "byte"]
 };
 
-export const sgrAttributesFixture: RetroLcdTerminalFixture = {
+export const sgrAttributesFixture: RetroScreenTerminalFixture = {
   name: "sgr-attributes",
   description:
     "SGR emphasis flags like bold, faint, blink, inverse, and conceal should survive as semantic cell state.",
@@ -135,4 +135,4 @@ export const ansiCommandMatrixFixtures = [
   ansiSaveRestoreFixture,
   resetToInitialStateFixture,
   sgrAttributesFixture
-] satisfies RetroLcdTerminalFixture[];
+] satisfies RetroScreenTerminalFixture[];

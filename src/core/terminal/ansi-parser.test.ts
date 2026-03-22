@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
-import { RetroLcdAnsiParser } from "./ansi-parser";
+import { RetroScreenAnsiParser } from "./ansi-parser";
 
 const createHandlers = () => ({
   command: vi.fn()
 });
 
-describe("RetroLcdAnsiParser", () => {
+describe("RetroScreenAnsiParser", () => {
   it("routes essential control characters", () => {
     const handlers = createHandlers();
-    const parser = new RetroLcdAnsiParser(handlers);
+    const parser = new RetroScreenAnsiParser(handlers);
 
     parser.feed("\n\r\b\t\f\u0007");
 
@@ -24,7 +24,7 @@ describe("RetroLcdAnsiParser", () => {
 
   it("dispatches cursor movement CSI sequences", () => {
     const handlers = createHandlers();
-    const parser = new RetroLcdAnsiParser(handlers);
+    const parser = new RetroScreenAnsiParser(handlers);
 
     parser.feed("\u001b[3A\u001b[4B\u001b[5C\u001b[6D\u001b[7;8H");
 
@@ -39,7 +39,7 @@ describe("RetroLcdAnsiParser", () => {
 
   it("dispatches erase, save/restore, and sgr sequences", () => {
     const handlers = createHandlers();
-    const parser = new RetroLcdAnsiParser(handlers);
+    const parser = new RetroScreenAnsiParser(handlers);
 
     parser.feed("\u001b[2J\u001b[1K\u001b[s\u001b[u\u001b[1;7;8m");
 
@@ -54,7 +54,7 @@ describe("RetroLcdAnsiParser", () => {
 
   it("dispatches phase 3 mutation and scrolling CSI sequences", () => {
     const handlers = createHandlers();
-    const parser = new RetroLcdAnsiParser(handlers);
+    const parser = new RetroScreenAnsiParser(handlers);
 
     parser.feed("\u001b[@\u001b[P\u001b[L\u001b[M\u001b[S\u001b[T\u001b[2;4r");
 
@@ -71,7 +71,7 @@ describe("RetroLcdAnsiParser", () => {
 
   it("keeps partial escape sequences across multiple writes", () => {
     const handlers = createHandlers();
-    const parser = new RetroLcdAnsiParser(handlers);
+    const parser = new RetroScreenAnsiParser(handlers);
 
     parser.feed("\u001b[");
     parser.feed("2J");
@@ -81,7 +81,7 @@ describe("RetroLcdAnsiParser", () => {
 
   it("preserves DEC private CSI prefixes for later mode handling", () => {
     const handlers = createHandlers();
-    const parser = new RetroLcdAnsiParser(handlers);
+    const parser = new RetroScreenAnsiParser(handlers);
 
     parser.feed("\u001b[?7l");
 
@@ -98,7 +98,7 @@ describe("RetroLcdAnsiParser", () => {
 
   it("dispatches ESC final-byte commands outside CSI", () => {
     const handlers = createHandlers();
-    const parser = new RetroLcdAnsiParser(handlers);
+    const parser = new RetroScreenAnsiParser(handlers);
 
     parser.feed("\u001b7\u001b8\u001bD\u001bE\u001bM\u001bc");
 

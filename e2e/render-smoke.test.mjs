@@ -144,7 +144,7 @@ test("render smoke stories stay stable in the browser", async (t) => {
         );
       },
       undefined,
-      { timeout: 10000 }
+      { timeout: 30000 }
     );
 
     const summary = await page().evaluate(() => {

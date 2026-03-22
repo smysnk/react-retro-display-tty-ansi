@@ -1,6 +1,6 @@
-import type { RetroLcdTerminalFixture } from "../types";
+import type { RetroScreenTerminalFixture } from "../types";
 
-export const originModeHomeFixture: RetroLcdTerminalFixture = {
+export const originModeHomeFixture: RetroScreenTerminalFixture = {
   name: "origin-mode-home",
   description: "DEC origin mode should home the cursor to the top of the active scroll region.",
   classification: "implemented",

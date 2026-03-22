@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { RetroLcdScreenBuffer } from "./screen-buffer";
+import { RetroScreenScreenBuffer } from "./screen-buffer";
 
-describe("RetroLcdScreenBuffer", () => {
+describe("RetroScreenScreenBuffer", () => {
   it("writes printable text and wraps to the next line", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 2, cols: 4 });
+    const buffer = new RetroScreenScreenBuffer({ rows: 2, cols: 4 });
 
     buffer.write("ABCDE");
 
@@ -17,7 +17,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("supports line feed without resetting the current column", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 3, cols: 6 });
+    const buffer = new RetroScreenScreenBuffer({ rows: 3, cols: 6 });
 
     buffer.write("AB\nZ");
 
@@ -31,7 +31,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("supports carriage return by returning to column zero", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 2, cols: 6 });
+    const buffer = new RetroScreenScreenBuffer({ rows: 2, cols: 6 });
 
     buffer.write("AB\rZ");
 
@@ -45,7 +45,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("supports non-destructive backspace behavior", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 2, cols: 6 });
+    const buffer = new RetroScreenScreenBuffer({ rows: 2, cols: 6 });
 
     buffer.write("AB\b");
 
@@ -60,7 +60,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("enters pending wrap after writing the final column", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 2, cols: 4 });
+    const buffer = new RetroScreenScreenBuffer({ rows: 2, cols: 4 });
 
     buffer.write("ABCD");
 
@@ -78,7 +78,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("wraps only when the next printable character arrives", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 2, cols: 4 });
+    const buffer = new RetroScreenScreenBuffer({ rows: 2, cols: 4 });
 
     buffer.write("ABCDE");
 
@@ -93,7 +93,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("expands tabs to the next tab stop", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 2, cols: 8, tabWidth: 4 });
+    const buffer = new RetroScreenScreenBuffer({ rows: 2, cols: 8, tabWidth: 4 });
 
     buffer.write("A\tB");
 
@@ -107,7 +107,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("scrolls upward when new content exceeds the visible rows", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 2, cols: 4, scrollback: 4 });
+    const buffer = new RetroScreenScreenBuffer({ rows: 2, cols: 4, scrollback: 4 });
 
     buffer.writeln("ONE");
     buffer.writeln("TWO");
@@ -124,7 +124,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("retains styled scrollback cells for viewport paging", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 1, cols: 8, scrollback: 4 });
+    const buffer = new RetroScreenScreenBuffer({ rows: 1, cols: 8, scrollback: 4 });
 
     buffer.write("\u001b[31mRED\u001b[0m\r\n\u001b[32mGREEN");
 
@@ -141,7 +141,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("supports explicit cursor movement and cursor state updates", () => {
-    const buffer = new RetroLcdScreenBuffer({
+    const buffer = new RetroScreenScreenBuffer({
       rows: 2,
       cols: 5,
       cursorMode: "hollow"
@@ -160,7 +160,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("supports CSI cursor movement and cursor positioning", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 3, cols: 6 });
+    const buffer = new RetroScreenScreenBuffer({ rows: 3, cols: 6 });
 
     buffer.write("ABCDEF");
     buffer.write("\u001b[1D");
@@ -178,7 +178,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("supports insert and delete character operations", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 2, cols: 7 });
+    const buffer = new RetroScreenScreenBuffer({ rows: 2, cols: 7 });
 
     buffer.write("ABCDE");
     buffer.write("\u001b[3D");
@@ -195,7 +195,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("supports insert mode printing", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 2, cols: 6 });
+    const buffer = new RetroScreenScreenBuffer({ rows: 2, cols: 6 });
 
     buffer.write("ABCD");
     buffer.write("\u001b[3D");
@@ -211,7 +211,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("supports insert and delete line operations within the scroll region", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 5, cols: 6 });
+    const buffer = new RetroScreenScreenBuffer({ rows: 5, cols: 6 });
 
     buffer.write("1\n2\n3\n4");
     buffer.write("\u001b[2;4r");
@@ -234,7 +234,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("supports scroll up and down within the active scroll region", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 5, cols: 6 });
+    const buffer = new RetroScreenScreenBuffer({ rows: 5, cols: 6 });
 
     buffer.write("1\n2\n3\n4");
     buffer.write("\u001b[2;4r");
@@ -253,7 +253,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("uses the scroll region as the home origin when DEC origin mode is enabled", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 5, cols: 6 });
+    const buffer = new RetroScreenScreenBuffer({ rows: 5, cols: 6 });
 
     buffer.write("\u001b[2;4r");
     buffer.write("\u001b[?6h");
@@ -272,7 +272,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("supports erase line and erase display commands", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 3, cols: 6 });
+    const buffer = new RetroScreenScreenBuffer({ rows: 3, cols: 6 });
 
     buffer.write("HELLO");
     buffer.write("\u001b[1D");
@@ -287,7 +287,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("supports save and restore cursor", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 3, cols: 6 });
+    const buffer = new RetroScreenScreenBuffer({ rows: 3, cols: 6 });
 
     buffer.write("AB");
     buffer.write("\u001b[s");
@@ -302,7 +302,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("supports DEC save and restore cursor outside CSI", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 3, cols: 6 });
+    const buffer = new RetroScreenScreenBuffer({ rows: 3, cols: 6 });
 
     buffer.write("AB");
     buffer.write("\u001b7");
@@ -317,7 +317,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("supports ESC D, ESC E, ESC M, and ESC c", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 3, cols: 4 });
+    const buffer = new RetroScreenScreenBuffer({ rows: 3, cols: 4 });
 
     buffer.write("AB");
     buffer.write("\u001bE");
@@ -344,7 +344,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("tracks basic monochrome sgr styles per cell", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 2, cols: 6 });
+    const buffer = new RetroScreenScreenBuffer({ rows: 2, cols: 6 });
 
     buffer.write("\u001b[1mA");
     buffer.write("\u001b[2mB");
@@ -381,7 +381,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("tracks ANSI 16 foreground and background colors semantically", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 2, cols: 8 });
+    const buffer = new RetroScreenScreenBuffer({ rows: 2, cols: 8 });
 
     buffer.write("\u001b[31;44mA\u001b[39;49mB\u001b[91;102mC");
 
@@ -419,7 +419,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("tracks indexed 256-color and truecolor semantics", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 2, cols: 8 });
+    const buffer = new RetroScreenScreenBuffer({ rows: 2, cols: 8 });
 
     buffer.write("\u001b[38;5;196;48;5;25mA");
     buffer.write("\u001b[38;2;17;34;51;48;2;68;85;102mB");
@@ -448,7 +448,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("preserves partial escape sequences across writes", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 2, cols: 6 });
+    const buffer = new RetroScreenScreenBuffer({ rows: 2, cols: 6 });
 
     buffer.write("AB");
     buffer.write("\u001b[");
@@ -461,7 +461,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("supports DEC private wraparound mode toggles", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 2, cols: 4 });
+    const buffer = new RetroScreenScreenBuffer({ rows: 2, cols: 4 });
 
     buffer.write("\u001b[?7l");
     buffer.write("ABCDE");
@@ -480,7 +480,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("tracks richer DEC private mode state for terminal integration", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 3, cols: 6 });
+    const buffer = new RetroScreenScreenBuffer({ rows: 3, cols: 6 });
 
     buffer.write("\u001b[?1h");
     buffer.write("\u001b[?1004h");
@@ -522,7 +522,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("switches to the alternate screen without polluting the primary screen", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 2, cols: 8, scrollback: 4 });
+    const buffer = new RetroScreenScreenBuffer({ rows: 2, cols: 8, scrollback: 4 });
 
     buffer.write("main\r\nshell");
     buffer.write("\u001b[?1049h");
@@ -548,7 +548,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("keeps alternate-screen scrolling out of the primary scrollback history", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 1, cols: 6, scrollback: 8 });
+    const buffer = new RetroScreenScreenBuffer({ rows: 1, cols: 6, scrollback: 8 });
 
     buffer.writeln("main-1");
     buffer.write("\u001b[?1049h");
@@ -575,7 +575,7 @@ describe("RetroLcdScreenBuffer", () => {
   });
 
   it("clears and resets independently", () => {
-    const buffer = new RetroLcdScreenBuffer({ rows: 2, cols: 4, cursorMode: "hollow" });
+    const buffer = new RetroScreenScreenBuffer({ rows: 2, cols: 4, cursorMode: "hollow" });
 
     buffer.write("ABCD");
     buffer.clear();

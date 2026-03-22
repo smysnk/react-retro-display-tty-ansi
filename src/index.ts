@@ -1,85 +1,83 @@
-export { RetroScreen, RetroScreen as RetroLcd } from "./react/RetroScreen";
+export { RetroScreen } from "./react/RetroScreen";
+export { RetroScreenAnsiPlayer } from "./react/RetroScreenAnsiPlayer";
 export { useRetroScreenTerminalBridge } from "./react/useRetroScreenTerminalBridge";
-export { useRetroLcdController } from "./react/useRetroScreenController";
-export { useRetroLcdEditorSession } from "./react/useRetroScreenEditorSession";
-export { useRetroLcdGeometry } from "./react/useRetroScreenGeometry";
-export { useRetroLcdPromptSession } from "./react/useRetroScreenPromptSession";
+export { useRetroScreenAnsiPlayer } from "./react/useRetroScreenAnsiPlayer";
+export { useRetroScreenController } from "./react/useRetroScreenController";
+export { useRetroScreenEditorSession } from "./react/useRetroScreenEditorSession";
+export { useRetroScreenGeometry } from "./react/useRetroScreenGeometry";
+export { useRetroScreenPromptSession } from "./react/useRetroScreenPromptSession";
 export type {
   CursorMode,
-  RetroLcdDisplayColorMode,
-  RetroLcdDisplaySurfaceMode,
-  RetroLcdDisplayPadding,
-  RetroLcdDisplayPaddingValue,
-  RetroLcdResizeMode,
-  RetroLcdController,
-  RetroLcdEditorModeProps,
-  RetroLcdGeometry,
-  RetroLcdPromptCommandResult,
-  RetroLcdProps,
-  RetroLcdSharedProps,
-  RetroLcdTerminalModeProps,
-  RetroLcdWriteChunk,
-  RetroLcdValueModeProps,
-  RetroLcdPromptModeProps
+  RetroScreenDisplayColorMode,
+  RetroScreenDisplaySurfaceMode,
+  RetroScreenDisplayPadding,
+  RetroScreenDisplayPaddingValue,
+  RetroScreenResizeMode,
+  RetroScreenController,
+  RetroScreenEditorModeProps,
+  RetroScreenGeometry,
+  RetroScreenPromptCommandResult,
+  RetroScreenProps,
+  RetroScreenSharedProps,
+  RetroScreenTerminalModeProps,
+  RetroScreenWriteChunk,
+  RetroScreenValueModeProps,
+  RetroScreenPromptModeProps
 } from "./core/types";
+export type { RetroScreenAnsiPlayerProps } from "./react/RetroScreenAnsiPlayer";
+export type { RetroScreenAnsiPlayerState } from "./react/useRetroScreenAnsiPlayer";
 export { measureGrid } from "./core/geometry/measure-grid";
 export { wrapTextToColumns } from "./core/geometry/wrap";
 export {
-  collapseRetroLcdTextSelectionToEnd,
-  collapseRetroLcdTextSelectionToStart,
-  clampRetroLcdTextOffset,
-  createRetroLcdTextSelection,
-  deleteRetroLcdSelectedText,
-  findRetroLcdNextWordBoundary,
-  findRetroLcdPreviousWordBoundary,
-  getRetroLcdWordSelectionAtOffset,
-  isRetroLcdTextSelectionCollapsed,
-  normalizeRetroLcdTextSelection,
-  replaceRetroLcdSelectedText
+  createRetroScreenAnsiFrameStream,
+  decodeRetroScreenAnsiBytes,
+  findRetroScreenAnsiSauceIndex,
+  materializeRetroScreenAnsiFrames,
+  normalizeRetroScreenAnsiByteChunk,
+  parseRetroScreenAnsiSauce,
+  splitRetroScreenAnsiBytes,
+  stripRetroScreenAnsiSauce
+} from "./core/ansi/player";
+export {
+  collapseRetroScreenTextSelectionToEnd,
+  collapseRetroScreenTextSelectionToStart,
+  clampRetroScreenTextOffset,
+  createRetroScreenTextSelection,
+  deleteRetroScreenSelectedText,
+  findRetroScreenNextWordBoundary,
+  findRetroScreenPreviousWordBoundary,
+  getRetroScreenWordSelectionAtOffset,
+  isRetroScreenTextSelectionCollapsed,
+  normalizeRetroScreenTextSelection,
+  replaceRetroScreenSelectedText
 } from "./core/editor/selection";
-export { createRetroLcdEditorSession } from "./core/editor/editor-session";
-export { createRetroLcdController } from "./core/terminal/controller";
-export { createRetroLcdPromptSession } from "./core/terminal/prompt-session";
+export { createRetroScreenEditorSession } from "./core/editor/editor-session";
+export { createRetroScreenController } from "./core/terminal/controller";
+export { createRetroScreenPromptSession } from "./core/terminal/prompt-session";
+export { createRetroScreenWebSocketSession } from "./core/terminal/websocket-session";
+export { encodeRetroScreenTerminalInput } from "./core/terminal/input-encoder";
+export { encodeRetroScreenTerminalMouse } from "./core/terminal/mouse-encoder";
 export {
-  createRetroLcdWebSocketSession,
-  createRetroLcdWebSocketSession as createRetroScreenWebSocketSession
-} from "./core/terminal/websocket-session";
-export {
-  encodeRetroLcdTerminalInput,
-  encodeRetroLcdTerminalInput as encodeRetroScreenTerminalInput
-} from "./core/terminal/input-encoder";
-export {
-  encodeRetroLcdTerminalMouse,
-  encodeRetroLcdTerminalMouse as encodeRetroScreenTerminalMouse
-} from "./core/terminal/mouse-encoder";
-export {
-  encodeRetroLcdTerminalPaste,
-  encodeRetroLcdTerminalPaste as encodeRetroScreenTerminalPaste,
-  encodeRetroLcdTerminalFocusReport,
-  encodeRetroLcdTerminalFocusReport as encodeRetroScreenTerminalFocusReport
+  encodeRetroScreenTerminalPaste,
+  encodeRetroScreenTerminalFocusReport
 } from "./core/terminal/paste-encoder";
-export { RetroLcdAnsiParser } from "./core/terminal/ansi-parser";
-export { RetroLcdScreenBuffer } from "./core/terminal/screen-buffer";
+export { RetroScreenAnsiParser } from "./core/terminal/ansi-parser";
+export { RetroScreenScreenBuffer } from "./core/terminal/screen-buffer";
 export type {
-  RetroLcdEditorSession,
-  RetroLcdEditorSessionOptions,
-  RetroLcdEditorSessionState
+  RetroScreenEditorSession,
+  RetroScreenEditorSessionOptions,
+  RetroScreenEditorSessionState
 } from "./core/editor/editor-session";
 export type {
-  RetroLcdTextSelection
+  RetroScreenTextSelection
 } from "./core/editor/selection";
 export type {
-  RetroLcdTerminalHostAdapter,
-  RetroLcdTerminalHostKeyEvent,
-  RetroLcdTerminalInputAdapter,
-  RetroLcdTerminalOutputAdapter
+  RetroScreenTerminalHostAdapter,
+  RetroScreenTerminalHostKeyEvent,
+  RetroScreenTerminalInputAdapter,
+  RetroScreenTerminalOutputAdapter
 } from "./core/terminal/host-adapter";
 export type {
-  RetroLcdTerminalSession,
-  RetroLcdTerminalSessionEvent,
-  RetroLcdTerminalSessionGeometry,
-  RetroLcdTerminalSessionListener,
-  RetroLcdTerminalSessionState,
   RetroScreenTerminalSession,
   RetroScreenTerminalSessionEvent,
   RetroScreenTerminalSessionGeometry,
@@ -87,36 +85,42 @@ export type {
   RetroScreenTerminalSessionState
 } from "./core/terminal/session-types";
 export type {
-  RetroLcdTerminalInputEncodingOptions
+  RetroScreenTerminalInputEncodingOptions
 } from "./core/terminal/input-encoder";
 export type {
-  RetroLcdTerminalMouseAction,
-  RetroLcdTerminalMouseButton,
-  RetroLcdTerminalMouseEncodingOptions,
-  RetroLcdTerminalMouseEvent
+  RetroScreenTerminalMouseAction,
+  RetroScreenTerminalMouseButton,
+  RetroScreenTerminalMouseEncodingOptions,
+  RetroScreenTerminalMouseEvent
 } from "./core/terminal/mouse-encoder";
 export type {
-  RetroLcdTerminalPasteEncodingOptions
+  RetroScreenTerminalPasteEncodingOptions
 } from "./core/terminal/paste-encoder";
 export type {
-  RetroLcdTerminalWebSocketConstructor,
-  RetroLcdTerminalWebSocketLike,
-  RetroLcdTerminalWebSocketSessionOptions
+  RetroScreenTerminalWebSocketConstructor,
+  RetroScreenTerminalWebSocketLike,
+  RetroScreenTerminalWebSocketSessionOptions
 } from "./core/terminal/websocket-session";
 export type {
-  RetroLcdPromptSession,
-  RetroLcdPromptSessionOptions
+  RetroScreenPromptSession,
+  RetroScreenPromptSessionOptions
 } from "./core/terminal/prompt-session";
 export type {
-  RetroLcdCell,
-  RetroLcdCellIntensity,
-  RetroLcdCellStyle,
-  RetroLcdCursorState,
-  RetroLcdTerminalColor,
-  RetroLcdTerminalModes,
-  RetroLcdTerminalMouseTrackingMode,
-  RetroLcdTerminalMouseProtocol,
-  RetroLcdScreenBufferOptions,
-  RetroLcdScreenSnapshot,
-  RetroLcdWriteOptions
+  RetroScreenAnsiByteChunk,
+  RetroScreenAnsiFrameStream,
+  RetroScreenAnsiFrameStreamSnapshot,
+  RetroScreenAnsiMetadata
+} from "./core/ansi/player";
+export type {
+  RetroScreenCell,
+  RetroScreenCellIntensity,
+  RetroScreenCellStyle,
+  RetroScreenCursorState,
+  RetroScreenTerminalColor,
+  RetroScreenTerminalModes,
+  RetroScreenTerminalMouseTrackingMode,
+  RetroScreenTerminalMouseProtocol,
+  RetroScreenScreenBufferOptions,
+  RetroScreenScreenSnapshot,
+  RetroScreenWriteOptions
 } from "./core/terminal/types";

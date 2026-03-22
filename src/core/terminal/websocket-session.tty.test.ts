@@ -4,13 +4,13 @@ import WebSocket from "ws";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { getNodeTtySupportError } from "../../../scripts/tty-support.mjs";
 import { startTtyWebSocketServer } from "../../../scripts/tty-websocket-server.mjs";
-import type { RetroLcdTerminalSessionEvent } from "./session-types";
+import type { RetroScreenTerminalSessionEvent } from "./session-types";
 import {
-  createRetroLcdWebSocketSession,
-  type RetroLcdTerminalWebSocketLike
+  createRetroScreenWebSocketSession,
+  type RetroScreenTerminalWebSocketLike
 } from "./websocket-session";
 
-class NodeWebSocketAdapter implements RetroLcdTerminalWebSocketLike {
+class NodeWebSocketAdapter implements RetroScreenTerminalWebSocketLike {
   readonly socket: WebSocket;
   onopen = null;
   onmessage = null;
@@ -81,16 +81,16 @@ const waitFor = async <T>(
   throw new Error(`Timed out waiting for ${label}.`);
 };
 
-const getCombinedData = (events: RetroLcdTerminalSessionEvent[]) =>
+const getCombinedData = (events: RetroScreenTerminalSessionEvent[]) =>
   events
-    .filter((event): event is Extract<RetroLcdTerminalSessionEvent, { type: "data" }> => event.type === "data")
+    .filter((event): event is Extract<RetroScreenTerminalSessionEvent, { type: "data" }> => event.type === "data")
     .map((event) => event.data)
     .join("");
 
 const ttySupportError = getNodeTtySupportError();
 const describeWithTty = ttySupportError ? describe.skip : describe;
 
-describeWithTty("createRetroLcdWebSocketSession with a real TTY server", () => {
+describeWithTty("createRetroScreenWebSocketSession with a real TTY server", () => {
   const scriptPath = resolve(process.cwd(), "scripts/tty-test-terminal.mjs");
   let server: Awaited<ReturnType<typeof startTtyWebSocketServer>>;
 
@@ -111,8 +111,8 @@ describeWithTty("createRetroLcdWebSocketSession with a real TTY server", () => {
   it(
     "round-trips TTY output, input, resize, title, bell, and alternate-screen events",
     async () => {
-      const events: RetroLcdTerminalSessionEvent[] = [];
-      const session = createRetroLcdWebSocketSession({
+      const events: RetroScreenTerminalSessionEvent[] = [];
+      const session = createRetroScreenWebSocketSession({
         url: server.url,
         WebSocket: NodeWebSocketAdapter,
         openPayload: {
@@ -199,8 +199,8 @@ describeWithTty("createRetroLcdWebSocketSession with a real TTY server", () => {
     });
 
     try {
-      const rejectedEvents: RetroLcdTerminalSessionEvent[] = [];
-      const rejectedSession = createRetroLcdWebSocketSession({
+      const rejectedEvents: RetroScreenTerminalSessionEvent[] = [];
+      const rejectedSession = createRetroScreenWebSocketSession({
         url: lockedServer.url,
         WebSocket: NodeWebSocketAdapter,
         openPayload: {
@@ -229,8 +229,8 @@ describeWithTty("createRetroLcdWebSocketSession with a real TTY server", () => {
         rejectedSession.close();
       }
 
-      const lockedEvents: RetroLcdTerminalSessionEvent[] = [];
-      const lockedSession = createRetroLcdWebSocketSession({
+      const lockedEvents: RetroScreenTerminalSessionEvent[] = [];
+      const lockedSession = createRetroScreenWebSocketSession({
         url: `${lockedServer.url}?token=secret-token`,
         WebSocket: NodeWebSocketAdapter,
         openPayload: {

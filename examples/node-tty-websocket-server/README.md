@@ -65,9 +65,9 @@ Server to frontend:
 ## Example Frontend Wiring
 
 ```tsx
-import { RetroScreen, createRetroLcdWebSocketSession } from "react-retro-display-tty-ansi";
+import { RetroScreen, createRetroScreenWebSocketSession } from "react-retro-display-tty-ansi";
 
-const session = createRetroLcdWebSocketSession({
+const session = createRetroScreenWebSocketSession({
   url: "ws://127.0.0.1:8787",
   openPayload: {
     cwd: "/Users/josh/play/react-retro-display",

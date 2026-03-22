@@ -1,15 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import type {
-  RetroLcdController,
-  RetroLcdGeometry,
-  RetroLcdTerminalModeProps
+  RetroScreenController,
+  RetroScreenGeometry,
+  RetroScreenTerminalModeProps
 } from "../core/types";
-import type { RetroLcdTerminalSessionState } from "../core/terminal/session-types";
+import type { RetroScreenTerminalSessionState } from "../core/terminal/session-types";
 
 type UseRetroScreenTerminalBridgeArgs = {
-  terminalProps: RetroLcdTerminalModeProps | null;
-  geometry: RetroLcdGeometry;
-  terminalController: RetroLcdController | null;
+  terminalProps: RetroScreenTerminalModeProps | null;
+  geometry: RetroScreenGeometry;
+  terminalController: RetroScreenController | null;
 };
 
 const getGeometrySignature = (rows: number, cols: number) => `${rows}x${cols}`;
@@ -19,7 +19,7 @@ export const useRetroScreenTerminalBridge = ({
   geometry,
   terminalController
 }: UseRetroScreenTerminalBridgeArgs): {
-  sessionState: RetroLcdTerminalSessionState;
+  sessionState: RetroScreenTerminalSessionState;
   sessionTitle: string | null;
   sessionBellCount: number;
 } => {
@@ -27,7 +27,7 @@ export const useRetroScreenTerminalBridge = ({
   const onSessionEvent = terminalProps?.onSessionEvent;
   const onSessionStateChange = terminalProps?.onSessionStateChange;
   const closeSessionOnUnmount = terminalProps?.closeSessionOnUnmount ?? true;
-  const [sessionState, setSessionState] = useState<RetroLcdTerminalSessionState>(
+  const [sessionState, setSessionState] = useState<RetroScreenTerminalSessionState>(
     session?.getState() ?? "idle"
   );
   const [sessionTitle, setSessionTitle] = useState<string | null>(null);
@@ -63,7 +63,7 @@ export const useRetroScreenTerminalBridge = ({
       return;
     }
 
-    const handleStateChange = (nextState: RetroLcdTerminalSessionState) => {
+    const handleStateChange = (nextState: RetroScreenTerminalSessionState) => {
       setSessionState((currentState) => (currentState === nextState ? currentState : nextState));
       onSessionStateChange?.(nextState);
     };

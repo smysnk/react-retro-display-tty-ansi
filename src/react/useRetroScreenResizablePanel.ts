@@ -6,9 +6,9 @@ import {
   type CSSProperties,
   type MouseEventHandler
 } from "react";
-import type { RetroLcdResizeMode, RetroLcdSharedProps } from "../core/types";
+import type { RetroScreenResizeMode, RetroScreenSharedProps } from "../core/types";
 
-type ResolvedResizeMode = RetroLcdResizeMode | "none";
+type ResolvedResizeMode = RetroScreenResizeMode | "none";
 type ResizeHandle = "right" | "bottom" | "bottom-right" | "left" | "top" | "top-left";
 type ResizeState = {
   width: number | null;
@@ -30,7 +30,7 @@ const DEFAULT_MIN_WIDTH = 280;
 const DEFAULT_MIN_HEIGHT = 220;
 
 const normalizeResizeMode = (
-  resizable: RetroLcdSharedProps["resizable"]
+  resizable: RetroScreenSharedProps["resizable"]
 ): ResolvedResizeMode => {
   if (resizable === true) {
     return "both";
@@ -73,10 +73,10 @@ const getHandleAxes = (handle: ResizeHandle) => {
   }
 };
 
-export const useRetroLcdResizablePanel = ({
+export const useRetroScreenResizablePanel = ({
   resizable,
   resizableLeadingEdges
-}: Pick<RetroLcdSharedProps, "resizable" | "resizableLeadingEdges">) => {
+}: Pick<RetroScreenSharedProps, "resizable" | "resizableLeadingEdges">) => {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const listenersRef = useRef<{
     move: (event: MouseEvent) => void;

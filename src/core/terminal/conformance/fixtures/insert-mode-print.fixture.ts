@@ -1,6 +1,6 @@
-import type { RetroLcdTerminalFixture } from "../types";
+import type { RetroScreenTerminalFixture } from "../types";
 
-export const insertModePrintFixture: RetroLcdTerminalFixture = {
+export const insertModePrintFixture: RetroScreenTerminalFixture = {
   name: "insert-mode-print",
   description: "ANSI insert mode should cause printable characters to push the row content right.",
   classification: "implemented",

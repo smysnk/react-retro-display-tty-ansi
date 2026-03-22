@@ -1,6 +1,6 @@
-import type { RetroLcdTerminalFixture } from "../types";
+import type { RetroScreenTerminalFixture } from "../types";
 
-export const escIndexFixture: RetroLcdTerminalFixture = {
+export const escIndexFixture: RetroScreenTerminalFixture = {
   name: "esc-index",
   description: "ESC D should perform IND, moving the cursor down while preserving the column.",
   classification: "implemented",

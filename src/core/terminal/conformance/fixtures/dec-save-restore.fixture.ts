@@ -1,6 +1,6 @@
-import type { RetroLcdTerminalFixture } from "../types";
+import type { RetroScreenTerminalFixture } from "../types";
 
-export const decSaveRestoreFixture: RetroLcdTerminalFixture = {
+export const decSaveRestoreFixture: RetroScreenTerminalFixture = {
   name: "dec-save-restore",
   description: "ESC 7 and ESC 8 should save and restore the cursor position like a VT-style terminal.",
   classification: "implemented",

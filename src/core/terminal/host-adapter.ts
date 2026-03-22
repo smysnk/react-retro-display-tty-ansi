@@ -1,4 +1,4 @@
-export type RetroLcdTerminalHostKeyEvent = {
+export type RetroScreenTerminalHostKeyEvent = {
   key: string;
   code: string;
   altKey: boolean;
@@ -8,7 +8,7 @@ export type RetroLcdTerminalHostKeyEvent = {
   repeat: boolean;
 };
 
-export type RetroLcdTerminalOutputAdapter = {
+export type RetroScreenTerminalOutputAdapter = {
   beginFrame: () => void;
   writeAnsi: (data: string) => void;
   setCursor: (row: number, col: number) => void;
@@ -17,12 +17,12 @@ export type RetroLcdTerminalOutputAdapter = {
   endFrame: () => void;
 };
 
-export type RetroLcdTerminalInputAdapter = {
-  onKeyDown?: (event: RetroLcdTerminalHostKeyEvent) => void;
-  onKeyUp?: (event: RetroLcdTerminalHostKeyEvent) => void;
+export type RetroScreenTerminalInputAdapter = {
+  onKeyDown?: (event: RetroScreenTerminalHostKeyEvent) => void;
+  onKeyUp?: (event: RetroScreenTerminalHostKeyEvent) => void;
   focusTerminal?: () => void;
   blurTerminal?: () => void;
   drainInputQueue?: () => readonly string[];
 };
 
-export type RetroLcdTerminalHostAdapter = RetroLcdTerminalOutputAdapter & RetroLcdTerminalInputAdapter;
+export type RetroScreenTerminalHostAdapter = RetroScreenTerminalOutputAdapter & RetroScreenTerminalInputAdapter;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { encodeRetroLcdTerminalInput } from "./input-encoder";
+import { encodeRetroScreenTerminalInput } from "./input-encoder";
 
-const createKeyEvent = (overrides: Partial<Parameters<typeof encodeRetroLcdTerminalInput>[0]>) => ({
+const createKeyEvent = (overrides: Partial<Parameters<typeof encodeRetroScreenTerminalInput>[0]>) => ({
   key: "",
   code: "",
   altKey: false,
@@ -12,10 +12,10 @@ const createKeyEvent = (overrides: Partial<Parameters<typeof encodeRetroLcdTermi
   ...overrides
 });
 
-describe("encodeRetroLcdTerminalInput", () => {
+describe("encodeRetroScreenTerminalInput", () => {
   it("encodes printable keys directly", () => {
     expect(
-      encodeRetroLcdTerminalInput(
+      encodeRetroScreenTerminalInput(
         createKeyEvent({
           key: "a",
           code: "KeyA"
@@ -26,7 +26,7 @@ describe("encodeRetroLcdTerminalInput", () => {
 
   it("encodes control-key combinations", () => {
     expect(
-      encodeRetroLcdTerminalInput(
+      encodeRetroScreenTerminalInput(
         createKeyEvent({
           key: "c",
           code: "KeyC",
@@ -38,7 +38,7 @@ describe("encodeRetroLcdTerminalInput", () => {
 
   it("encodes alt-printable input with an escape prefix", () => {
     expect(
-      encodeRetroLcdTerminalInput(
+      encodeRetroScreenTerminalInput(
         createKeyEvent({
           key: "x",
           code: "KeyX",
@@ -50,7 +50,7 @@ describe("encodeRetroLcdTerminalInput", () => {
 
   it("encodes cursor and paging keys with xterm-style sequences", () => {
     expect(
-      encodeRetroLcdTerminalInput(
+      encodeRetroScreenTerminalInput(
         createKeyEvent({
           key: "ArrowUp",
           code: "ArrowUp"
@@ -58,7 +58,7 @@ describe("encodeRetroLcdTerminalInput", () => {
       )
     ).toBe("\u001b[A");
     expect(
-      encodeRetroLcdTerminalInput(
+      encodeRetroScreenTerminalInput(
         createKeyEvent({
           key: "PageDown",
           code: "PageDown"
@@ -69,7 +69,7 @@ describe("encodeRetroLcdTerminalInput", () => {
 
   it("encodes modified navigation keys with CSI modifiers", () => {
     expect(
-      encodeRetroLcdTerminalInput(
+      encodeRetroScreenTerminalInput(
         createKeyEvent({
           key: "ArrowRight",
           code: "ArrowRight",
@@ -82,7 +82,7 @@ describe("encodeRetroLcdTerminalInput", () => {
 
   it("switches cursor keys to SS3 sequences when application cursor mode is enabled", () => {
     expect(
-      encodeRetroLcdTerminalInput(
+      encodeRetroScreenTerminalInput(
         createKeyEvent({
           key: "ArrowUp",
           code: "ArrowUp"
@@ -96,7 +96,7 @@ describe("encodeRetroLcdTerminalInput", () => {
 
   it("leaves command/meta shortcuts alone by default", () => {
     expect(
-      encodeRetroLcdTerminalInput(
+      encodeRetroScreenTerminalInput(
         createKeyEvent({
           key: "k",
           code: "KeyK",

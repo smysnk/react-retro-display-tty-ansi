@@ -1,29 +1,29 @@
 import type {
   CursorMode,
-  RetroLcdPromptCommandResult
+  RetroScreenPromptCommandResult
 } from "../types";
-import { RetroLcdScreenBuffer } from "./screen-buffer";
+import { RetroScreenScreenBuffer } from "./screen-buffer";
 import type {
-  RetroLcdScreenBufferOptions,
-  RetroLcdScreenSnapshot,
-  RetroLcdWriteOptions
+  RetroScreenScreenBufferOptions,
+  RetroScreenScreenSnapshot,
+  RetroScreenWriteOptions
 } from "./types";
 
 type PromptTranscriptOperation = {
   data: string;
-  options?: RetroLcdWriteOptions;
+  options?: RetroScreenWriteOptions;
 };
 
-export type RetroLcdPromptSessionOptions = Partial<RetroLcdScreenBufferOptions> & {
+export type RetroScreenPromptSessionOptions = Partial<RetroScreenScreenBufferOptions> & {
   promptChar?: string;
   acceptanceText?: string;
   rejectionText?: string;
   onCommand?: (
     command: string
-  ) => RetroLcdPromptCommandResult | Promise<RetroLcdPromptCommandResult>;
+  ) => RetroScreenPromptCommandResult | Promise<RetroScreenPromptCommandResult>;
 };
 
-export type RetroLcdPromptSession = {
+export type RetroScreenPromptSession = {
   setDraft: (draft: string) => void;
   getDraft: () => string;
   setSelection: (offset: number) => void;
@@ -31,11 +31,11 @@ export type RetroLcdPromptSession = {
   isAwaitingResponse: () => boolean;
   resize: (rows: number, cols: number) => void;
   setCursorMode: (mode: CursorMode) => void;
-  updateOptions: (options: Partial<RetroLcdPromptSessionOptions>) => void;
+  updateOptions: (options: Partial<RetroScreenPromptSessionOptions>) => void;
   clear: () => void;
   reset: () => void;
-  submit: (command?: string) => Promise<RetroLcdPromptCommandResult>;
-  getSnapshot: () => RetroLcdScreenSnapshot;
+  submit: (command?: string) => Promise<RetroScreenPromptCommandResult>;
+  getSnapshot: () => RetroScreenScreenSnapshot;
   subscribe: (listener: () => void) => () => void;
 };
 
@@ -61,7 +61,7 @@ const normalizeResponseLines = (response?: string | string[]) => {
   return values.flatMap((value) => value.split(/\r?\n/u));
 };
 
-class RetroLcdPromptSessionStore implements RetroLcdPromptSession {
+class RetroScreenPromptSessionStore implements RetroScreenPromptSession {
   private readonly listeners = new Set<() => void>();
   private readonly transcript: PromptTranscriptOperation[] = [];
   private rows: number;
@@ -72,13 +72,13 @@ class RetroLcdPromptSessionStore implements RetroLcdPromptSession {
   private promptChar: string;
   private acceptanceText: string;
   private rejectionText: string;
-  private onCommand?: RetroLcdPromptSessionOptions["onCommand"];
+  private onCommand?: RetroScreenPromptSessionOptions["onCommand"];
   private draft = "";
   private selection = 0;
   private focused = false;
   private awaitingResponse = false;
 
-  constructor(options: RetroLcdPromptSessionOptions = {}) {
+  constructor(options: RetroScreenPromptSessionOptions = {}) {
     this.rows = clampDimension(options.rows ?? DEFAULT_ROWS, DEFAULT_ROWS);
     this.cols = clampDimension(options.cols ?? DEFAULT_COLS, DEFAULT_COLS);
     this.scrollback = options.scrollback;
@@ -132,7 +132,7 @@ class RetroLcdPromptSessionStore implements RetroLcdPromptSession {
     this.emit();
   }
 
-  updateOptions(options: Partial<RetroLcdPromptSessionOptions>) {
+  updateOptions(options: Partial<RetroScreenPromptSessionOptions>) {
     if (options.promptChar !== undefined) {
       this.promptChar = options.promptChar || ">";
     }
@@ -185,7 +185,7 @@ class RetroLcdPromptSessionStore implements RetroLcdPromptSession {
     this.emit();
   }
 
-  async submit(command = this.draft): Promise<RetroLcdPromptCommandResult> {
+  async submit(command = this.draft): Promise<RetroScreenPromptCommandResult> {
     if (this.awaitingResponse) {
       return { accepted: false, response: [this.rejectionText] };
     }
@@ -196,7 +196,7 @@ class RetroLcdPromptSessionStore implements RetroLcdPromptSession {
     this.awaitingResponse = true;
     this.emit();
 
-    let result: RetroLcdPromptCommandResult;
+    let result: RetroScreenPromptCommandResult;
 
     try {
       result = (await this.onCommand?.(command)) ?? { accepted: true };
@@ -216,7 +216,7 @@ class RetroLcdPromptSessionStore implements RetroLcdPromptSession {
     return result;
   }
 
-  getSnapshot(): RetroLcdScreenSnapshot {
+  getSnapshot(): RetroScreenScreenSnapshot {
     const renderBuffer = this.createBuffer();
 
     if (!this.awaitingResponse) {
@@ -250,7 +250,7 @@ class RetroLcdPromptSessionStore implements RetroLcdPromptSession {
   }
 
   private createBuffer() {
-    const buffer = new RetroLcdScreenBuffer({
+    const buffer = new RetroScreenScreenBuffer({
       rows: this.rows,
       cols: this.cols,
       scrollback: this.scrollback,
@@ -265,7 +265,7 @@ class RetroLcdPromptSessionStore implements RetroLcdPromptSession {
     return buffer;
   }
 
-  private appendTranscript(data: string, options?: RetroLcdWriteOptions) {
+  private appendTranscript(data: string, options?: RetroScreenWriteOptions) {
     this.transcript.push({
       data,
       options
@@ -279,6 +279,6 @@ class RetroLcdPromptSessionStore implements RetroLcdPromptSession {
   }
 }
 
-export const createRetroLcdPromptSession = (
-  options: RetroLcdPromptSessionOptions = {}
-): RetroLcdPromptSession => new RetroLcdPromptSessionStore(options);
+export const createRetroScreenPromptSession = (
+  options: RetroScreenPromptSessionOptions = {}
+): RetroScreenPromptSession => new RetroScreenPromptSessionStore(options);

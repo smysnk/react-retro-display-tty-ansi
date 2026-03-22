@@ -1,4 +1,4 @@
-import type { RetroLcdGeometry } from "../types";
+import type { RetroScreenGeometry } from "../types";
 
 export type MeasureGridInput = {
   innerWidth: number;
@@ -23,7 +23,7 @@ export const measureGrid = ({
   cellWidth,
   cellHeight,
   fontSize
-}: MeasureGridInput): RetroLcdGeometry => ({
+}: MeasureGridInput): RetroScreenGeometry => ({
   rows: Math.max(1, Math.floor(innerHeight / Math.max(1, cellHeight))),
   cols: Math.max(1, Math.floor(innerWidth / Math.max(1, cellWidth))),
   cellWidth,
@@ -40,7 +40,7 @@ export const measureStaticGrid = ({
   cols,
   fontWidthRatio,
   fontHeightRatio
-}: MeasureStaticGridInput): RetroLcdGeometry => {
+}: MeasureStaticGridInput): RetroScreenGeometry => {
   const resolvedRows = Math.max(1, Math.floor(rows));
   const resolvedCols = Math.max(1, Math.floor(cols));
   const cellWidth = Math.max(1, innerWidth / resolvedCols);

@@ -1,8 +1,8 @@
 import type { CSSProperties } from "react";
-import type { RetroLcdCell, RetroLcdTerminalColor } from "../core/terminal/types";
-import type { RetroLcdDisplayColorMode, RetroLcdDisplaySurfaceMode } from "../core/types";
+import type { RetroScreenCell, RetroScreenTerminalColor } from "../core/terminal/types";
+import type { RetroScreenDisplayColorMode, RetroScreenDisplaySurfaceMode } from "../core/types";
 
-const DISPLAY_MODE_ACCENTS: Record<RetroLcdDisplayColorMode, string> = {
+const DISPLAY_MODE_ACCENTS: Record<RetroScreenDisplayColorMode, string> = {
   "phosphor-green": "#97ff9b",
   "phosphor-amber": "#ffc96b",
   "phosphor-ice": "#b8f1ff",
@@ -11,7 +11,7 @@ const DISPLAY_MODE_ACCENTS: Record<RetroLcdDisplayColorMode, string> = {
 };
 
 const LIGHT_SURFACE_BACKGROUNDS: Record<
-  RetroLcdDisplayColorMode,
+  RetroScreenDisplayColorMode,
   {
     top: string;
     bottom: string;
@@ -204,7 +204,7 @@ const ensureBackgroundContrast = (
   return bestColor;
 };
 
-const buildTextGlow = (color: string, displaySurfaceMode: RetroLcdDisplaySurfaceMode) => {
+const buildTextGlow = (color: string, displaySurfaceMode: RetroScreenDisplaySurfaceMode) => {
   const rgbColor = parseHexColor(color);
 
   if (displaySurfaceMode === "light") {
@@ -242,8 +242,8 @@ const buildXtermPalette = () => {
 const XTERM_256_PALETTE = buildXtermPalette();
 
 const getSurfaceBackground = (
-  displayColorMode: RetroLcdDisplayColorMode,
-  displaySurfaceMode: RetroLcdDisplaySurfaceMode
+  displayColorMode: RetroScreenDisplayColorMode,
+  displaySurfaceMode: RetroScreenDisplaySurfaceMode
 ) =>
   displaySurfaceMode === "light"
     ? LIGHT_SURFACE_BACKGROUNDS[displayColorMode]
@@ -259,8 +259,8 @@ const getSurfaceBackground = (
       };
 
 const getDefaultAnsiForeground = (
-  displayColorMode: RetroLcdDisplayColorMode,
-  displaySurfaceMode: RetroLcdDisplaySurfaceMode
+  displayColorMode: RetroScreenDisplayColorMode,
+  displaySurfaceMode: RetroScreenDisplaySurfaceMode
 ) => {
   if (displaySurfaceMode === "dark") {
     return ANSI_CLASSIC_DEFAULT_FOREGROUND;
@@ -274,11 +274,11 @@ const getDefaultAnsiForeground = (
 };
 
 const resolveAnsiColor = (
-  color: RetroLcdTerminalColor,
+  color: RetroScreenTerminalColor,
   role: "foreground" | "background",
   palette: string[],
-  displayColorMode: RetroLcdDisplayColorMode,
-  displaySurfaceMode: RetroLcdDisplaySurfaceMode
+  displayColorMode: RetroScreenDisplayColorMode,
+  displaySurfaceMode: RetroScreenDisplaySurfaceMode
 ) => {
   const surfaceBackground = getSurfaceBackground(displayColorMode, displaySurfaceMode).bottom;
   const defaultForeground = getDefaultAnsiForeground(displayColorMode, displaySurfaceMode);
@@ -314,8 +314,8 @@ const resolveAnsiColor = (
 };
 
 export const getDisplayModeRootVars = (
-  displayColorMode: RetroLcdDisplayColorMode,
-  displaySurfaceMode: RetroLcdDisplaySurfaceMode,
+  displayColorMode: RetroScreenDisplayColorMode,
+  displaySurfaceMode: RetroScreenDisplaySurfaceMode,
   colorOverride?: string
 ): CSSProperties => {
   const surface = getSurfaceBackground(displayColorMode, displaySurfaceMode);
@@ -339,9 +339,9 @@ export const getDisplayModeRootVars = (
 };
 
 export const getCellPresentationStyle = (
-  cell: RetroLcdCell,
-  displayColorMode: RetroLcdDisplayColorMode,
-  displaySurfaceMode: RetroLcdDisplaySurfaceMode
+  cell: RetroScreenCell,
+  displayColorMode: RetroScreenDisplayColorMode,
+  displaySurfaceMode: RetroScreenDisplaySurfaceMode
 ): CSSProperties | undefined => {
   if (displayColorMode !== "ansi-classic" && displayColorMode !== "ansi-extended") {
     return undefined;

@@ -7,7 +7,7 @@ import {
   type RefObject
 } from "react";
 import { measureGrid, measureStaticGrid } from "../core/geometry/measure-grid";
-import type { RetroLcdGeometry, RetroLcdGridMode } from "../core/types";
+import type { RetroScreenGeometry, RetroScreenGridMode } from "../core/types";
 
 const DEFAULT_GEOMETRY = measureGrid({
   innerWidth: 560,
@@ -27,14 +27,14 @@ const buildStaticFallbackGeometry = (rows?: number, cols?: number) =>
     fontHeightRatio: DEFAULT_GEOMETRY.cellHeight / DEFAULT_GEOMETRY.fontSize
   });
 
-type UseRetroLcdGeometryOptions = {
+type UseRetroScreenGeometryOptions = {
   screenRef: RefObject<HTMLElement | null>;
   probeRef: RefObject<HTMLElement | null>;
-  gridMode?: RetroLcdGridMode;
+  gridMode?: RetroScreenGridMode;
   rows?: number;
   cols?: number;
   fontScale?: number;
-  onGeometryChange?: (geometry: RetroLcdGeometry) => void;
+  onGeometryChange?: (geometry: RetroScreenGeometry) => void;
 };
 
 const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -46,9 +46,9 @@ const measureCurrentGeometry = ({
   rows,
   cols
 }: Pick<
-  UseRetroLcdGeometryOptions,
+  UseRetroScreenGeometryOptions,
   "screenRef" | "probeRef" | "gridMode" | "rows" | "cols" | "fontScale"
->): RetroLcdGeometry => {
+>): RetroScreenGeometry => {
   const screenNode = screenRef.current;
   const probeNode = probeRef.current;
 
@@ -98,7 +98,7 @@ const measureCurrentGeometry = ({
   });
 };
 
-export const useRetroLcdGeometry = ({
+export const useRetroScreenGeometry = ({
   screenRef,
   probeRef,
   gridMode,
@@ -106,7 +106,7 @@ export const useRetroLcdGeometry = ({
   cols,
   fontScale,
   onGeometryChange
-}: UseRetroLcdGeometryOptions) => {
+}: UseRetroScreenGeometryOptions) => {
   const [geometry, setGeometry] = useState(() =>
     measureCurrentGeometry({ screenRef, probeRef, gridMode, rows, cols, fontScale })
   );

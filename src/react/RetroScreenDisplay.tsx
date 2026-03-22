@@ -8,24 +8,24 @@ import type {
   RefObject,
   WheelEventHandler
 } from "react";
-import type { RetroLcdCell } from "../core/terminal/types";
+import type { RetroScreenCell } from "../core/terminal/types";
 import type {
-  RetroLcdDisplayColorMode,
-  RetroLcdDisplaySurfaceMode,
-  RetroLcdProps
+  RetroScreenDisplayColorMode,
+  RetroScreenDisplaySurfaceMode,
+  RetroScreenProps
 } from "../core/types";
 import {
   getCellCharacter,
   getLineDisplayText,
-  type RetroLcdRenderCell,
-  type RetroLcdRenderModel
+  type RetroScreenRenderCell,
+  type RetroScreenRenderModel
 } from "./retro-screen-render-model";
 import { getCellPresentationStyle } from "./retro-screen-display-color";
 
 const joinClassNames = (...classNames: Array<string | undefined>) =>
   classNames.filter(Boolean).join(" ");
 
-const getCellClassName = (cell: RetroLcdRenderCell) =>
+const getCellClassName = (cell: RetroScreenRenderCell) =>
   joinClassNames(
     "retro-lcd__cell",
     cell.style.bold ? "retro-lcd__cell--bold" : undefined,
@@ -37,10 +37,10 @@ const getCellClassName = (cell: RetroLcdRenderCell) =>
   );
 
 type RetroScreenDisplayProps = {
-  mode: RetroLcdProps["mode"];
-  renderModel: RetroLcdRenderModel;
-  displayColorMode: RetroLcdDisplayColorMode;
-  displaySurfaceMode: RetroLcdDisplaySurfaceMode;
+  mode: RetroScreenProps["mode"];
+  renderModel: RetroScreenRenderModel;
+  displayColorMode: RetroScreenDisplayColorMode;
+  displaySurfaceMode: RetroScreenDisplaySurfaceMode;
   screenRef: RefObject<HTMLDivElement | null>;
   probeRef: RefObject<HTMLSpanElement | null>;
   viewportRef?: RefObject<HTMLDivElement | null>;

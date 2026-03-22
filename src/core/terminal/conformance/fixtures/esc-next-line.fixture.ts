@@ -1,6 +1,6 @@
-import type { RetroLcdTerminalFixture } from "../types";
+import type { RetroScreenTerminalFixture } from "../types";
 
-export const escNextLineFixture: RetroLcdTerminalFixture = {
+export const escNextLineFixture: RetroScreenTerminalFixture = {
   name: "esc-next-line",
   description: "ESC E should perform NEL, moving to the next line and column zero.",
   classification: "implemented",

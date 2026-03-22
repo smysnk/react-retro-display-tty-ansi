@@ -1,8 +1,8 @@
 import type { CursorMode } from "../types";
 
-export type RetroLcdCellIntensity = "normal" | "bold" | "faint";
+export type RetroScreenCellIntensity = "normal" | "bold" | "faint";
 
-export type RetroLcdTerminalColor =
+export type RetroScreenTerminalColor =
   | {
       mode: "default";
       value: 0;
@@ -16,33 +16,33 @@ export type RetroLcdTerminalColor =
       value: number;
     };
 
-export type RetroLcdCellStyle = {
-  intensity: RetroLcdCellIntensity;
+export type RetroScreenCellStyle = {
+  intensity: RetroScreenCellIntensity;
   bold: boolean;
   faint: boolean;
   inverse: boolean;
   conceal: boolean;
   blink: boolean;
-  foreground: RetroLcdTerminalColor;
-  background: RetroLcdTerminalColor;
+  foreground: RetroScreenTerminalColor;
+  background: RetroScreenTerminalColor;
 };
 
-export type RetroLcdCell = {
+export type RetroScreenCell = {
   char: string;
-  style: RetroLcdCellStyle;
+  style: RetroScreenCellStyle;
 };
 
-export type RetroLcdCursorState = {
+export type RetroScreenCursorState = {
   row: number;
   col: number;
   visible: boolean;
   mode: CursorMode;
 };
 
-export type RetroLcdTerminalMouseTrackingMode = "none" | "vt200" | "drag" | "any";
-export type RetroLcdTerminalMouseProtocol = "none" | "sgr";
+export type RetroScreenTerminalMouseTrackingMode = "none" | "vt200" | "drag" | "any";
+export type RetroScreenTerminalMouseProtocol = "none" | "sgr";
 
-export type RetroLcdTerminalModes = {
+export type RetroScreenTerminalModes = {
   insertMode: boolean;
   originMode: boolean;
   wraparoundMode: boolean;
@@ -50,11 +50,11 @@ export type RetroLcdTerminalModes = {
   bracketedPasteMode: boolean;
   focusReportingMode: boolean;
   alternateScreenBufferMode: boolean;
-  mouseTrackingMode: RetroLcdTerminalMouseTrackingMode;
-  mouseProtocol: RetroLcdTerminalMouseProtocol;
+  mouseTrackingMode: RetroScreenTerminalMouseTrackingMode;
+  mouseProtocol: RetroScreenTerminalMouseProtocol;
 };
 
-export type RetroLcdScreenBufferOptions = {
+export type RetroScreenScreenBufferOptions = {
   rows: number;
   cols: number;
   scrollback?: number;
@@ -62,19 +62,19 @@ export type RetroLcdScreenBufferOptions = {
   cursorMode?: CursorMode;
 };
 
-export type RetroLcdScreenSnapshot = {
+export type RetroScreenScreenSnapshot = {
   rows: number;
   cols: number;
   lines: string[];
   rawLines: string[];
-  cells: RetroLcdCell[][];
+  cells: RetroScreenCell[][];
   scrollback: string[];
-  scrollbackCells: RetroLcdCell[][];
-  cursor: RetroLcdCursorState;
+  scrollbackCells: RetroScreenCell[][];
+  cursor: RetroScreenCursorState;
   pendingWrap: boolean;
-  modes: RetroLcdTerminalModes;
+  modes: RetroScreenTerminalModes;
 };
 
-export type RetroLcdWriteOptions = {
+export type RetroScreenWriteOptions = {
   appendNewline?: boolean;
 };

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { encodeRetroLcdTerminalMouse } from "./mouse-encoder";
+import { encodeRetroScreenTerminalMouse } from "./mouse-encoder";
 
-describe("encodeRetroLcdTerminalMouse", () => {
+describe("encodeRetroScreenTerminalMouse", () => {
   it("encodes left-button press events in SGR mode", () => {
     expect(
-      encodeRetroLcdTerminalMouse(
+      encodeRetroScreenTerminalMouse(
         {
           action: "press",
           button: "left",
@@ -25,7 +25,7 @@ describe("encodeRetroLcdTerminalMouse", () => {
 
   it("encodes button releases with the SGR release final byte", () => {
     expect(
-      encodeRetroLcdTerminalMouse(
+      encodeRetroScreenTerminalMouse(
         {
           action: "release",
           button: "right",
@@ -46,7 +46,7 @@ describe("encodeRetroLcdTerminalMouse", () => {
 
   it("encodes drag motion with the motion bit set", () => {
     expect(
-      encodeRetroLcdTerminalMouse(
+      encodeRetroScreenTerminalMouse(
         {
           action: "move",
           button: "left",
@@ -67,7 +67,7 @@ describe("encodeRetroLcdTerminalMouse", () => {
 
   it("encodes any-event motion even with no pressed button", () => {
     expect(
-      encodeRetroLcdTerminalMouse(
+      encodeRetroScreenTerminalMouse(
         {
           action: "move",
           button: "none",
@@ -88,7 +88,7 @@ describe("encodeRetroLcdTerminalMouse", () => {
 
   it("encodes wheel events while mouse reporting is active", () => {
     expect(
-      encodeRetroLcdTerminalMouse(
+      encodeRetroScreenTerminalMouse(
         {
           action: "wheel",
           button: "wheel-down",
@@ -109,7 +109,7 @@ describe("encodeRetroLcdTerminalMouse", () => {
 
   it("returns null when SGR mouse reporting is not active", () => {
     expect(
-      encodeRetroLcdTerminalMouse(
+      encodeRetroScreenTerminalMouse(
         {
           action: "press",
           button: "left",

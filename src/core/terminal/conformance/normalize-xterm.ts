@@ -1,18 +1,18 @@
 import { Terminal } from "@xterm/headless";
 import type { IBuffer, IBufferCell } from "@xterm/headless";
 import type {
-  RetroLcdNormalizedCell,
-  RetroLcdNormalizedCellStyle,
-  RetroLcdNormalizedColor,
-  RetroLcdNormalizedTerminalSnapshot
+  RetroScreenNormalizedCell,
+  RetroScreenNormalizedCellStyle,
+  RetroScreenNormalizedColor,
+  RetroScreenNormalizedTerminalSnapshot
 } from "./types";
 
-const DEFAULT_COLOR: RetroLcdNormalizedColor = {
+const DEFAULT_COLOR: RetroScreenNormalizedColor = {
   mode: "default",
   value: 0
 };
 
-const normalizeColor = (cell: IBufferCell, type: "foreground" | "background"): RetroLcdNormalizedColor => {
+const normalizeColor = (cell: IBufferCell, type: "foreground" | "background"): RetroScreenNormalizedColor => {
   const isDefault = type === "foreground" ? cell.isFgDefault() : cell.isBgDefault();
   if (isDefault) {
     return DEFAULT_COLOR;
@@ -37,7 +37,7 @@ const normalizeColor = (cell: IBufferCell, type: "foreground" | "background"): R
   return DEFAULT_COLOR;
 };
 
-const normalizeCellStyle = (cell: IBufferCell): RetroLcdNormalizedCellStyle => ({
+const normalizeCellStyle = (cell: IBufferCell): RetroScreenNormalizedCellStyle => ({
   bold: Boolean(cell.isBold()),
   faint: Boolean(cell.isDim()),
   inverse: Boolean(cell.isInverse()),
@@ -47,7 +47,7 @@ const normalizeCellStyle = (cell: IBufferCell): RetroLcdNormalizedCellStyle => (
   background: normalizeColor(cell, "background")
 });
 
-const normalizeCell = (cell: IBufferCell): RetroLcdNormalizedCell => ({
+const normalizeCell = (cell: IBufferCell): RetroScreenNormalizedCell => ({
   char: cell.getChars() || " ",
   width: cell.getWidth() || 1,
   style: normalizeCellStyle(cell)
@@ -73,7 +73,7 @@ const getNormalizedCells = (buffer: IBuffer, y: number, cols: number) => {
 
 export const normalizeXtermSnapshot = (
   terminal: Terminal
-): RetroLcdNormalizedTerminalSnapshot => {
+): RetroScreenNormalizedTerminalSnapshot => {
   const buffer = terminal.buffer.active;
   const visibleLineIndices = Array.from({ length: terminal.rows }, (_, rowIndex) => buffer.viewportY + rowIndex);
   const scrollbackIndices = Array.from({ length: buffer.baseY }, (_, index) => index);

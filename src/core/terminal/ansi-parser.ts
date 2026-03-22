@@ -1,7 +1,7 @@
-import type { RetroLcdTerminalCommand } from "./commands";
+import type { RetroScreenTerminalCommand } from "./commands";
 
-export type RetroLcdAnsiParserHandlers = {
-  command: (command: RetroLcdTerminalCommand) => void;
+export type RetroScreenAnsiParserHandlers = {
+  command: (command: RetroScreenTerminalCommand) => void;
 };
 
 type ParserState = "text" | "escape" | "csi";
@@ -37,14 +37,14 @@ const firstParam = (params: number[], fallback = 1) => {
   return value && value > 0 ? value : fallback;
 };
 
-export class RetroLcdAnsiParser {
+export class RetroScreenAnsiParser {
   private state: ParserState = "text";
   private escIntermediateBuffer = "";
   private csiPrefixBuffer = "";
   private csiParamBuffer = "";
   private csiIntermediateBuffer = "";
 
-  constructor(private readonly handlers: RetroLcdAnsiParserHandlers) {}
+  constructor(private readonly handlers: RetroScreenAnsiParserHandlers) {}
 
   feed(data: string) {
     for (const character of data) {

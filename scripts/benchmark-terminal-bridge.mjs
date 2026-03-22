@@ -31,14 +31,14 @@ try {
   process.exit(1);
 }
 
-const { createRetroLcdController } = await import(pathToFileURL(distEntryPath).href);
+const { createRetroScreenController } = await import(pathToFileURL(distEntryPath).href);
 
 const benchmarkRows = 24;
 const benchmarkCols = 80;
 const subscriber = () => {};
 
 const writeManyBench = measure("writeMany 10k ANSI lines", () => {
-  const controller = createRetroLcdController({
+  const controller = createRetroScreenController({
     rows: benchmarkRows,
     cols: benchmarkCols,
     scrollback: 12000
@@ -57,7 +57,7 @@ const writeManyBench = measure("writeMany 10k ANSI lines", () => {
 });
 
 const unbatchedBench = measure("write 4k ANSI lines (unbatched)", () => {
-  const controller = createRetroLcdController({
+  const controller = createRetroScreenController({
     rows: benchmarkRows,
     cols: benchmarkCols,
     scrollback: 6000
@@ -78,7 +78,7 @@ const unbatchedBench = measure("write 4k ANSI lines (unbatched)", () => {
 });
 
 const batchedWriteBench = measure("write 4k ANSI lines inside controller.batch", () => {
-  const controller = createRetroLcdController({
+  const controller = createRetroScreenController({
     rows: benchmarkRows,
     cols: benchmarkCols,
     scrollback: 6000
@@ -101,7 +101,7 @@ const batchedWriteBench = measure("write 4k ANSI lines inside controller.batch",
 });
 
 const resizeReplayBench = measure("resize replay after 2k lines", () => {
-  const controller = createRetroLcdController({
+  const controller = createRetroScreenController({
     rows: benchmarkRows,
     cols: benchmarkCols,
     scrollback: 4000
@@ -132,7 +132,7 @@ const resizeReplayBench = measure("resize replay after 2k lines", () => {
 });
 
 const cachedSnapshotBench = measure("getSnapshot 10k cached reads", () => {
-  const controller = createRetroLcdController({
+  const controller = createRetroScreenController({
     rows: benchmarkRows,
     cols: benchmarkCols,
     scrollback: 500

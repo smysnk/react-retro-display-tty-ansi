@@ -1,13 +1,13 @@
-import type { RetroLcdCellStyle, RetroLcdTerminalColor } from "./types";
+import type { RetroScreenCellStyle, RetroScreenTerminalColor } from "./types";
 
-export const DEFAULT_TERMINAL_COLOR: RetroLcdTerminalColor = {
+export const DEFAULT_TERMINAL_COLOR: RetroScreenTerminalColor = {
   mode: "default",
   value: 0
 };
 
-export const cloneColor = (color: RetroLcdTerminalColor): RetroLcdTerminalColor => ({ ...color });
+export const cloneColor = (color: RetroScreenTerminalColor): RetroScreenTerminalColor => ({ ...color });
 
-export const DEFAULT_CELL_STYLE: RetroLcdCellStyle = {
+export const DEFAULT_CELL_STYLE: RetroScreenCellStyle = {
   intensity: "normal",
   bold: false,
   faint: false,
@@ -18,31 +18,31 @@ export const DEFAULT_CELL_STYLE: RetroLcdCellStyle = {
   background: DEFAULT_TERMINAL_COLOR
 };
 
-export const cloneStyle = (style: RetroLcdCellStyle): RetroLcdCellStyle => ({
+export const cloneStyle = (style: RetroScreenCellStyle): RetroScreenCellStyle => ({
   ...style,
   foreground: cloneColor(style.foreground),
   background: cloneColor(style.background)
 });
 
-const syncIntensity = (style: RetroLcdCellStyle) => {
+const syncIntensity = (style: RetroScreenCellStyle) => {
   style.intensity = style.bold ? "bold" : style.faint ? "faint" : "normal";
 };
 
 const clampColorByte = (value: number) =>
   Math.max(0, Math.min(255, Number.isFinite(value) ? Math.floor(value) : 0));
 
-const toRgbColor = (red: number, green: number, blue: number): RetroLcdTerminalColor => ({
+const toRgbColor = (red: number, green: number, blue: number): RetroScreenTerminalColor => ({
   mode: "rgb",
   value: (clampColorByte(red) << 16) | (clampColorByte(green) << 8) | clampColorByte(blue)
 });
 
-const toPaletteColor = (value: number): RetroLcdTerminalColor => ({
+const toPaletteColor = (value: number): RetroScreenTerminalColor => ({
   mode: "palette",
   value: Math.max(0, Math.min(255, Number.isFinite(value) ? Math.floor(value) : 0))
 });
 
 const setExtendedColor = (
-  style: RetroLcdCellStyle,
+  style: RetroScreenCellStyle,
   channel: "foreground" | "background",
   params: number[],
   index: number
@@ -72,7 +72,7 @@ const setExtendedColor = (
   return index;
 };
 
-export const applySgrParameters = (style: RetroLcdCellStyle, params: number[]) => {
+export const applySgrParameters = (style: RetroScreenCellStyle, params: number[]) => {
   const nextStyle = cloneStyle(style);
   const values = params.length > 0 ? params : [0];
 

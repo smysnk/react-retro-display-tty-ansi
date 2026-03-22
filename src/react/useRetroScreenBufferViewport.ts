@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { RetroLcdScreenSnapshot } from "../core/terminal/types";
+import type { RetroScreenScreenSnapshot } from "../core/terminal/types";
 import {
   clampSnapshotScrollOffset,
   getSnapshotMaxScrollOffset,
   snapshotToRenderModel,
-  type RetroLcdRenderModel
+  type RetroScreenRenderModel
 } from "./retro-screen-render-model";
 
-export type RetroLcdBufferViewportState = {
+export type RetroScreenBufferViewportState = {
   autoFollow: boolean;
   scrollOffset: number;
   maxScrollOffset: number;
@@ -16,23 +16,23 @@ export type RetroLcdBufferViewportState = {
 
 const clampDelta = (value: number) => (Number.isFinite(value) ? Math.abs(value) : 0);
 
-export const useRetroLcdBufferViewport = ({
+export const useRetroScreenBufferViewport = ({
   snapshot,
   enabled,
   defaultAutoFollow = true
 }: {
-  snapshot: RetroLcdScreenSnapshot;
+  snapshot: RetroScreenScreenSnapshot;
   enabled: boolean;
   defaultAutoFollow?: boolean;
 }): {
-  renderModel: RetroLcdRenderModel;
-  viewportState: RetroLcdBufferViewportState;
+  renderModel: RetroScreenRenderModel;
+  viewportState: RetroScreenBufferViewportState;
   handleNavigationKey: (key: string) => boolean;
   handleWheelDelta: (deltaY: number) => boolean;
 } => {
   const maxScrollOffset = getSnapshotMaxScrollOffset(snapshot);
   const previousMaxScrollOffsetRef = useRef(maxScrollOffset);
-  const [viewportState, setViewportState] = useState<RetroLcdBufferViewportState>(() => ({
+  const [viewportState, setViewportState] = useState<RetroScreenBufferViewportState>(() => ({
     autoFollow: defaultAutoFollow,
     scrollOffset: 0,
     maxScrollOffset,

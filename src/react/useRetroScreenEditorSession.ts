@@ -1,17 +1,17 @@
 import { useEffect, useRef } from "react";
 import {
-  createRetroLcdEditorSession,
-  type RetroLcdEditorSession,
-  type RetroLcdEditorSessionOptions
+  createRetroScreenEditorSession,
+  type RetroScreenEditorSession,
+  type RetroScreenEditorSessionOptions
 } from "../core/editor/editor-session";
 
-export const useRetroLcdEditorSession = (
-  options: RetroLcdEditorSessionOptions = {}
-): RetroLcdEditorSession => {
-  const sessionRef = useRef<RetroLcdEditorSession | null>(null);
+export const useRetroScreenEditorSession = (
+  options: RetroScreenEditorSessionOptions = {}
+): RetroScreenEditorSession => {
+  const sessionRef = useRef<RetroScreenEditorSession | null>(null);
 
   if (!sessionRef.current) {
-    sessionRef.current = createRetroLcdEditorSession(options);
+    sessionRef.current = createRetroScreenEditorSession(options);
   }
 
   useEffect(() => {

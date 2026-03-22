@@ -1,23 +1,23 @@
-export type RetroLcdTextSelection = {
+export type RetroScreenTextSelection = {
   start: number;
   end: number;
 };
 
 const WORD_CHARACTER_PATTERN = /[\p{L}\p{N}_]/u;
 
-export const clampRetroLcdTextOffset = (value: number, textLength: number) => {
+export const clampRetroScreenTextOffset = (value: number, textLength: number) => {
   const nextValue = Math.floor(Number.isFinite(value) ? value : 0);
   return Math.max(0, Math.min(textLength, nextValue));
 };
 
 const isWordCharacter = (character: string) => WORD_CHARACTER_PATTERN.test(character);
 
-export const normalizeRetroLcdTextSelection = (
-  selection: RetroLcdTextSelection,
+export const normalizeRetroScreenTextSelection = (
+  selection: RetroScreenTextSelection,
   textLength: number
-): RetroLcdTextSelection => {
-  const start = clampRetroLcdTextOffset(selection.start, textLength);
-  const end = clampRetroLcdTextOffset(selection.end, textLength);
+): RetroScreenTextSelection => {
+  const start = clampRetroScreenTextOffset(selection.start, textLength);
+  const end = clampRetroScreenTextOffset(selection.end, textLength);
 
   if (start <= end) {
     return { start, end };
@@ -29,12 +29,12 @@ export const normalizeRetroLcdTextSelection = (
   };
 };
 
-export const createRetroLcdTextSelection = (
+export const createRetroScreenTextSelection = (
   start: number,
   end = start,
   textLength = Number.MAX_SAFE_INTEGER
-): RetroLcdTextSelection =>
-  normalizeRetroLcdTextSelection(
+): RetroScreenTextSelection =>
+  normalizeRetroScreenTextSelection(
     {
       start,
       end
@@ -42,8 +42,8 @@ export const createRetroLcdTextSelection = (
     textLength
   );
 
-export const findRetroLcdPreviousWordBoundary = (value: string, offset: number) => {
-  let index = clampRetroLcdTextOffset(offset, value.length);
+export const findRetroScreenPreviousWordBoundary = (value: string, offset: number) => {
+  let index = clampRetroScreenTextOffset(offset, value.length);
 
   while (index > 0 && !isWordCharacter(value[index - 1] ?? "")) {
     index -= 1;
@@ -56,8 +56,8 @@ export const findRetroLcdPreviousWordBoundary = (value: string, offset: number) 
   return index;
 };
 
-export const findRetroLcdNextWordBoundary = (value: string, offset: number) => {
-  let index = clampRetroLcdTextOffset(offset, value.length);
+export const findRetroScreenNextWordBoundary = (value: string, offset: number) => {
+  let index = clampRetroScreenTextOffset(offset, value.length);
 
   while (index < value.length && !isWordCharacter(value[index] ?? "")) {
     index += 1;
@@ -70,10 +70,10 @@ export const findRetroLcdNextWordBoundary = (value: string, offset: number) => {
   return index;
 };
 
-export const getRetroLcdWordSelectionAtOffset = (
+export const getRetroScreenWordSelectionAtOffset = (
   value: string,
   offset: number
-): RetroLcdTextSelection => {
+): RetroScreenTextSelection => {
   if (value.length === 0) {
     return {
       start: 0,
@@ -81,7 +81,7 @@ export const getRetroLcdWordSelectionAtOffset = (
     };
   }
 
-  const clampedOffset = clampRetroLcdTextOffset(offset, value.length);
+  const clampedOffset = clampRetroScreenTextOffset(offset, value.length);
   const currentCharacter =
     clampedOffset < value.length ? value[clampedOffset] ?? "" : "";
   const previousCharacter = clampedOffset > 0 ? value[clampedOffset - 1] ?? "" : "";
@@ -98,8 +98,8 @@ export const getRetroLcdWordSelectionAtOffset = (
       ? clampedOffset
       : clampedOffset - 1;
 
-  const start = findRetroLcdPreviousWordBoundary(value, seedOffset + 1);
-  const end = findRetroLcdNextWordBoundary(value, seedOffset);
+  const start = findRetroScreenPreviousWordBoundary(value, seedOffset + 1);
+  const end = findRetroScreenNextWordBoundary(value, seedOffset);
 
   return {
     start,
@@ -107,35 +107,35 @@ export const getRetroLcdWordSelectionAtOffset = (
   };
 };
 
-export const isRetroLcdTextSelectionCollapsed = (selection: RetroLcdTextSelection) =>
+export const isRetroScreenTextSelectionCollapsed = (selection: RetroScreenTextSelection) =>
   selection.start === selection.end;
 
-export const collapseRetroLcdTextSelectionToStart = (
-  selection: RetroLcdTextSelection
-): RetroLcdTextSelection => ({
+export const collapseRetroScreenTextSelectionToStart = (
+  selection: RetroScreenTextSelection
+): RetroScreenTextSelection => ({
   start: selection.start,
   end: selection.start
 });
 
-export const collapseRetroLcdTextSelectionToEnd = (
-  selection: RetroLcdTextSelection
-): RetroLcdTextSelection => ({
+export const collapseRetroScreenTextSelectionToEnd = (
+  selection: RetroScreenTextSelection
+): RetroScreenTextSelection => ({
   start: selection.end,
   end: selection.end
 });
 
-export const deleteRetroLcdSelectedText = (
+export const deleteRetroScreenSelectedText = (
   value: string,
-  selection: RetroLcdTextSelection
+  selection: RetroScreenTextSelection
 ): {
   value: string;
-  selection: RetroLcdTextSelection;
+  selection: RetroScreenTextSelection;
   deletedText: string;
 } => {
-  const normalized = normalizeRetroLcdTextSelection(selection, value.length);
+  const normalized = normalizeRetroScreenTextSelection(selection, value.length);
   const deletedText = value.slice(normalized.start, normalized.end);
   const nextValue = `${value.slice(0, normalized.start)}${value.slice(normalized.end)}`;
-  const nextSelection = collapseRetroLcdTextSelectionToStart(normalized);
+  const nextSelection = collapseRetroScreenTextSelectionToStart(normalized);
 
   return {
     value: nextValue,
@@ -144,16 +144,16 @@ export const deleteRetroLcdSelectedText = (
   };
 };
 
-export const replaceRetroLcdSelectedText = (
+export const replaceRetroScreenSelectedText = (
   value: string,
-  selection: RetroLcdTextSelection,
+  selection: RetroScreenTextSelection,
   replacement: string
 ): {
   value: string;
-  selection: RetroLcdTextSelection;
+  selection: RetroScreenTextSelection;
   deletedText: string;
 } => {
-  const normalized = normalizeRetroLcdTextSelection(selection, value.length);
+  const normalized = normalizeRetroScreenTextSelection(selection, value.length);
   const deletedText = value.slice(normalized.start, normalized.end);
   const nextValue = `${value.slice(0, normalized.start)}${replacement}${value.slice(normalized.end)}`;
   const nextOffset = normalized.start + replacement.length;

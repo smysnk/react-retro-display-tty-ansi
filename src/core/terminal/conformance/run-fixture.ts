@@ -1,16 +1,16 @@
 import { Terminal } from "@xterm/headless";
-import { RetroLcdScreenBuffer } from "../screen-buffer";
+import { RetroScreenScreenBuffer } from "../screen-buffer";
 import {
   formatChunkReproduction,
   resolveChunkRuns,
   shrinkFailingChunks
 } from "./chunk-plans";
-import { normalizeRetroLcdSnapshot } from "./normalize-retro-lcd";
+import { normalizeRetroScreenSnapshot } from "./normalize-retro-lcd";
 import { normalizeXtermSnapshot } from "./normalize-xterm";
 import { diffNormalizedSnapshots } from "./diff-snapshots";
 import type {
-  RetroLcdFixtureRunResult,
-  RetroLcdTerminalFixture
+  RetroScreenFixtureRunResult,
+  RetroScreenTerminalFixture
 } from "./types";
 
 const writeToXterm = async (terminal: Terminal, chunks: string[]) => {
@@ -21,8 +21,8 @@ const writeToXterm = async (terminal: Terminal, chunks: string[]) => {
   }
 };
 
-const runChunks = async (fixture: RetroLcdTerminalFixture, chunks: string[]) => {
-  const buffer = new RetroLcdScreenBuffer({
+const runChunks = async (fixture: RetroScreenTerminalFixture, chunks: string[]) => {
+  const buffer = new RetroScreenScreenBuffer({
     rows: fixture.rows,
     cols: fixture.cols,
     scrollback: fixture.scrollback
@@ -40,20 +40,20 @@ const runChunks = async (fixture: RetroLcdTerminalFixture, chunks: string[]) => 
 
   await writeToXterm(terminal, chunks);
 
-  const retroLcd = normalizeRetroLcdSnapshot(buffer.getSnapshot());
+  const retroScreen = normalizeRetroScreenSnapshot(buffer.getSnapshot());
   const xterm = normalizeXtermSnapshot(terminal);
 
   return {
-    retroLcd,
+    retroScreen,
     xterm,
-    diffs: diffNormalizedSnapshots(retroLcd, xterm)
+    diffs: diffNormalizedSnapshots(retroScreen, xterm)
   };
 };
 
 export const runTerminalFixture = async (
-  fixture: RetroLcdTerminalFixture
-): Promise<RetroLcdFixtureRunResult[]> => {
-  const results: RetroLcdFixtureRunResult[] = [];
+  fixture: RetroScreenTerminalFixture
+): Promise<RetroScreenFixtureRunResult[]> => {
+  const results: RetroScreenFixtureRunResult[] = [];
 
   for (const run of resolveChunkRuns(fixture)) {
     let resolvedChunks = run.chunks;
@@ -74,7 +74,7 @@ export const runTerminalFixture = async (
       resolvedChunks,
       reproduction: formatChunkReproduction(fixture, resolvedChunks),
       fixture,
-      retroLcd: outcome.retroLcd,
+      retroScreen: outcome.retroScreen,
       xterm: outcome.xterm,
       diffs: outcome.diffs
     });

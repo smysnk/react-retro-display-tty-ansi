@@ -1,6 +1,6 @@
-import type { RetroLcdTerminalFixture } from "../types";
+import type { RetroScreenTerminalFixture } from "../types";
 
-export const escReverseIndexFixture: RetroLcdTerminalFixture = {
+export const escReverseIndexFixture: RetroScreenTerminalFixture = {
   name: "esc-reverse-index",
   description: "ESC M should perform RI, moving upward and preserving the terminal state around pending wrap.",
   classification: "implemented",

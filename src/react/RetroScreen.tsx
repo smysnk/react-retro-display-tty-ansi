@@ -10,22 +10,22 @@ import {
   type MouseEvent,
   type WheelEvent
 } from "react";
-import type { RetroLcdScreenSnapshot } from "../core/terminal/types";
-import type { RetroLcdTerminalHostKeyEvent } from "../core/terminal/host-adapter";
-import { encodeRetroLcdTerminalInput } from "../core/terminal/input-encoder";
+import type { RetroScreenScreenSnapshot } from "../core/terminal/types";
+import type { RetroScreenTerminalHostKeyEvent } from "../core/terminal/host-adapter";
+import { encodeRetroScreenTerminalInput } from "../core/terminal/input-encoder";
 import {
-  encodeRetroLcdTerminalMouse,
-  type RetroLcdTerminalMouseButton,
-  type RetroLcdTerminalMouseEvent
+  encodeRetroScreenTerminalMouse,
+  type RetroScreenTerminalMouseButton,
+  type RetroScreenTerminalMouseEvent
 } from "../core/terminal/mouse-encoder";
 import {
-  encodeRetroLcdTerminalFocusReport,
-  encodeRetroLcdTerminalPaste
+  encodeRetroScreenTerminalFocusReport,
+  encodeRetroScreenTerminalPaste
 } from "../core/terminal/paste-encoder";
 import type {
-  RetroLcdPromptModeProps,
-  RetroLcdProps,
-  RetroLcdValueModeProps
+  RetroScreenPromptModeProps,
+  RetroScreenProps,
+  RetroScreenValueModeProps
 } from "../core/types";
 import { RetroScreenDisplay } from "./RetroScreenDisplay";
 import { RetroScreenInputOverlay } from "./RetroScreenInputOverlay";
@@ -33,22 +33,22 @@ import { getDisplayModeRootVars } from "./retro-screen-display-color";
 import { getDisplayPaddingVars } from "./retro-screen-display-padding";
 import { getDisplayTypographyVars } from "./retro-screen-display-typography";
 import {
-  getRetroLcdPointerGridHit,
-  getRetroLcdPointerGridPosition
+  getRetroScreenPointerGridHit,
+  getRetroScreenPointerGridPosition
 } from "./retro-screen-pointer-grid";
-import { useRetroLcdController } from "./useRetroScreenController";
-import { useRetroLcdBufferViewport } from "./useRetroScreenBufferViewport";
-import { useRetroLcdEditorSession } from "./useRetroScreenEditorSession";
-import { useRetroLcdGeometry } from "./useRetroScreenGeometry";
-import { useRetroLcdPromptSession } from "./useRetroScreenPromptSession";
-import { useRetroLcdResizablePanel } from "./useRetroScreenResizablePanel";
+import { useRetroScreenController } from "./useRetroScreenController";
+import { useRetroScreenBufferViewport } from "./useRetroScreenBufferViewport";
+import { useRetroScreenEditorSession } from "./useRetroScreenEditorSession";
+import { useRetroScreenGeometry } from "./useRetroScreenGeometry";
+import { useRetroScreenPromptSession } from "./useRetroScreenPromptSession";
+import { useRetroScreenResizablePanel } from "./useRetroScreenResizablePanel";
 import { useRetroScreenTerminalBridge } from "./useRetroScreenTerminalBridge";
 import {
   buildTextRenderModel,
   getValueDisplayText,
-  type RetroLcdRenderModel
+  type RetroScreenRenderModel
 } from "./retro-screen-render-model";
-import { useRetroLcdTerminalRenderModel } from "./useRetroScreenTerminalRenderModel";
+import { useRetroScreenTerminalRenderModel } from "./useRetroScreenTerminalRenderModel";
 
 const DEFAULT_ROWS = 9;
 const DEFAULT_COLS = 46;
@@ -59,7 +59,7 @@ const joinClassNames = (...classNames: Array<string | undefined>) =>
 const clampSelection = (value: number, text: string) =>
   Math.max(0, Math.min(text.length, Number.isFinite(value) ? Math.floor(value) : text.length));
 
-const isMouseTrackingActive = (snapshot: RetroLcdScreenSnapshot) =>
+const isMouseTrackingActive = (snapshot: RetroScreenScreenSnapshot) =>
   snapshot.modes.mouseTrackingMode !== "none" && snapshot.modes.mouseProtocol === "sgr";
 
 const isEditorWordNavigationModifier = (event: KeyboardEvent<HTMLTextAreaElement>) =>
@@ -70,7 +70,7 @@ const isEditorSelectAllShortcut = (event: KeyboardEvent<HTMLTextAreaElement>) =>
   !event.altKey &&
   event.key.toLowerCase() === "a";
 
-const toTerminalMouseButton = (button: number): RetroLcdTerminalMouseButton | null => {
+const toTerminalMouseButton = (button: number): RetroScreenTerminalMouseButton | null => {
   switch (button) {
     case 0:
       return "left";
@@ -85,7 +85,7 @@ const toTerminalMouseButton = (button: number): RetroLcdTerminalMouseButton | nu
 
 const toTerminalHostKeyEvent = (
   event: KeyboardEvent<HTMLDivElement>
-): RetroLcdTerminalHostKeyEvent => ({
+): RetroScreenTerminalHostKeyEvent => ({
   key: event.key,
   code: event.code,
   altKey: event.altKey,
@@ -95,9 +95,10 @@ const toTerminalHostKeyEvent = (
   repeat: event.repeat
 });
 
-export function RetroScreen(props: RetroLcdProps) {
+export function RetroScreen(props: RetroScreenProps) {
   const displayColorMode = props.displayColorMode ?? "phosphor-green";
   const displaySurfaceMode = props.displaySurfaceMode ?? "dark";
+  const focusGlow = props.focusGlow ?? true;
   const requestedCursorMode = props.cursorMode;
   const cursorMode = requestedCursorMode ?? "solid";
   const valueProps = props.mode === "value" ? props : null;
@@ -108,17 +109,17 @@ export function RetroScreen(props: RetroLcdProps) {
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const probeRef = useRef<HTMLSpanElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
-  const activeMouseButtonRef = useRef<RetroLcdTerminalMouseButton>("none");
+  const activeMouseButtonRef = useRef<RetroScreenTerminalMouseButton>("none");
   const lastMouseCellRef = useRef<string | null>(null);
   const editorSelectionAnchorRef = useRef<number | null>(null);
   const editorSelectionDraggingRef = useRef(false);
   const previousEditableValueRef = useRef(valueProps?.value ?? "");
-  const internalTerminalController = useRetroLcdController({
+  const internalTerminalController = useRetroScreenController({
     rows: props.gridMode === "static" ? props.rows : undefined,
     cols: props.gridMode === "static" ? props.cols : undefined,
     scrollback: terminalProps?.bufferSize
   });
-  const promptSession = useRetroLcdPromptSession({
+  const promptSession = useRetroScreenPromptSession({
     rows: props.gridMode === "static" ? props.rows ?? DEFAULT_ROWS : DEFAULT_ROWS,
     cols: props.gridMode === "static" ? props.cols ?? DEFAULT_COLS : DEFAULT_COLS,
     cursorMode,
@@ -128,7 +129,7 @@ export function RetroScreen(props: RetroLcdProps) {
     rejectionText: promptProps?.rejectionText,
     onCommand: promptProps?.onCommand
   });
-  const editorSession = useRetroLcdEditorSession({
+  const editorSession = useRetroScreenEditorSession({
     value: editorProps?.value,
     placeholder: editorProps?.placeholder,
     editable: editorProps?.editable,
@@ -138,14 +139,14 @@ export function RetroScreen(props: RetroLcdProps) {
   const [selectionStart, setSelectionStart] = useState(0);
   const [promptDraft, setPromptDraft] = useState(promptSession.getDraft());
   const [editorState, setEditorState] = useState(() => editorSession.getState());
-  const [promptSnapshot, setPromptSnapshot] = useState<RetroLcdScreenSnapshot>(() =>
+  const [promptSnapshot, setPromptSnapshot] = useState<RetroScreenScreenSnapshot>(() =>
     promptSession.getSnapshot()
   );
-  const resizablePanel = useRetroLcdResizablePanel({
+  const resizablePanel = useRetroScreenResizablePanel({
     resizable: props.resizable,
     resizableLeadingEdges: props.resizableLeadingEdges
   });
-  const { geometry, cssVars } = useRetroLcdGeometry({
+  const { geometry, cssVars } = useRetroScreenGeometry({
     screenRef,
     probeRef,
     gridMode: props.gridMode,
@@ -154,7 +155,7 @@ export function RetroScreen(props: RetroLcdProps) {
     fontScale: props.displayFontScale,
     onGeometryChange: props.onGeometryChange
   });
-  const { snapshot: terminalSnapshot, terminalController } = useRetroLcdTerminalRenderModel({
+  const { snapshot: terminalSnapshot, terminalController } = useRetroScreenTerminalRenderModel({
     terminalProps,
     geometry,
     cursorMode,
@@ -180,7 +181,7 @@ export function RetroScreen(props: RetroLcdProps) {
     terminalProps?.captureFocusReport ?? Boolean(terminalProps?.session || terminalProps?.onTerminalData);
   const terminalFocusable = terminalProps?.terminalFocusable ?? true;
   const localScrollbackWhenMouseActive = terminalProps?.localScrollbackWhenMouseActive ?? false;
-  const bufferViewport = useRetroLcdBufferViewport({
+  const bufferViewport = useRetroScreenBufferViewport({
     snapshot: props.mode === "terminal" ? terminalSnapshot : promptSnapshot,
     enabled: props.mode === "terminal" || props.mode === "prompt",
     defaultAutoFollow: terminalProps?.defaultAutoFollow ?? promptProps?.defaultAutoFollow ?? true
@@ -288,7 +289,7 @@ export function RetroScreen(props: RetroLcdProps) {
     return promptSession.subscribe(syncPromptState);
   }, [promptSession]);
 
-  const renderModel = useMemo<RetroLcdRenderModel>(() => {
+  const renderModel = useMemo<RetroScreenRenderModel>(() => {
     if (props.mode === "terminal") {
       return bufferViewport.renderModel;
     }
@@ -312,7 +313,7 @@ export function RetroScreen(props: RetroLcdProps) {
       });
     }
 
-    const nextValueProps = valueProps as RetroLcdValueModeProps;
+    const nextValueProps = valueProps as RetroScreenValueModeProps;
     const { text, dimmed } = getValueDisplayText(nextValueProps, focused);
     return buildTextRenderModel({
       text,
@@ -610,7 +611,7 @@ export function RetroScreen(props: RetroLcdProps) {
     terminalProps?.onTerminalKeyDown?.(terminalKeyEvent);
 
     if (captureTerminalKeyboard) {
-      const encodedInput = encodeRetroLcdTerminalInput(terminalKeyEvent, {
+      const encodedInput = encodeRetroScreenTerminalInput(terminalKeyEvent, {
         applicationCursorKeysMode: terminalSnapshot.modes.applicationCursorKeysMode
       });
 
@@ -642,12 +643,12 @@ export function RetroScreen(props: RetroLcdProps) {
   const terminalMouseReportingActive =
     props.mode === "terminal" && captureTerminalMouse && isMouseTrackingActive(terminalSnapshot);
 
-  const emitTerminalMouse = (event: RetroLcdTerminalMouseEvent) => {
+  const emitTerminalMouse = (event: RetroScreenTerminalMouseEvent) => {
     if (props.mode !== "terminal") {
       return false;
     }
 
-    const encodedData = encodeRetroLcdTerminalMouse(event, {
+    const encodedData = encodeRetroScreenTerminalMouse(event, {
       protocol: terminalSnapshot.modes.mouseProtocol,
       trackingMode: terminalSnapshot.modes.mouseTrackingMode
     });
@@ -665,15 +666,15 @@ export function RetroScreen(props: RetroLcdProps) {
 
   const buildTerminalMouseEvent = (
     event: MouseEvent<HTMLDivElement>,
-    action: RetroLcdTerminalMouseEvent["action"],
-    button: RetroLcdTerminalMouseButton
-  ): RetroLcdTerminalMouseEvent | null => {
+    action: RetroScreenTerminalMouseEvent["action"],
+    button: RetroScreenTerminalMouseButton
+  ): RetroScreenTerminalMouseEvent | null => {
     const screenNode = screenRef.current;
     if (!screenNode) {
       return null;
     }
 
-    const { row, col } = getRetroLcdPointerGridPosition({
+    const { row, col } = getRetroScreenPointerGridPosition({
       clientX: event.clientX,
       clientY: event.clientY,
       rect: screenNode.getBoundingClientRect(),
@@ -694,7 +695,7 @@ export function RetroScreen(props: RetroLcdProps) {
 
   const buildWheelTerminalMouseEvent = (
     event: WheelEvent<HTMLDivElement>
-  ): RetroLcdTerminalMouseEvent | null => {
+  ): RetroScreenTerminalMouseEvent | null => {
     if (event.deltaY === 0) {
       return null;
     }
@@ -704,7 +705,7 @@ export function RetroScreen(props: RetroLcdProps) {
       return null;
     }
 
-    const { row, col } = getRetroLcdPointerGridPosition({
+    const { row, col } = getRetroScreenPointerGridPosition({
       clientX: event.clientX,
       clientY: event.clientY,
       rect: screenNode.getBoundingClientRect(),
@@ -732,7 +733,7 @@ export function RetroScreen(props: RetroLcdProps) {
       return;
     }
 
-    emitTerminalData(encodeRetroLcdTerminalFocusReport(focusedState));
+    emitTerminalData(encodeRetroScreenTerminalFocusReport(focusedState));
   };
 
   const handleViewportPaste = (event: ClipboardEvent<HTMLDivElement>) => {
@@ -747,7 +748,7 @@ export function RetroScreen(props: RetroLcdProps) {
 
     event.preventDefault();
     emitTerminalData(
-      encodeRetroLcdTerminalPaste(pastedText, {
+      encodeRetroScreenTerminalPaste(pastedText, {
         bracketedPasteMode: terminalSnapshot.modes.bracketedPasteMode
       })
     );
@@ -768,7 +769,7 @@ export function RetroScreen(props: RetroLcdProps) {
       return null;
     }
 
-    const hit = getRetroLcdPointerGridHit({
+    const hit = getRetroScreenPointerGridHit({
       clientX: event.clientX,
       clientY: event.clientY,
       rect: screenNode.getBoundingClientRect(),
@@ -981,6 +982,8 @@ export function RetroScreen(props: RetroLcdProps) {
       data-grid-mode={props.gridMode ?? "auto"}
       data-display-color-mode={displayColorMode}
       data-display-surface-mode={displaySurfaceMode}
+      data-focus-glow={focusGlow ? "true" : "false"}
+      data-focused={focused ? "true" : "false"}
       data-resizable={resizablePanel.isResizable ? "true" : undefined}
       data-resizable-mode={resizablePanel.isResizable ? resizablePanel.resizeMode : undefined}
       data-resizable-leading-edges={resizablePanel.hasLeadingHandles ? "true" : undefined}
@@ -1192,5 +1195,3 @@ export function RetroScreen(props: RetroLcdProps) {
     </div>
   );
 }
-
-export const RetroLcd = RetroScreen;

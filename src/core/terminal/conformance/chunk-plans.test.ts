@@ -4,9 +4,9 @@ import {
   resolveChunkRuns,
   shrinkFailingChunks
 } from "./chunk-plans";
-import type { RetroLcdTerminalFixture } from "./types";
+import type { RetroScreenTerminalFixture } from "./types";
 
-const baseFixture: RetroLcdTerminalFixture = {
+const baseFixture: RetroScreenTerminalFixture = {
   name: "chunk-plan-spec",
   description: "Chunk planning spec fixture.",
   classification: "implemented",

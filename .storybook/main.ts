@@ -1,5 +1,6 @@
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 import type { StorybookConfig } from "@storybook/react-vite";
 import { mergeConfig } from "vite";
 
@@ -15,6 +16,7 @@ const resolveStorybookBasePath = () => {
 
   return configuredBasePath.endsWith("/") ? configuredBasePath : `${configuredBasePath}/`;
 };
+const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 const config: StorybookConfig = {
   stories: ["../src/**/*.stories.@(ts|tsx)"],
@@ -28,7 +30,27 @@ const config: StorybookConfig = {
   },
   async viteFinal(existingConfig) {
     return mergeConfig(existingConfig, {
-      base: resolveStorybookBasePath()
+      base: resolveStorybookBasePath(),
+      resolve: {
+        preserveSymlinks: false
+      },
+      server: {
+        fs: {
+          strict: true,
+          allow: [workspaceRoot]
+        },
+        watch: {
+          followSymlinks: false,
+          ignored: [
+            "**/.git/**",
+            "**/node_modules/**",
+            "**/storybook-static/**",
+            "**/.test-results/**",
+            "**/docs/assets/**",
+            "**/references/**"
+          ]
+        }
+      }
     });
   }
 };

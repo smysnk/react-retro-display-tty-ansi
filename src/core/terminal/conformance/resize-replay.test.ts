@@ -1,8 +1,8 @@
 import { Terminal } from "@xterm/headless";
 import { describe, expect, it } from "vitest";
-import { createRetroLcdController } from "../controller";
+import { createRetroScreenController } from "../controller";
 import { diffNormalizedSnapshots, formatFixtureDiffReport } from "./diff-snapshots";
-import { normalizeRetroLcdSnapshot } from "./normalize-retro-lcd";
+import { normalizeRetroScreenSnapshot } from "./normalize-retro-lcd";
 import { normalizeXtermSnapshot } from "./normalize-xterm";
 
 const writeToXterm = async (terminal: Terminal, writes: string[]) => {
@@ -20,7 +20,7 @@ describe("terminal resize replay oracle", () => {
       "$ yarn test:conformance\r\n",
       "\u001b[38;5;45mPASS\u001b[0m replay parity\r\n"
     ];
-    const controller = createRetroLcdController({ rows: 4, cols: 40 });
+    const controller = createRetroScreenController({ rows: 4, cols: 40 });
 
     for (const write of writes) {
       controller.write(write);
@@ -35,7 +35,7 @@ describe("terminal resize replay oracle", () => {
     await writeToXterm(terminal, writes);
 
     const diffs = diffNormalizedSnapshots(
-      normalizeRetroLcdSnapshot(controller.getSnapshot()),
+      normalizeRetroScreenSnapshot(controller.getSnapshot()),
       normalizeXtermSnapshot(terminal)
     );
 
@@ -49,7 +49,7 @@ describe("terminal resize replay oracle", () => {
       "\u001b[2;1Horacle ready\r\nchunk fuzzer ready\r\npalette mapper ready",
       "\u001b[6;1H\u001b[L\u001b[38;2;255;180;120mrecorded regression fixture\u001b[0m"
     ];
-    const controller = createRetroLcdController({ rows: 8, cols: 40 });
+    const controller = createRetroScreenController({ rows: 8, cols: 40 });
 
     for (const write of writes) {
       controller.write(write);
@@ -64,7 +64,7 @@ describe("terminal resize replay oracle", () => {
     await writeToXterm(terminal, writes);
 
     const diffs = diffNormalizedSnapshots(
-      normalizeRetroLcdSnapshot(controller.getSnapshot()),
+      normalizeRetroScreenSnapshot(controller.getSnapshot()),
       normalizeXtermSnapshot(terminal)
     );
 

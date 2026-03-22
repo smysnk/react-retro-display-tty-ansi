@@ -1,37 +1,37 @@
 import { startTransition, useEffect, useMemo, useState } from "react";
 import type {
   CursorMode,
-  RetroLcdController,
-  RetroLcdGeometry,
-  RetroLcdTerminalModeProps
+  RetroScreenController,
+  RetroScreenGeometry,
+  RetroScreenTerminalModeProps
 } from "../core/types";
 import { buildTerminalSnapshot } from "./retro-screen-render-model";
-import type { RetroLcdScreenSnapshot } from "../core/terminal/types";
+import type { RetroScreenScreenSnapshot } from "../core/terminal/types";
 
-type UseRetroLcdTerminalRenderModelArgs = {
-  terminalProps: RetroLcdTerminalModeProps | null;
-  geometry: RetroLcdGeometry;
+type UseRetroScreenTerminalRenderModelArgs = {
+  terminalProps: RetroScreenTerminalModeProps | null;
+  geometry: RetroScreenGeometry;
   cursorMode: CursorMode;
   requestedCursorMode?: CursorMode;
-  internalController: RetroLcdController;
+  internalController: RetroScreenController;
 };
 
-export const useRetroLcdTerminalRenderModel = ({
+export const useRetroScreenTerminalRenderModel = ({
   terminalProps,
   geometry,
   cursorMode,
   requestedCursorMode,
   internalController
-  }: UseRetroLcdTerminalRenderModelArgs): {
-  snapshot: RetroLcdScreenSnapshot;
-  terminalController: RetroLcdController | null;
+  }: UseRetroScreenTerminalRenderModelArgs): {
+  snapshot: RetroScreenScreenSnapshot;
+  terminalController: RetroScreenController | null;
 } => {
   const terminalController =
     terminalProps?.controller ?? (terminalProps ? internalController : null);
   const initialText = terminalProps?.session
     ? ""
     : terminalProps?.value ?? terminalProps?.initialBuffer ?? "";
-  const [snapshot, setSnapshot] = useState<RetroLcdScreenSnapshot>(() =>
+  const [snapshot, setSnapshot] = useState<RetroScreenScreenSnapshot>(() =>
     buildTerminalSnapshot({
       text: initialText,
       rows: geometry.rows,

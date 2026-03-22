@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { createRetroLcdPromptSession } from "./prompt-session";
+import { createRetroScreenPromptSession } from "./prompt-session";
 
-describe("RetroLcdPromptSession", () => {
+describe("RetroScreenPromptSession", () => {
   it("renders an initial prompt line", () => {
-    const session = createRetroLcdPromptSession({
+    const session = createRetroScreenPromptSession({
       rows: 4,
       cols: 16
     });
@@ -17,7 +17,7 @@ describe("RetroLcdPromptSession", () => {
       accepted: true as const,
       response: ["alpha", "beta"]
     }));
-    const session = createRetroLcdPromptSession({
+    const session = createRetroScreenPromptSession({
       rows: 6,
       cols: 24,
       onCommand
@@ -33,7 +33,7 @@ describe("RetroLcdPromptSession", () => {
   });
 
   it("submits rejected commands with ERROR by default", async () => {
-    const session = createRetroLcdPromptSession({
+    const session = createRetroScreenPromptSession({
       rows: 5,
       cols: 24,
       onCommand: () => ({ accepted: false as const })
@@ -48,7 +48,7 @@ describe("RetroLcdPromptSession", () => {
   });
 
   it("uses custom accept and reject labels", async () => {
-    const session = createRetroLcdPromptSession({
+    const session = createRetroScreenPromptSession({
       rows: 5,
       cols: 24,
       acceptanceText: "READY",
@@ -78,7 +78,7 @@ describe("RetroLcdPromptSession", () => {
           resolveCommand = resolve;
         })
     );
-    const session = createRetroLcdPromptSession({
+    const session = createRetroScreenPromptSession({
       rows: 5,
       cols: 24,
       onCommand
@@ -99,7 +99,7 @@ describe("RetroLcdPromptSession", () => {
   });
 
   it("positions the cursor using the live draft selection", () => {
-    const session = createRetroLcdPromptSession({
+    const session = createRetroScreenPromptSession({
       rows: 4,
       cols: 10
     });

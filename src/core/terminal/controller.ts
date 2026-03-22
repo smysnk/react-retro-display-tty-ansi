@@ -1,18 +1,18 @@
 import type {
   CursorMode,
-  RetroLcdController,
-  RetroLcdWriteChunk
+  RetroScreenController,
+  RetroScreenWriteChunk
 } from "../types";
-import { RetroLcdScreenBuffer } from "./screen-buffer";
+import { RetroScreenScreenBuffer } from "./screen-buffer";
 import type {
-  RetroLcdScreenBufferOptions,
-  RetroLcdScreenSnapshot,
-  RetroLcdWriteOptions
+  RetroScreenScreenBufferOptions,
+  RetroScreenScreenSnapshot,
+  RetroScreenWriteOptions
 } from "./types";
 
 type ControllerOperation =
-  | { type: "write"; data: string; options?: RetroLcdWriteOptions }
-  | { type: "writeMany"; chunks: RetroLcdWriteChunk[] }
+  | { type: "write"; data: string; options?: RetroScreenWriteOptions }
+  | { type: "writeMany"; chunks: RetroScreenWriteChunk[] }
   | { type: "writeln"; line: string }
   | { type: "clear" }
   | { type: "reset" }
@@ -26,10 +26,10 @@ const clampDimension = (value: number, fallback: number) => {
 };
 
 const normalizeWriteChunk = (
-  chunk: RetroLcdWriteChunk
+  chunk: RetroScreenWriteChunk
 ): {
   data: string;
-  options?: RetroLcdWriteOptions;
+  options?: RetroScreenWriteOptions;
 } =>
   typeof chunk === "string"
     ? {
@@ -40,25 +40,25 @@ const normalizeWriteChunk = (
         options: chunk.options
       };
 
-class RetroLcdControllerStore implements RetroLcdController {
+class RetroScreenControllerStore implements RetroScreenController {
   private readonly listeners = new Set<() => void>();
   private readonly history: ControllerOperation[] = [];
-  private readonly options: Pick<RetroLcdScreenBufferOptions, "scrollback" | "tabWidth">;
+  private readonly options: Pick<RetroScreenScreenBufferOptions, "scrollback" | "tabWidth">;
   private rows: number;
   private cols: number;
-  private buffer: RetroLcdScreenBuffer;
-  private cachedSnapshot: RetroLcdScreenSnapshot | null = null;
+  private buffer: RetroScreenScreenBuffer;
+  private cachedSnapshot: RetroScreenScreenSnapshot | null = null;
   private notificationSuspendDepth = 0;
   private hasPendingNotification = false;
 
-  constructor(options: Partial<RetroLcdScreenBufferOptions> = {}) {
+  constructor(options: Partial<RetroScreenScreenBufferOptions> = {}) {
     this.rows = clampDimension(options.rows ?? 9, 9);
     this.cols = clampDimension(options.cols ?? 46, 46);
     this.options = {
       scrollback: options.scrollback,
       tabWidth: options.tabWidth
     };
-    this.buffer = new RetroLcdScreenBuffer({
+    this.buffer = new RetroScreenScreenBuffer({
       rows: this.rows,
       cols: this.cols,
       scrollback: options.scrollback,
@@ -74,7 +74,7 @@ class RetroLcdControllerStore implements RetroLcdController {
     }
   }
 
-  write(data: string, options?: RetroLcdWriteOptions) {
+  write(data: string, options?: RetroScreenWriteOptions) {
     this.buffer.write(data, options);
     this.history.push({
       type: "write",
@@ -84,7 +84,7 @@ class RetroLcdControllerStore implements RetroLcdController {
     this.markDirtyAndEmit();
   }
 
-  writeMany(chunks: readonly RetroLcdWriteChunk[]) {
+  writeMany(chunks: readonly RetroScreenWriteChunk[]) {
     if (chunks.length === 0) {
       return;
     }
@@ -178,7 +178,7 @@ class RetroLcdControllerStore implements RetroLcdController {
 
     this.rows = nextRows;
     this.cols = nextCols;
-    this.buffer = new RetroLcdScreenBuffer({
+    this.buffer = new RetroScreenScreenBuffer({
       rows: this.rows,
       cols: this.cols,
       scrollback: this.options.scrollback,
@@ -206,7 +206,7 @@ class RetroLcdControllerStore implements RetroLcdController {
     this.markDirtyAndEmit();
   }
 
-  getSnapshot(): RetroLcdScreenSnapshot {
+  getSnapshot(): RetroScreenScreenSnapshot {
     if (!this.cachedSnapshot) {
       this.cachedSnapshot = this.buffer.getSnapshot();
     }
@@ -277,6 +277,6 @@ class RetroLcdControllerStore implements RetroLcdController {
   }
 }
 
-export const createRetroLcdController = (
-  options: Partial<RetroLcdScreenBufferOptions> = {}
-): RetroLcdController => new RetroLcdControllerStore(options);
+export const createRetroScreenController = (
+  options: Partial<RetroScreenScreenBufferOptions> = {}
+): RetroScreenController => new RetroScreenControllerStore(options);

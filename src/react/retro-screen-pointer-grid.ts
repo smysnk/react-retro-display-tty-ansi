@@ -1,11 +1,11 @@
-import type { RetroLcdGeometry } from "../core/types";
+import type { RetroScreenGeometry } from "../core/types";
 
-export type RetroLcdPointerGridPosition = {
+export type RetroScreenPointerGridPosition = {
   row: number;
   col: number;
 };
 
-export type RetroLcdPointerGridHit = RetroLcdPointerGridPosition & {
+export type RetroScreenPointerGridHit = RetroScreenPointerGridPosition & {
   cellOffsetX: number;
   cellOffsetY: number;
   cellRatioX: number;
@@ -15,7 +15,7 @@ export type RetroLcdPointerGridHit = RetroLcdPointerGridPosition & {
 const clampCoordinate = (value: number, limit: number) =>
   Math.min(limit, Math.max(1, Number.isFinite(value) ? Math.floor(value) : 1));
 
-export const getRetroLcdPointerGridHit = ({
+export const getRetroScreenPointerGridHit = ({
   clientX,
   clientY,
   rect,
@@ -24,8 +24,8 @@ export const getRetroLcdPointerGridHit = ({
   clientX: number;
   clientY: number;
   rect: Pick<DOMRectReadOnly, "left" | "top" | "width" | "height">;
-  geometry: RetroLcdGeometry;
-}): RetroLcdPointerGridHit => {
+  geometry: RetroScreenGeometry;
+}): RetroScreenPointerGridHit => {
   const width = Math.max(1, rect.width || geometry.innerWidth);
   const height = Math.max(1, rect.height || geometry.innerHeight);
   const cellWidth = Math.max(1, width / Math.max(1, geometry.cols));
@@ -45,9 +45,9 @@ export const getRetroLcdPointerGridHit = ({
   };
 };
 
-export const getRetroLcdPointerGridPosition = (
-  args: Parameters<typeof getRetroLcdPointerGridHit>[0]
-): RetroLcdPointerGridPosition => {
-  const { row, col } = getRetroLcdPointerGridHit(args);
+export const getRetroScreenPointerGridPosition = (
+  args: Parameters<typeof getRetroScreenPointerGridHit>[0]
+): RetroScreenPointerGridPosition => {
+  const { row, col } = getRetroScreenPointerGridHit(args);
   return { row, col };
 };

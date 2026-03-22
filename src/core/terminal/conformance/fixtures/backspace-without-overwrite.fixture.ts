@@ -1,6 +1,6 @@
-import type { RetroLcdTerminalFixture } from "../types";
+import type { RetroScreenTerminalFixture } from "../types";
 
-export const backspaceWithoutOverwriteFixture: RetroLcdTerminalFixture = {
+export const backspaceWithoutOverwriteFixture: RetroScreenTerminalFixture = {
   name: "backspace-without-overwrite",
   description: "Backspace should move the cursor left without erasing the cell under it.",
   classification: "implemented",

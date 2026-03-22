@@ -71,6 +71,13 @@ more. The prop accepts:
 />
 ```
 
+RetroScreen also shows a focus glow around the shell by default so editable, prompt, and terminal
+surfaces clearly read as active. Disable it when you want a quieter shell:
+
+```tsx
+<RetroScreen mode="terminal" focusGlow={false} />
+```
+
 Because rows and columns are measured from the visible screen area, tighter padding yields a
 denser grid and looser padding yields fewer cells.
 
@@ -195,10 +202,10 @@ Use a controller when the display should follow external writes over time.
 import { useEffect } from "react";
 import {
   RetroScreen,
-  createRetroLcdController
+  createRetroScreenController
 } from "react-retro-display-tty-ansi";
 
-const controller = createRetroLcdController({
+const controller = createRetroScreenController({
   rows: 9,
   cols: 46,
   cursorMode: "hollow"
@@ -350,7 +357,7 @@ If you are driving the component with your own controller, configure the underly
 the controller itself:
 
 ```tsx
-const controller = createRetroLcdController({
+const controller = createRetroScreenController({
   rows: 9,
   cols: 46,
   scrollback: 400
@@ -378,10 +385,10 @@ different visual projections.
 ```tsx
 import {
   RetroScreen,
-  createRetroLcdController
+  createRetroScreenController
 } from "react-retro-display-tty-ansi";
 
-const controller = createRetroLcdController({
+const controller = createRetroScreenController({
   rows: 9,
   cols: 34,
   cursorMode: "solid"
@@ -445,10 +452,15 @@ Reach for `ansi-classic` when you want the familiar 16-color terminal profile, o
 ## ANSI Art Playback
 
 Storybook now includes a dedicated `Bad Apple ANSI` demo that loads the real ANSI release,
-decodes the original IBM VGA / CP437 bytes, and plays it back through `RetroScreen` at the
-asset's native `80 x 25` geometry. The demo uses the full `BADAPPLE.ANS` payload, not a trimmed
-excerpt, and tightens the glyph scale so the character rows visually sit flush instead of leaving
-air between scanlines.
+decodes the original IBM VGA / CP437 bytes outside the display component, and then feeds those
+bytes into the reusable `RetroScreenAnsiPlayer` wrapper. The player incrementally materializes
+stabilized full-screen `80 x 25` snapshots while the parent owns byte loading and streaming. The
+demo uses the full `BADAPPLE.ANS` payload, not a trimmed excerpt, and tightens the glyph scale so
+the character rows visually sit flush instead of leaving air between scanlines.
+
+[![Bad Apple ANSI Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi/main/docs/assets/react-retro-display-tty-ansi-bad-apple-ansi.webp)](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi/main/docs/assets/react-retro-display-tty-ansi-bad-apple-ansi.mp4)
+
+The README clip is a 30-second capture of the real ANSI-art playback path, not a separate video renderer.
 
 Credit for the original ANSI release goes to [Mistigris](https://mistigris.org/).
 
@@ -458,15 +470,16 @@ Open it here:
 The Storybook demo is backed by the bundled asset at
 [src/stories/assets/bad-apple.ans](/Users/josh/play/react-retro-display/src/stories/assets/bad-apple.ans).
 
-The key styling for this kind of ANSI-art playback is:
+The key wiring for this kind of ANSI-art playback is:
 
 ```tsx
-<RetroScreen
-  mode="terminal"
-  controller={controller}
-  gridMode="static"
+<RetroScreenAnsiPlayer
+  byteStream={asset.byteStream}
   rows={25}
   cols={80}
+  frameDelayMs={asset.frameDelayMs}
+  complete
+  loop
   displayColorMode="ansi-classic"
   displayPadding={{ block: 8, inline: 12 }}
   displayFontScale={1.22}
@@ -475,13 +488,13 @@ The key styling for this kind of ANSI-art playback is:
 />
 ```
 
-Use `gridMode="static"` with the asset's native `rows` and `cols` so the art is not reflowed.
-Use `displayFontScale` to densify the rendered glyphs within each row when you want ANSI art to
-read as a continuous image rather than as separated text lines. Use `displayRowScale` when you
-need to close the last 1-2px of visual gap between rows by letting the glyphs overlap slightly
-inside each fixed terminal row. For the Bad Apple panel, the demo also uses a container size that
-lands on exact `12x24` cell geometry after padding and bezel chrome, which avoids fractional row
-heights and helps eliminate subpixel seams.
+Use `RetroScreenAnsiPlayer` when a parent is responsible for supplying ANSI bytes or byte chunks,
+including incremental streams. Keep the asset loading outside the display component, pass the
+native `rows` and `cols` so the art is not reflowed, and use `displayFontScale` plus
+`displayRowScale` to densify the rendered glyphs when you want ANSI art to read as a continuous
+image instead of separated text lines. For the Bad Apple panel, the demo also uses a container
+size that lands on exact `12x24` cell geometry after padding and bezel chrome, which avoids
+fractional row heights and helps eliminate subpixel seams.
 
 ## Control-Character Playback
 
@@ -494,10 +507,10 @@ updates, ANSI 16-color, indexed 256-color, and truecolor output.
 ```tsx
 import {
   RetroScreen,
-  createRetroLcdController
+  createRetroScreenController
 } from "react-retro-display-tty-ansi";
 
-const controller = createRetroLcdController({ rows: 6, cols: 34 });
+const controller = createRetroScreenController({ rows: 6, cols: 34 });
 
 controller.write("Downloading fixtures... 12%");
 controller.write("\rDownloading fixtures... 73%");

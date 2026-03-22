@@ -1,6 +1,6 @@
-import type { RetroLcdTerminalFixture } from "../types";
+import type { RetroScreenTerminalFixture } from "../types";
 
-export const insertLinesFixture: RetroLcdTerminalFixture = {
+export const insertLinesFixture: RetroScreenTerminalFixture = {
   name: "insert-lines",
   description: "CSI L should insert blank lines within the active scroll region only.",
   classification: "implemented",

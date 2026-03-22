@@ -1,9 +1,9 @@
-import type { RetroLcdTerminalHostKeyEvent } from "./host-adapter";
+import type { RetroScreenTerminalHostKeyEvent } from "./host-adapter";
 
 const ESC = "\u001b";
 const DEL = "\u007f";
 
-export type RetroLcdTerminalInputEncodingOptions = {
+export type RetroScreenTerminalInputEncodingOptions = {
   applicationCursorKeysMode?: boolean;
 };
 
@@ -40,7 +40,7 @@ const SS3_FUNCTION_KEYS: Record<string, string> = {
 
 const isPrintableKey = (key: string) => key.length === 1;
 
-const getModifierParameter = (event: RetroLcdTerminalHostKeyEvent) => {
+const getModifierParameter = (event: RetroScreenTerminalHostKeyEvent) => {
   let value = 1;
 
   if (event.shiftKey) {
@@ -64,7 +64,7 @@ const encodeModifiedCursorKey = (final: string, modifier: number) =>
 const encodeModifiedTildeKey = (code: number, modifier: number) =>
   `${ESC}[${code};${modifier}~`;
 
-const normalizeMetaBehavior = (event: RetroLcdTerminalHostKeyEvent) =>
+const normalizeMetaBehavior = (event: RetroScreenTerminalHostKeyEvent) =>
   event.metaKey && !event.altKey && !event.ctrlKey;
 
 const encodeCtrlPrintableKey = (key: string) => {
@@ -96,9 +96,9 @@ const encodeCtrlPrintableKey = (key: string) => {
   }
 };
 
-export const encodeRetroLcdTerminalInput = (
-  event: RetroLcdTerminalHostKeyEvent,
-  options: RetroLcdTerminalInputEncodingOptions = {}
+export const encodeRetroScreenTerminalInput = (
+  event: RetroScreenTerminalHostKeyEvent,
+  options: RetroScreenTerminalInputEncodingOptions = {}
 ): string | null => {
   if (normalizeMetaBehavior(event)) {
     return null;
@@ -167,5 +167,3 @@ export const encodeRetroLcdTerminalInput = (
 
   return altPrefix ? `${ESC}${event.key}` : null;
 };
-
-export const encodeRetroScreenTerminalInput = encodeRetroLcdTerminalInput;

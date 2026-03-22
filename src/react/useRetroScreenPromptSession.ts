@@ -1,14 +1,14 @@
 import { useEffect, useRef } from "react";
-import { createRetroLcdPromptSession } from "../core/terminal/prompt-session";
-import type { RetroLcdPromptSessionOptions, RetroLcdPromptSession } from "../core/terminal/prompt-session";
+import { createRetroScreenPromptSession } from "../core/terminal/prompt-session";
+import type { RetroScreenPromptSessionOptions, RetroScreenPromptSession } from "../core/terminal/prompt-session";
 
-export const useRetroLcdPromptSession = (
-  options: RetroLcdPromptSessionOptions = {}
-): RetroLcdPromptSession => {
-  const sessionRef = useRef<RetroLcdPromptSession | null>(null);
+export const useRetroScreenPromptSession = (
+  options: RetroScreenPromptSessionOptions = {}
+): RetroScreenPromptSession => {
+  const sessionRef = useRef<RetroScreenPromptSession | null>(null);
 
   if (!sessionRef.current) {
-    sessionRef.current = createRetroLcdPromptSession(options);
+    sessionRef.current = createRetroScreenPromptSession(options);
   }
 
   useEffect(() => {

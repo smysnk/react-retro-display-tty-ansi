@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { createRetroLcdEditorSession } from "./editor-session";
+import { createRetroScreenEditorSession } from "./editor-session";
 
-describe("createRetroLcdEditorSession", () => {
+describe("createRetroScreenEditorSession", () => {
   it("creates a collapsed cursor at the end of the initial value by default", () => {
-    const session = createRetroLcdEditorSession({
+    const session = createRetroScreenEditorSession({
       value: "retro"
     });
 
@@ -20,7 +20,7 @@ describe("createRetroLcdEditorSession", () => {
   });
 
   it("normalizes reverse selections from the constructor", () => {
-    const session = createRetroLcdEditorSession({
+    const session = createRetroScreenEditorSession({
       value: "display",
       selectionStart: 6,
       selectionEnd: 2
@@ -33,7 +33,7 @@ describe("createRetroLcdEditorSession", () => {
   });
 
   it("deletes the active selection with backspace", () => {
-    const session = createRetroLcdEditorSession({
+    const session = createRetroScreenEditorSession({
       value: "retro display"
     });
 
@@ -49,7 +49,7 @@ describe("createRetroLcdEditorSession", () => {
   });
 
   it("deletes the active selection with delete", () => {
-    const session = createRetroLcdEditorSession({
+    const session = createRetroScreenEditorSession({
       value: "retro display"
     });
 
@@ -65,7 +65,7 @@ describe("createRetroLcdEditorSession", () => {
   });
 
   it("deletes one character backward when the selection is collapsed", () => {
-    const session = createRetroLcdEditorSession({
+    const session = createRetroScreenEditorSession({
       value: "retro"
     });
 
@@ -81,7 +81,7 @@ describe("createRetroLcdEditorSession", () => {
   });
 
   it("deletes one character forward when the selection is collapsed", () => {
-    const session = createRetroLcdEditorSession({
+    const session = createRetroScreenEditorSession({
       value: "retro"
     });
 
@@ -97,7 +97,7 @@ describe("createRetroLcdEditorSession", () => {
   });
 
   it("replaces the selected text and moves the cursor after the replacement", () => {
-    const session = createRetroLcdEditorSession({
+    const session = createRetroScreenEditorSession({
       value: "retro display"
     });
 
@@ -113,7 +113,7 @@ describe("createRetroLcdEditorSession", () => {
   });
 
   it("moves and extends selection by word boundaries", () => {
-    const session = createRetroLcdEditorSession({
+    const session = createRetroScreenEditorSession({
       value: "retro display tty"
     });
 
@@ -138,7 +138,7 @@ describe("createRetroLcdEditorSession", () => {
   });
 
   it("selects words at an offset and cuts the selection", () => {
-    const session = createRetroLcdEditorSession({
+    const session = createRetroScreenEditorSession({
       value: "retro display tty"
     });
 
@@ -162,7 +162,7 @@ describe("createRetroLcdEditorSession", () => {
   });
 
   it("extends selection to document boundaries", () => {
-    const session = createRetroLcdEditorSession({
+    const session = createRetroScreenEditorSession({
       value: "retro display"
     });
 
@@ -181,7 +181,7 @@ describe("createRetroLcdEditorSession", () => {
   });
 
   it("does not edit when the session is read only", () => {
-    const session = createRetroLcdEditorSession({
+    const session = createRetroScreenEditorSession({
       value: "retro display",
       editable: false
     });
@@ -199,7 +199,7 @@ describe("createRetroLcdEditorSession", () => {
   });
 
   it("notifies subscribers when the state changes", () => {
-    const session = createRetroLcdEditorSession({
+    const session = createRetroScreenEditorSession({
       value: "retro"
     });
     let notifications = 0;

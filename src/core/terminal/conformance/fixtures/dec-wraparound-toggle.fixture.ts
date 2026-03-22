@@ -1,6 +1,6 @@
-import type { RetroLcdTerminalFixture } from "../types";
+import type { RetroScreenTerminalFixture } from "../types";
 
-export const decWraparoundToggleFixture: RetroLcdTerminalFixture = {
+export const decWraparoundToggleFixture: RetroScreenTerminalFixture = {
   name: "dec-wraparound-toggle",
   description: "DEC private mode ?7 should preserve the private marker and disable autowrap when reset.",
   classification: "implemented",

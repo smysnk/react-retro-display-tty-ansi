@@ -1,10 +1,10 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import {
-  createRetroLcdWebSocketSession,
-  type RetroLcdTerminalWebSocketLike
+  createRetroScreenWebSocketSession,
+  type RetroScreenTerminalWebSocketLike
 } from "./websocket-session";
 
-class MockWebSocket implements RetroLcdTerminalWebSocketLike {
+class MockWebSocket implements RetroScreenTerminalWebSocketLike {
   static instances: MockWebSocket[] = [];
 
   readonly sent: string[] = [];
@@ -46,13 +46,13 @@ class MockWebSocket implements RetroLcdTerminalWebSocketLike {
   }
 }
 
-describe("createRetroLcdWebSocketSession", () => {
+describe("createRetroScreenWebSocketSession", () => {
   beforeEach(() => {
     MockWebSocket.instances.length = 0;
   });
 
   it("opens with the measured geometry, flushes queued resize updates, and forwards events", () => {
-    const session = createRetroLcdWebSocketSession({
+    const session = createRetroScreenWebSocketSession({
       url: "ws://example.test/terminal",
       WebSocket: MockWebSocket,
       openPayload: {
@@ -99,7 +99,7 @@ describe("createRetroLcdWebSocketSession", () => {
   });
 
   it("forwards title and bell events and sends an explicit close message", () => {
-    const session = createRetroLcdWebSocketSession({
+    const session = createRetroScreenWebSocketSession({
       url: "ws://example.test/terminal",
       WebSocket: MockWebSocket
     });

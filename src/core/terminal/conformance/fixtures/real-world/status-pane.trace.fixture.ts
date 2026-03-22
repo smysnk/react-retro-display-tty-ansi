@@ -1,6 +1,6 @@
-import type { RetroLcdTerminalFixture } from "../../types";
+import type { RetroScreenTerminalFixture } from "../../types";
 
-export const statusPaneTraceFixture: RetroLcdTerminalFixture = {
+export const statusPaneTraceFixture: RetroScreenTerminalFixture = {
   name: "status-pane-trace",
   description:
     "A fixed-header status pane with a scroll region, insert-line update, and truecolor footer should remain oracle-clean.",

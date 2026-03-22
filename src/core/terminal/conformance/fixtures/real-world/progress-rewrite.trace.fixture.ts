@@ -1,6 +1,6 @@
-import type { RetroLcdTerminalFixture } from "../../types";
+import type { RetroScreenTerminalFixture } from "../../types";
 
-export const progressRewriteTraceFixture: RetroLcdTerminalFixture = {
+export const progressRewriteTraceFixture: RetroScreenTerminalFixture = {
   name: "progress-rewrite-trace",
   description:
     "A progress line that rewrites itself with carriage return and erase-in-line should settle into the same final output as xterm.",

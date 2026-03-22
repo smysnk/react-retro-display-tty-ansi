@@ -1,6 +1,6 @@
-import type { RetroLcdTerminalFixture } from "../../types";
+import type { RetroScreenTerminalFixture } from "../../types";
 
-export const shellSessionTraceFixture: RetroLcdTerminalFixture = {
+export const shellSessionTraceFixture: RetroScreenTerminalFixture = {
   name: "shell-session-trace",
   description:
     "A shell-style trace with prompt colors, wrapped path output, and a colored PASS line should match xterm end state.",

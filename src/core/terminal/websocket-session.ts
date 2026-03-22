@@ -1,12 +1,12 @@
 import type {
-  RetroLcdTerminalSession,
-  RetroLcdTerminalSessionEvent,
-  RetroLcdTerminalSessionGeometry,
-  RetroLcdTerminalSessionListener,
-  RetroLcdTerminalSessionState
+  RetroScreenTerminalSession,
+  RetroScreenTerminalSessionEvent,
+  RetroScreenTerminalSessionGeometry,
+  RetroScreenTerminalSessionListener,
+  RetroScreenTerminalSessionState
 } from "./session-types";
 
-type RetroLcdTerminalClientMessage =
+type RetroScreenTerminalClientMessage =
   | {
       type: "open";
       rows: number;
@@ -31,7 +31,7 @@ type RetroLcdTerminalClientMessage =
       type: "close";
     };
 
-type RetroLcdTerminalServerMessage =
+type RetroScreenTerminalServerMessage =
   | { type: "ready"; pid?: number | null }
   | { type: "data"; data: string }
   | { type: "title"; title: string }
@@ -39,7 +39,7 @@ type RetroLcdTerminalServerMessage =
   | { type: "exit"; exitCode: number | null; signal: string | null }
   | { type: "error"; message: string };
 
-export type RetroLcdTerminalWebSocketLike = {
+export type RetroScreenTerminalWebSocketLike = {
   readyState: number;
   onopen: ((event: Event) => void) | null;
   onmessage: ((event: MessageEvent<string>) => void) | null;
@@ -49,20 +49,20 @@ export type RetroLcdTerminalWebSocketLike = {
   close: (code?: number, reason?: string) => void;
 };
 
-export type RetroLcdTerminalWebSocketConstructor = new (
+export type RetroScreenTerminalWebSocketConstructor = new (
   url: string,
   protocols?: string | string[]
-) => RetroLcdTerminalWebSocketLike;
+) => RetroScreenTerminalWebSocketLike;
 
-export type RetroLcdTerminalWebSocketSessionOptions = {
+export type RetroScreenTerminalWebSocketSessionOptions = {
   url: string | URL;
   protocols?: string | string[];
-  WebSocket?: RetroLcdTerminalWebSocketConstructor;
+  WebSocket?: RetroScreenTerminalWebSocketConstructor;
   openPayload?:
-    | Omit<Extract<RetroLcdTerminalClientMessage, { type: "open" }>, "type" | "rows" | "cols">
+    | Omit<Extract<RetroScreenTerminalClientMessage, { type: "open" }>, "type" | "rows" | "cols">
     | ((
-        geometry: RetroLcdTerminalSessionGeometry
-      ) => Omit<Extract<RetroLcdTerminalClientMessage, { type: "open" }>, "type" | "rows" | "cols">);
+        geometry: RetroScreenTerminalSessionGeometry
+      ) => Omit<Extract<RetroScreenTerminalClientMessage, { type: "open" }>, "type" | "rows" | "cols">);
 };
 
 const SOCKET_CONNECTING = 0;
@@ -98,14 +98,14 @@ const asBase64 = (value: Uint8Array) => {
 };
 
 const resolveWebSocketConstructor = (
-  override?: RetroLcdTerminalWebSocketConstructor
-): RetroLcdTerminalWebSocketConstructor => {
+  override?: RetroScreenTerminalWebSocketConstructor
+): RetroScreenTerminalWebSocketConstructor => {
   if (override) {
     return override;
   }
 
   const WebSocketConstructor = (globalThis as typeof globalThis & {
-    WebSocket?: RetroLcdTerminalWebSocketConstructor;
+    WebSocket?: RetroScreenTerminalWebSocketConstructor;
   }).WebSocket;
 
   if (!WebSocketConstructor) {
@@ -115,27 +115,27 @@ const resolveWebSocketConstructor = (
   return WebSocketConstructor;
 };
 
-const stringifyClientMessage = (message: RetroLcdTerminalClientMessage) => JSON.stringify(message);
+const stringifyClientMessage = (message: RetroScreenTerminalClientMessage) => JSON.stringify(message);
 
-const toErrorEvent = (message: string, error?: unknown): RetroLcdTerminalSessionEvent => ({
+const toErrorEvent = (message: string, error?: unknown): RetroScreenTerminalSessionEvent => ({
   type: "error",
   message,
   error
 });
 
-export const createRetroLcdWebSocketSession = (
-  options: RetroLcdTerminalWebSocketSessionOptions
-): RetroLcdTerminalSession => {
-  const listeners = new Set<RetroLcdTerminalSessionListener>();
+export const createRetroScreenWebSocketSession = (
+  options: RetroScreenTerminalWebSocketSessionOptions
+): RetroScreenTerminalSession => {
+  const listeners = new Set<RetroScreenTerminalSessionListener>();
   const WebSocketConstructor = resolveWebSocketConstructor(options.WebSocket);
   const socketUrl = String(options.url);
-  let socket: RetroLcdTerminalWebSocketLike | null = null;
-  let state: RetroLcdTerminalSessionState = "idle";
-  let lastGeometry: RetroLcdTerminalSessionGeometry | null = null;
+  let socket: RetroScreenTerminalWebSocketLike | null = null;
+  let state: RetroScreenTerminalSessionState = "idle";
+  let lastGeometry: RetroScreenTerminalSessionGeometry | null = null;
   let openPayloadSent = false;
   const queuedMessages: string[] = [];
 
-  const emit = (event: RetroLcdTerminalSessionEvent) => {
+  const emit = (event: RetroScreenTerminalSessionEvent) => {
     if (event.type === "connecting") {
       state = "connecting";
     } else if (event.type === "open" || event.type === "ready") {
@@ -151,7 +151,7 @@ export const createRetroLcdWebSocketSession = (
     }
   };
 
-  const sendOrQueue = (message: RetroLcdTerminalClientMessage) => {
+  const sendOrQueue = (message: RetroScreenTerminalClientMessage) => {
     const serialized = stringifyClientMessage(message);
 
     if (message.type === "resize" && (!socket || socket.readyState === SOCKET_CONNECTING)) {
@@ -201,7 +201,7 @@ export const createRetroLcdWebSocketSession = (
     flushQueuedMessages();
   };
 
-  const connect = (geometry: RetroLcdTerminalSessionGeometry) => {
+  const connect = (geometry: RetroScreenTerminalSessionGeometry) => {
     lastGeometry = geometry;
 
     if (socket && (socket.readyState === SOCKET_CONNECTING || socket.readyState === SOCKET_OPEN)) {
@@ -219,7 +219,7 @@ export const createRetroLcdWebSocketSession = (
 
     socket.onmessage = (event) => {
       try {
-        const payload = JSON.parse(event.data) as RetroLcdTerminalServerMessage | Record<string, unknown>;
+        const payload = JSON.parse(event.data) as RetroScreenTerminalServerMessage | Record<string, unknown>;
 
         if (!isRecord(payload) || typeof payload.type !== "string") {
           emit(toErrorEvent("Received an invalid terminal session payload.", payload));

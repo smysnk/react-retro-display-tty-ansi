@@ -1,10 +1,10 @@
 import type { CSSProperties } from "react";
 import type {
-  RetroLcdDisplayPadding,
-  RetroLcdDisplayPaddingValue
+  RetroScreenDisplayPadding,
+  RetroScreenDisplayPaddingValue
 } from "../core/types";
 
-const toCssLength = (value?: RetroLcdDisplayPaddingValue) => {
+const toCssLength = (value?: RetroScreenDisplayPaddingValue) => {
   if (value === undefined) {
     return undefined;
   }
@@ -15,7 +15,7 @@ const toCssLength = (value?: RetroLcdDisplayPaddingValue) => {
 const setVar = (
   vars: CSSProperties,
   name: string,
-  value?: RetroLcdDisplayPaddingValue
+  value?: RetroScreenDisplayPaddingValue
 ) => {
   const resolved = toCssLength(value);
 
@@ -25,7 +25,7 @@ const setVar = (
 };
 
 export const getDisplayPaddingVars = (
-  displayPadding?: RetroLcdDisplayPadding
+  displayPadding?: RetroScreenDisplayPadding
 ): CSSProperties => {
   if (displayPadding === undefined) {
     return {};

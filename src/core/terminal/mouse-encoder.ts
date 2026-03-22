@@ -1,6 +1,6 @@
 import type {
-  RetroLcdTerminalMouseProtocol,
-  RetroLcdTerminalMouseTrackingMode
+  RetroScreenTerminalMouseProtocol,
+  RetroScreenTerminalMouseTrackingMode
 } from "./types";
 
 const ESC = "\u001b";
@@ -10,7 +10,7 @@ const CTRL_MODIFIER = 16;
 const MOTION_MODIFIER = 32;
 const WHEEL_MODIFIER = 64;
 
-export type RetroLcdTerminalMouseButton =
+export type RetroScreenTerminalMouseButton =
   | "left"
   | "middle"
   | "right"
@@ -18,11 +18,11 @@ export type RetroLcdTerminalMouseButton =
   | "wheel-down"
   | "none";
 
-export type RetroLcdTerminalMouseAction = "press" | "release" | "move" | "wheel";
+export type RetroScreenTerminalMouseAction = "press" | "release" | "move" | "wheel";
 
-export type RetroLcdTerminalMouseEvent = {
-  action: RetroLcdTerminalMouseAction;
-  button: RetroLcdTerminalMouseButton;
+export type RetroScreenTerminalMouseEvent = {
+  action: RetroScreenTerminalMouseAction;
+  button: RetroScreenTerminalMouseButton;
   row: number;
   col: number;
   altKey: boolean;
@@ -31,22 +31,22 @@ export type RetroLcdTerminalMouseEvent = {
   shiftKey: boolean;
 };
 
-export type RetroLcdTerminalMouseEncodingOptions = {
-  protocol?: RetroLcdTerminalMouseProtocol;
-  trackingMode?: RetroLcdTerminalMouseTrackingMode;
+export type RetroScreenTerminalMouseEncodingOptions = {
+  protocol?: RetroScreenTerminalMouseProtocol;
+  trackingMode?: RetroScreenTerminalMouseTrackingMode;
 };
 
 const clampCoordinate = (value: number) =>
   Math.max(1, Number.isFinite(value) ? Math.floor(value) : 1);
 
-const getModifierBits = (event: RetroLcdTerminalMouseEvent) =>
+const getModifierBits = (event: RetroScreenTerminalMouseEvent) =>
   (event.shiftKey ? SHIFT_MODIFIER : 0) +
   (event.altKey || event.metaKey ? META_MODIFIER : 0) +
   (event.ctrlKey ? CTRL_MODIFIER : 0);
 
 const getButtonCode = (
-  button: RetroLcdTerminalMouseButton,
-  action: RetroLcdTerminalMouseAction
+  button: RetroScreenTerminalMouseButton,
+  action: RetroScreenTerminalMouseAction
 ) => {
   switch (button) {
     case "left":
@@ -66,12 +66,12 @@ const getButtonCode = (
   }
 };
 
-const supportsMotion = (trackingMode: RetroLcdTerminalMouseTrackingMode) =>
+const supportsMotion = (trackingMode: RetroScreenTerminalMouseTrackingMode) =>
   trackingMode === "drag" || trackingMode === "any";
 
 const shouldEncodeEvent = (
-  event: RetroLcdTerminalMouseEvent,
-  trackingMode: RetroLcdTerminalMouseTrackingMode
+  event: RetroScreenTerminalMouseEvent,
+  trackingMode: RetroScreenTerminalMouseTrackingMode
 ) => {
   switch (event.action) {
     case "press":
@@ -90,9 +90,9 @@ const shouldEncodeEvent = (
   }
 };
 
-export const encodeRetroLcdTerminalMouse = (
-  event: RetroLcdTerminalMouseEvent,
-  options: RetroLcdTerminalMouseEncodingOptions = {}
+export const encodeRetroScreenTerminalMouse = (
+  event: RetroScreenTerminalMouseEvent,
+  options: RetroScreenTerminalMouseEncodingOptions = {}
 ): string | null => {
   const protocol = options.protocol ?? "none";
   const trackingMode = options.trackingMode ?? "none";
@@ -116,5 +116,3 @@ export const encodeRetroLcdTerminalMouse = (
 
   return `${ESC}[<${encodedButton};${clampCoordinate(event.col)};${clampCoordinate(event.row)}${final}`;
 };
-
-export const encodeRetroScreenTerminalMouse = encodeRetroLcdTerminalMouse;

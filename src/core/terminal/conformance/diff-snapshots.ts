@@ -1,11 +1,11 @@
 import type {
-  RetroLcdNormalizedCell,
-  RetroLcdNormalizedTerminalSnapshot
+  RetroScreenNormalizedCell,
+  RetroScreenNormalizedTerminalSnapshot
 } from "./types";
 
 const sameValue = <T>(left: T, right: T) => JSON.stringify(left) === JSON.stringify(right);
 
-const formatCell = (cell: RetroLcdNormalizedCell) =>
+const formatCell = (cell: RetroScreenNormalizedCell) =>
   JSON.stringify({
     char: cell.char,
     width: cell.width,
@@ -13,8 +13,8 @@ const formatCell = (cell: RetroLcdNormalizedCell) =>
   });
 
 export const diffNormalizedSnapshots = (
-  actual: RetroLcdNormalizedTerminalSnapshot,
-  expected: RetroLcdNormalizedTerminalSnapshot
+  actual: RetroScreenNormalizedTerminalSnapshot,
+  expected: RetroScreenNormalizedTerminalSnapshot
 ) => {
   const diffs: string[] = [];
 

@@ -1,20 +1,20 @@
 import type { CursorMode } from "../types";
 import {
-  findRetroLcdNextWordBoundary,
-  findRetroLcdPreviousWordBoundary,
-  getRetroLcdWordSelectionAtOffset,
-  collapseRetroLcdTextSelectionToEnd,
-  collapseRetroLcdTextSelectionToStart,
-  clampRetroLcdTextOffset,
-  createRetroLcdTextSelection,
-  deleteRetroLcdSelectedText,
-  isRetroLcdTextSelectionCollapsed,
-  normalizeRetroLcdTextSelection,
-  replaceRetroLcdSelectedText,
-  type RetroLcdTextSelection
+  findRetroScreenNextWordBoundary,
+  findRetroScreenPreviousWordBoundary,
+  getRetroScreenWordSelectionAtOffset,
+  collapseRetroScreenTextSelectionToEnd,
+  collapseRetroScreenTextSelectionToStart,
+  clampRetroScreenTextOffset,
+  createRetroScreenTextSelection,
+  deleteRetroScreenSelectedText,
+  isRetroScreenTextSelectionCollapsed,
+  normalizeRetroScreenTextSelection,
+  replaceRetroScreenSelectedText,
+  type RetroScreenTextSelection
 } from "./selection";
 
-export type RetroLcdEditorSessionOptions = {
+export type RetroScreenEditorSessionOptions = {
   value?: string;
   placeholder?: string;
   editable?: boolean;
@@ -23,19 +23,19 @@ export type RetroLcdEditorSessionOptions = {
   selectionEnd?: number;
 };
 
-export type RetroLcdEditorSessionState = {
+export type RetroScreenEditorSessionState = {
   value: string;
   placeholder: string;
   editable: boolean;
   cursorMode: CursorMode;
-  selection: RetroLcdTextSelection;
+  selection: RetroScreenTextSelection;
 };
 
-export type RetroLcdEditorSession = {
+export type RetroScreenEditorSession = {
   setValue: (value: string) => void;
   getValue: () => string;
   setSelection: (start: number, end?: number) => void;
-  getSelection: () => RetroLcdTextSelection;
+  getSelection: () => RetroScreenTextSelection;
   getSelectedText: () => string;
   moveCursorTo: (offset: number) => void;
   moveCursorByCharacter: (direction: -1 | 1) => void;
@@ -61,13 +61,13 @@ export type RetroLcdEditorSession = {
   getPlaceholder: () => string;
   setCursorMode: (mode: CursorMode) => void;
   getCursorMode: () => CursorMode;
-  getState: () => RetroLcdEditorSessionState;
+  getState: () => RetroScreenEditorSessionState;
   subscribe: (listener: () => void) => () => void;
 };
 
 const DEFAULT_CURSOR_MODE: CursorMode = "solid";
 
-class RetroLcdEditorSessionStore implements RetroLcdEditorSession {
+class RetroScreenEditorSessionStore implements RetroScreenEditorSession {
   private readonly listeners = new Set<() => void>();
   private value: string;
   private placeholder: string;
@@ -76,12 +76,12 @@ class RetroLcdEditorSessionStore implements RetroLcdEditorSession {
   private selectionAnchor: number;
   private selectionFocus: number;
 
-  constructor(options: RetroLcdEditorSessionOptions = {}) {
+  constructor(options: RetroScreenEditorSessionOptions = {}) {
     this.value = options.value ?? "";
     this.placeholder = options.placeholder ?? "";
     this.editable = options.editable ?? true;
     this.cursorMode = options.cursorMode ?? DEFAULT_CURSOR_MODE;
-    const initialSelection = createRetroLcdTextSelection(
+    const initialSelection = createRetroScreenTextSelection(
       options.selectionStart ?? this.value.length,
       options.selectionEnd ?? options.selectionStart ?? this.value.length,
       this.value.length
@@ -96,8 +96,8 @@ class RetroLcdEditorSessionStore implements RetroLcdEditorSession {
     }
 
     this.value = value;
-    this.selectionAnchor = clampRetroLcdTextOffset(this.selectionAnchor, this.value.length);
-    this.selectionFocus = clampRetroLcdTextOffset(this.selectionFocus, this.value.length);
+    this.selectionAnchor = clampRetroScreenTextOffset(this.selectionAnchor, this.value.length);
+    this.selectionFocus = clampRetroScreenTextOffset(this.selectionFocus, this.value.length);
     this.emit();
   }
 
@@ -106,10 +106,10 @@ class RetroLcdEditorSessionStore implements RetroLcdEditorSession {
   }
 
   setSelection(start: number, end = start) {
-    const nextAnchor = clampRetroLcdTextOffset(start, this.value.length);
-    const nextFocus = clampRetroLcdTextOffset(end, this.value.length);
+    const nextAnchor = clampRetroScreenTextOffset(start, this.value.length);
+    const nextFocus = clampRetroScreenTextOffset(end, this.value.length);
     const current = this.getSelection();
-    const nextSelection = createRetroLcdTextSelection(nextAnchor, nextFocus, this.value.length);
+    const nextSelection = createRetroScreenTextSelection(nextAnchor, nextFocus, this.value.length);
 
     if (
       nextSelection.start === current.start &&
@@ -126,7 +126,7 @@ class RetroLcdEditorSessionStore implements RetroLcdEditorSession {
   }
 
   getSelection() {
-    return normalizeRetroLcdTextSelection(
+    return normalizeRetroScreenTextSelection(
       {
         start: this.selectionAnchor,
         end: this.selectionFocus
@@ -148,10 +148,10 @@ class RetroLcdEditorSessionStore implements RetroLcdEditorSession {
     const selection = this.getSelection();
     const nextOffset =
       direction < 0
-        ? isRetroLcdTextSelectionCollapsed(selection)
+        ? isRetroScreenTextSelectionCollapsed(selection)
           ? selection.start - 1
           : selection.start
-        : isRetroLcdTextSelectionCollapsed(selection)
+        : isRetroScreenTextSelectionCollapsed(selection)
           ? selection.end + 1
           : selection.end;
     this.moveCursorTo(nextOffset);
@@ -161,16 +161,16 @@ class RetroLcdEditorSessionStore implements RetroLcdEditorSession {
     const selection = this.getSelection();
     const referenceOffset =
       direction < 0
-        ? isRetroLcdTextSelectionCollapsed(selection)
+        ? isRetroScreenTextSelectionCollapsed(selection)
           ? selection.start
           : selection.start
-        : isRetroLcdTextSelectionCollapsed(selection)
+        : isRetroScreenTextSelectionCollapsed(selection)
           ? selection.end
           : selection.end;
     const nextOffset =
       direction < 0
-        ? findRetroLcdPreviousWordBoundary(this.value, referenceOffset)
-        : findRetroLcdNextWordBoundary(this.value, referenceOffset);
+        ? findRetroScreenPreviousWordBoundary(this.value, referenceOffset)
+        : findRetroScreenNextWordBoundary(this.value, referenceOffset);
     this.moveCursorTo(nextOffset);
   }
 
@@ -183,20 +183,20 @@ class RetroLcdEditorSessionStore implements RetroLcdEditorSession {
   }
 
   selectWordAt(offset: number) {
-    const selection = getRetroLcdWordSelectionAtOffset(this.value, offset);
+    const selection = getRetroScreenWordSelectionAtOffset(this.value, offset);
     this.setSelection(selection.start, selection.end);
   }
 
   extendSelectionByCharacter(direction: -1 | 1) {
-    const nextFocus = clampRetroLcdTextOffset(this.selectionFocus + direction, this.value.length);
+    const nextFocus = clampRetroScreenTextOffset(this.selectionFocus + direction, this.value.length);
     this.setSelection(this.selectionAnchor, nextFocus);
   }
 
   extendSelectionByWord(direction: -1 | 1) {
     const nextFocus =
       direction < 0
-        ? findRetroLcdPreviousWordBoundary(this.value, this.selectionFocus)
-        : findRetroLcdNextWordBoundary(this.value, this.selectionFocus);
+        ? findRetroScreenPreviousWordBoundary(this.value, this.selectionFocus)
+        : findRetroScreenNextWordBoundary(this.value, this.selectionFocus);
     this.setSelection(this.selectionAnchor, nextFocus);
   }
 
@@ -205,7 +205,7 @@ class RetroLcdEditorSessionStore implements RetroLcdEditorSession {
   }
 
   collapseSelectionToStart() {
-    const nextSelection = collapseRetroLcdTextSelectionToStart(this.getSelection());
+    const nextSelection = collapseRetroScreenTextSelectionToStart(this.getSelection());
 
     if (
       nextSelection.start === this.selectionAnchor &&
@@ -220,7 +220,7 @@ class RetroLcdEditorSessionStore implements RetroLcdEditorSession {
   }
 
   collapseSelectionToEnd() {
-    const nextSelection = collapseRetroLcdTextSelectionToEnd(this.getSelection());
+    const nextSelection = collapseRetroScreenTextSelectionToEnd(this.getSelection());
 
     if (
       nextSelection.start === this.selectionAnchor &&
@@ -239,7 +239,7 @@ class RetroLcdEditorSessionStore implements RetroLcdEditorSession {
       return false;
     }
 
-    const nextState = replaceRetroLcdSelectedText(this.value, this.getSelection(), text);
+    const nextState = replaceRetroScreenSelectedText(this.value, this.getSelection(), text);
     this.value = nextState.value;
     this.selectionAnchor = nextState.selection.start;
     this.selectionFocus = nextState.selection.end;
@@ -257,7 +257,7 @@ class RetroLcdEditorSessionStore implements RetroLcdEditorSession {
       };
     }
 
-    const nextState = deleteRetroLcdSelectedText(this.value, this.getSelection());
+    const nextState = deleteRetroScreenSelectedText(this.value, this.getSelection());
     this.value = nextState.value;
     this.selectionAnchor = nextState.selection.start;
     this.selectionFocus = nextState.selection.end;
@@ -274,8 +274,8 @@ class RetroLcdEditorSessionStore implements RetroLcdEditorSession {
       return false;
     }
 
-    if (!isRetroLcdTextSelectionCollapsed(this.getSelection())) {
-      const nextState = deleteRetroLcdSelectedText(this.value, this.getSelection());
+    if (!isRetroScreenTextSelectionCollapsed(this.getSelection())) {
+      const nextState = deleteRetroScreenSelectedText(this.value, this.getSelection());
       this.value = nextState.value;
       this.selectionAnchor = nextState.selection.start;
       this.selectionFocus = nextState.selection.end;
@@ -295,8 +295,8 @@ class RetroLcdEditorSessionStore implements RetroLcdEditorSession {
       return false;
     }
 
-    if (!isRetroLcdTextSelectionCollapsed(this.getSelection())) {
-      const nextState = deleteRetroLcdSelectedText(this.value, this.getSelection());
+    if (!isRetroScreenTextSelectionCollapsed(this.getSelection())) {
+      const nextState = deleteRetroScreenSelectedText(this.value, this.getSelection());
       this.value = nextState.value;
       this.selectionAnchor = nextState.selection.start;
       this.selectionFocus = nextState.selection.end;
@@ -350,7 +350,7 @@ class RetroLcdEditorSessionStore implements RetroLcdEditorSession {
     return this.cursorMode;
   }
 
-  getState(): RetroLcdEditorSessionState {
+  getState(): RetroScreenEditorSessionState {
     return {
       value: this.value,
       placeholder: this.placeholder,
@@ -369,7 +369,7 @@ class RetroLcdEditorSessionStore implements RetroLcdEditorSession {
   }
 
   private replaceSelectionAtOffsets(start: number, end: number, replacement: string) {
-    const nextState = replaceRetroLcdSelectedText(
+    const nextState = replaceRetroScreenSelectedText(
       this.value,
       {
         start,
@@ -391,6 +391,6 @@ class RetroLcdEditorSessionStore implements RetroLcdEditorSession {
   }
 }
 
-export const createRetroLcdEditorSession = (
-  options: RetroLcdEditorSessionOptions = {}
-): RetroLcdEditorSession => new RetroLcdEditorSessionStore(options);
+export const createRetroScreenEditorSession = (
+  options: RetroScreenEditorSessionOptions = {}
+): RetroScreenEditorSession => new RetroScreenEditorSessionStore(options);

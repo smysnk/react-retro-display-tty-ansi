@@ -12,10 +12,12 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { progressRewriteTraceFixture } from "../core/terminal/conformance/fixtures/real-world/progress-rewrite.trace.fixture";
 import { shellSessionTraceFixture } from "../core/terminal/conformance/fixtures/real-world/shell-session.trace.fixture";
 import { statusPaneTraceFixture } from "../core/terminal/conformance/fixtures/real-world/status-pane.trace.fixture";
-import { createRetroLcdController } from "../core/terminal/controller";
-import { createRetroLcdWebSocketSession } from "../core/terminal/websocket-session";
-import type { RetroLcdDisplayColorMode, RetroLcdGeometry } from "../core/types";
-import { RetroScreen } from "../react/RetroScreen";
+import { createRetroScreenController } from "../core/terminal/controller";
+import { createRetroScreenWebSocketSession } from "../core/terminal/websocket-session";
+import type { RetroScreenDisplayColorMode, RetroScreenGeometry } from "../core/types";
+import { RetroScreen as RetroScreenBase } from "../react/RetroScreen";
+import { RetroScreenAnsiPlayer } from "../react/RetroScreenAnsiPlayer";
+import type { RetroScreenAnsiPlayerState } from "../react/useRetroScreenAnsiPlayer";
 import { loadBadAppleAnsiAsset, type BadAppleAnsiAsset } from "./bad-apple-ansi";
 
 const STORY_COLOR = "#97ff9b";
@@ -29,7 +31,7 @@ type StoryShellProps = {
 };
 
 type DisplayColorModeCardProps = {
-  displayColorMode: RetroLcdDisplayColorMode;
+  displayColorMode: RetroScreenDisplayColorMode;
   title: string;
   copy: string;
   children: ReactNode;
@@ -69,7 +71,7 @@ type ProbeGlyphStyle = {
 };
 
 type ProbeSceneState = {
-  displayColorMode: RetroLcdDisplayColorMode;
+  displayColorMode: RetroScreenDisplayColorMode;
   borderStyleLabel: string;
   glyphStyleLabel: string;
 };
@@ -138,7 +140,7 @@ type ResizablePanelLiveSurfaceProps = {
   leadingFocus?: boolean;
   onPauseChange?: (paused: boolean) => void;
   onActiveStepLabelChange?: (label: string) => void;
-  onGeometryChange?: (geometry: RetroLcdGeometry | null) => void;
+  onGeometryChange?: (geometry: RetroScreenGeometry | null) => void;
 };
 
 const DEFAULT_LIVE_TTY_URL = "ws://127.0.0.1:8787";
@@ -260,8 +262,8 @@ const resizablePanelLeadingSteps: ScriptedResizeStep[] = [
   }
 ];
 
-const RetroLcd = (props: ComponentProps<typeof RetroScreen>) => (
-  <RetroScreen
+const RetroScreen = (props: ComponentProps<typeof RetroScreenBase>) => (
+  <RetroScreenBase
     {...props}
     resizable={props.resizable ?? true}
     resizableLeadingEdges={props.resizableLeadingEdges ?? true}
@@ -277,7 +279,7 @@ const TERMINAL_SIZE_QUERY = "\u001b[18t";
 const PROBE_RESET = "\u001b[0m";
 const PROBE_BOLD = "\u001b[1m";
 const PROBE_FAINT = "\u001b[2m";
-const probeDisplayColorModes: RetroLcdDisplayColorMode[] = [
+const probeDisplayColorModes: RetroScreenDisplayColorMode[] = [
   "phosphor-green",
   "phosphor-amber",
   "phosphor-ice",
@@ -431,7 +433,7 @@ declare global {
 }
 
 const displayColorModeDemoSteps: {
-  displayColorMode: RetroLcdDisplayColorMode;
+  displayColorMode: RetroScreenDisplayColorMode;
   value: string;
 }[] = [
   {
@@ -625,7 +627,7 @@ const colorizeSequence = (text: string, palette: string[]) => {
   return `${rendered.join("")}${PROBE_RESET}`;
 };
 
-const buildProbeTheme = (displayColorMode: RetroLcdDisplayColorMode) => {
+const buildProbeTheme = (displayColorMode: RetroScreenDisplayColorMode) => {
   switch (displayColorMode) {
     case "ansi-classic":
       return {
@@ -1015,7 +1017,16 @@ const resolveLiveTtyDemoConfig = (): LiveTtyDemoConfig | null => {
     return null;
   }
 
-  const globalConfig = window.__RETRO_SCREEN_TTY_DEMO__;
+  let topWindowConfig: LiveTtyDemoConfig | undefined;
+
+  try {
+    topWindowConfig =
+      window.top && window.top !== window ? window.top.__RETRO_SCREEN_TTY_DEMO__ : undefined;
+  } catch {
+    topWindowConfig = undefined;
+  }
+
+  const globalConfig = window.__RETRO_SCREEN_TTY_DEMO__ ?? topWindowConfig;
   const query = new URLSearchParams(window.location.search);
   const url = globalConfig?.url ?? query.get("ttyUrl") ?? DEFAULT_LIVE_TTY_URL;
 
@@ -1040,7 +1051,7 @@ const toGlyphArt = (value: string, glyphs: Record<string, string[]>) => {
 };
 
 const writeAt = (
-  controller: ReturnType<typeof createRetroLcdController>,
+  controller: ReturnType<typeof createRetroScreenController>,
   row: number,
   col: number,
   text: string
@@ -1049,7 +1060,7 @@ const writeAt = (
 };
 
 const drawTerminalProbeFrame = (
-  controller: ReturnType<typeof createRetroLcdController>,
+  controller: ReturnType<typeof createRetroScreenController>,
   rows: number,
   cols: number,
   {
@@ -1057,7 +1068,7 @@ const drawTerminalProbeFrame = (
     borderStyle,
     glyphStyle
   }: {
-    displayColorMode: RetroLcdDisplayColorMode;
+    displayColorMode: RetroScreenDisplayColorMode;
     borderStyle: ProbeBorderStyle;
     glyphStyle: ProbeGlyphStyle;
   }
@@ -1143,7 +1154,7 @@ const drawTerminalProbeFrame = (
 };
 
 const playTraceScenario = (
-  controller: ReturnType<typeof createRetroLcdController>,
+  controller: ReturnType<typeof createRetroScreenController>,
   scenario: TraceScenario,
   startAt = 0
 ) => {
@@ -1268,7 +1279,7 @@ export function QuietOutputDemoStory() {
 
   return (
     <CaptureStage captureId="quiet-output" maxWidth={760}>
-      <RetroLcd mode="value" color={STORY_COLOR} value={value} />
+      <RetroScreen mode="value" color={STORY_COLOR} value={value} />
     </CaptureStage>
   );
 }
@@ -1321,7 +1332,7 @@ export function EditableModeDemoStory() {
   return (
     <CaptureStage captureId="editable-drafting" maxWidth={860}>
       <div ref={hostRef} className="sb-retro-capture-host">
-        <RetroLcd
+        <RetroScreen
           mode="value"
           value={value}
           editable
@@ -1352,7 +1363,7 @@ export function EditableNotebookStory() {
       }
     >
       <Stage>
-        <RetroLcd
+        <RetroScreen
           mode="value"
           value={value}
           editable
@@ -1385,7 +1396,7 @@ export function EditorSelectionLabStory() {
       }
     >
       <Stage maxWidth={520}>
-        <RetroLcd
+        <RetroScreen
           mode="editor"
           value={value}
           onChange={setValue}
@@ -1421,7 +1432,7 @@ export function EditorSelectionWrappedStory() {
       }
     >
       <Stage maxWidth={520}>
-        <RetroLcd
+        <RetroScreen
           mode="editor"
           value={value}
           onChange={setValue}
@@ -1457,7 +1468,7 @@ export function EditorWordSelectionLabStory() {
       }
     >
       <Stage maxWidth={620}>
-        <RetroLcd
+        <RetroScreen
           mode="editor"
           value={value}
           onChange={setValue}
@@ -1492,7 +1503,7 @@ export function EditorSelectionReadOnlyStory() {
       }
     >
       <Stage maxWidth={520}>
-        <RetroLcd
+        <RetroScreen
           mode="editor"
           value="ABCD"
           onSelectionChange={(nextSelection) =>
@@ -1513,7 +1524,7 @@ export function EditorSelectionReadOnlyStory() {
 
 function TerminalStreamStory() {
   const [controller] = useState(() =>
-    createRetroLcdController({
+    createRetroScreenController({
       rows: 9,
       cols: 46,
       cursorMode: "hollow"
@@ -1569,7 +1580,7 @@ function TerminalStreamStory() {
       }
     >
       <Stage>
-        <RetroLcd mode="terminal" controller={controller} color={STORY_COLOR} />
+        <RetroScreen mode="terminal" controller={controller} color={STORY_COLOR} />
       </Stage>
     </StoryShell>
   );
@@ -1577,7 +1588,7 @@ function TerminalStreamStory() {
 
 export function TerminalModeDemoStory() {
   const [controller] = useState(() =>
-    createRetroLcdController({
+    createRetroScreenController({
       rows: 9,
       cols: 46,
       cursorMode: "solid"
@@ -1619,7 +1630,7 @@ export function TerminalModeDemoStory() {
 
   return (
     <CaptureStage captureId="terminal-output" maxWidth={860}>
-      <RetroLcd mode="terminal" controller={controller} color={STORY_COLOR} />
+      <RetroScreen mode="terminal" controller={controller} color={STORY_COLOR} />
     </CaptureStage>
   );
 }
@@ -1638,7 +1649,7 @@ function PromptConsoleStory() {
       }
     >
       <Stage>
-        <RetroLcd
+        <RetroScreen
           mode="prompt"
           autoFocus
           color={STORY_COLOR}
@@ -1721,7 +1732,7 @@ export function PromptModeDemoStory() {
   return (
     <CaptureStage captureId="prompt-interaction" maxWidth={860}>
       <div ref={hostRef} className="sb-retro-capture-host">
-        <RetroLcd
+        <RetroScreen
           mode="prompt"
           autoFocus
           color={STORY_COLOR}
@@ -1753,13 +1764,13 @@ export function PromptModeDemoStory() {
 
 export function DisplayColorModesDemoStory() {
   const [controller] = useState(() =>
-    createRetroLcdController({
+    createRetroScreenController({
       rows: 6,
       cols: 40,
       cursorMode: "solid"
     })
   );
-  const [displayColorMode, setDisplayColorMode] = useState<RetroLcdDisplayColorMode>(
+  const [displayColorMode, setDisplayColorMode] = useState<RetroScreenDisplayColorMode>(
     displayColorModeDemoSteps[0].displayColorMode
   );
 
@@ -1792,7 +1803,7 @@ export function DisplayColorModesDemoStory() {
 
   return (
     <CaptureStage captureId="display-color-modes" maxWidth={820}>
-      <RetroLcd
+      <RetroScreen
         mode="terminal"
         controller={controller}
         displayColorMode={displayColorMode}
@@ -1806,7 +1817,7 @@ export function ControlCharacterReplayStory() {
   const [scenarioId, setScenarioId] = useState(traceScenarios[0].id);
   const [runToken, setRunToken] = useState(0);
   const [controller] = useState(() =>
-    createRetroLcdController({
+    createRetroScreenController({
       rows: traceScenarios[0].rows,
       cols: traceScenarios[0].cols,
       cursorMode: "solid"
@@ -1858,7 +1869,7 @@ export function ControlCharacterReplayStory() {
         ))}
       </div>
       <Stage maxWidth={820}>
-        <RetroLcd
+        <RetroScreen
           mode="terminal"
           controller={controller}
           displayColorMode="ansi-extended"
@@ -1871,7 +1882,7 @@ export function ControlCharacterReplayStory() {
 
 export function ControlCharacterReplayDemoStory() {
   const [controller] = useState(() =>
-    createRetroLcdController({
+    createRetroScreenController({
       rows: 6,
       cols: 34,
       cursorMode: "solid"
@@ -1897,7 +1908,7 @@ export function ControlCharacterReplayDemoStory() {
 
   return (
     <CaptureStage captureId="control-character-replay" maxWidth={820}>
-      <RetroLcd
+      <RetroScreen
         mode="terminal"
         controller={controller}
         displayColorMode="ansi-extended"
@@ -1909,7 +1920,7 @@ export function ControlCharacterReplayDemoStory() {
 
 export function DisplayBufferStory() {
   const [controller] = useState(() =>
-    createRetroLcdController({
+    createRetroScreenController({
       rows: 8,
       cols: 34,
       scrollback: 40,
@@ -1960,34 +1971,25 @@ export function DisplayBufferStory() {
         </button>
       </div>
       <Stage maxWidth={820}>
-        <RetroLcd mode="terminal" controller={controller} />
+        <RetroScreen mode="terminal" controller={controller} />
       </Stage>
     </StoryShell>
   );
 }
 
-export function BadAppleAnsiStory() {
-  const [controller] = useState(() =>
-    createRetroLcdController({
-      rows: 25,
-      cols: 80,
-      scrollback: 0,
-      cursorMode: "solid"
-    })
-  );
+function BadAppleAnsiSurface({
+  capture = false
+}: {
+  capture?: boolean;
+}) {
   const [asset, setAsset] = useState<BadAppleAnsiAsset | null>(null);
   const [playbackState, setPlaybackState] = useState<"loading" | "playing" | "failed">(
     "loading"
   );
-  const [frameIndex, setFrameIndex] = useState(0);
+  const [playerState, setPlayerState] = useState<RetroScreenAnsiPlayerState | null>(null);
 
   useEffect(() => {
     let active = true;
-
-    controller.reset();
-    controller.resize(25, 80);
-    controller.setCursorVisible(false);
-    controller.write("Loading Bad Apple ANSI...\r\nWaiting for CP437 decode.");
 
     loadBadAppleAnsiAsset()
       .then((nextAsset) => {
@@ -1995,11 +1997,7 @@ export function BadAppleAnsiStory() {
           return;
         }
 
-        controller.reset();
-        controller.resize(nextAsset.height, nextAsset.width);
-        controller.setCursorVisible(false);
         setAsset(nextAsset);
-        setFrameIndex(0);
         setPlaybackState("playing");
       })
       .catch((error) => {
@@ -2007,62 +2005,54 @@ export function BadAppleAnsiStory() {
           return;
         }
 
-        controller.reset();
-        controller.resize(25, 80);
-        controller.setCursorVisible(false);
-        controller.write(`Bad Apple ANSI failed to load.\r\n${String(error)}`);
+        console.error("Bad Apple ANSI failed to load.", error);
         setPlaybackState("failed");
       });
 
     return () => {
       active = false;
     };
-  }, [controller]);
+  }, []);
+  const loadingValue =
+    playbackState === "failed"
+      ? "Bad Apple ANSI failed to load.\nSee the browser console for details."
+      : "Loading Bad Apple ANSI...\nWaiting for CP437 decode.";
+  const player = (
+    <RetroScreenAnsiPlayer
+      rows={asset?.height ?? 25}
+      cols={asset?.width ?? 80}
+      byteStream={playbackState === "playing" && asset ? asset.byteStream : []}
+      frameDelayMs={asset?.frameDelayMs ?? 72}
+      complete={asset?.complete ?? false}
+      loop
+      loadingValue={loadingValue}
+      onPlaybackStateChange={setPlayerState}
+      displayColorMode="ansi-classic"
+      displayFontScale={1.22}
+      displayRowScale={1.14}
+      displayPadding={{ block: 8, inline: 12 }}
+      style={{ width: "1010px", height: "642px" }}
+    />
+  );
 
-  useEffect(() => {
-    if (!asset || playbackState !== "playing" || asset.frames.length === 0) {
-      return;
-    }
-
-    let active = true;
-    let currentFrame = 0;
-    let timer = 0;
-
-    const paintFrame = () => {
-      if (!active) {
-        return;
-      }
-
-      if (currentFrame === 0) {
-        controller.reset();
-        controller.resize(asset.height, asset.width);
-        controller.setCursorVisible(false);
-      }
-
-      controller.write(asset.frames[currentFrame] ?? "");
-      setFrameIndex(currentFrame);
-      currentFrame = (currentFrame + 1) % asset.frames.length;
-      timer = window.setTimeout(paintFrame, asset.frameDelayMs);
-    };
-
-    paintFrame();
-
-    return () => {
-      active = false;
-      window.clearTimeout(timer);
-    };
-  }, [asset, controller, playbackState]);
+  if (capture) {
+    return (
+      <CaptureStage captureId="ansi-art-bad-apple" maxWidth={1100}>
+        {player}
+      </CaptureStage>
+    );
+  }
 
   return (
     <StoryShell
       kicker="ANSI Playback"
       title="Play Bad Apple!! inside RetroScreen at its native 80x25 geometry."
-      copy="This demo loads the full original ANSI release, decodes its IBM VGA CP437 bytes, and replays every frame directly through the terminal surface. The panel is locked to the asset's native 80 columns by 25 rows, and the container is sized so the grid lands on exact 12x24 cells with extra row overlap for dense ANSI-art playback."
+      copy="This demo loads the full original ANSI release, prepares a byte stream outside of RetroScreen, and feeds those bytes into the reusable ANSI player wrapper. The player incrementally materializes stable 80x25 frames while keeping byte loading and playback concerns decoupled."
       footer={
         <div className="sb-retro-status">
           <span>
             {asset
-              ? `Frame ${String(frameIndex + 1).padStart(2, "0")} / ${asset.frames.length} · ${asset.width}x${asset.height} · ${asset.font}`
+              ? `Frame ${String((playerState?.frameIndex ?? 0) + 1).padStart(2, "0")} / ${playerState?.frameCount ?? "..."} · ${asset.width}x${asset.height} · ${asset.font}`
               : "Loading Mistigris ANSI release..."}
           </span>
           <span>
@@ -2076,21 +2066,18 @@ export function BadAppleAnsiStory() {
       }
     >
       <Stage maxWidth={1100}>
-        <RetroLcd
-          mode="terminal"
-          controller={controller}
-          gridMode="static"
-          rows={25}
-          cols={80}
-          displayColorMode="ansi-classic"
-          displayFontScale={1.22}
-          displayRowScale={1.14}
-          displayPadding={{ block: 8, inline: 12 }}
-          style={{ width: "1010px", height: "642px" }}
-        />
+        {player}
       </Stage>
     </StoryShell>
   );
+}
+
+export function BadAppleAnsiStory() {
+  return <BadAppleAnsiSurface />;
+}
+
+export function BadAppleAnsiDemoStory() {
+  return <BadAppleAnsiSurface capture />;
 }
 
 function LiveTtyTerminalBridgeStory() {
@@ -2107,7 +2094,7 @@ function LiveTtyTerminalBridgeStory() {
       return null;
     }
 
-    return createRetroLcdWebSocketSession({
+    return createRetroScreenWebSocketSession({
       url: config.url,
       openPayload:
         typeof config.openPayload === "object" && config.openPayload !== null
@@ -2138,7 +2125,7 @@ function LiveTtyTerminalBridgeStory() {
         }
       >
         <Stage maxWidth={900}>
-          <RetroLcd
+          <RetroScreen
             mode="value"
             value={[
               "LIVE TTY STORY IDLE",
@@ -2206,7 +2193,7 @@ function LiveTtyTerminalBridgeStory() {
           data-tty-size-frame={stageSize.id}
           style={{ width: `${stageSize.width}px`, height: `${stageSize.height}px` }}
         >
-          <RetroLcd
+          <RetroScreen
             mode="terminal"
             session={session}
             autoFocus
@@ -2235,7 +2222,7 @@ export function LiveTtyTerminalBridgeDemoStory() {
       return null;
     }
 
-    return createRetroLcdWebSocketSession({
+    return createRetroScreenWebSocketSession({
       url: config.url,
       openPayload:
         typeof config.openPayload === "object" && config.openPayload !== null
@@ -2247,7 +2234,7 @@ export function LiveTtyTerminalBridgeDemoStory() {
   if (!config || !session) {
     return (
       <CaptureStage captureId="live-tty-terminal-bridge" maxWidth={980}>
-        <RetroLcd
+        <RetroScreen
           mode="value"
           value={[
             "LIVE TTY CAPTURE IDLE",
@@ -2271,7 +2258,7 @@ export function LiveTtyTerminalBridgeDemoStory() {
         data-session-state="capture"
         style={{ width: "920px", height: "420px" }}
       >
-        <RetroLcd
+        <RetroScreen
           mode="terminal"
           session={session}
           autoFocus
@@ -2342,7 +2329,7 @@ function AutoResizeProbeSurface({
   const panelHostRef = useRef<HTMLDivElement | null>(null);
   const windowResizePauseArmedRef = useRef(false);
   const [controller] = useState(() =>
-    createRetroLcdController({
+    createRetroScreenController({
       rows: 9,
       cols: 34,
       scrollback: 20,
@@ -2354,7 +2341,7 @@ function AutoResizeProbeSurface({
   const [visualVariant, setVisualVariant] = useState(0);
   const [resizePaused, setResizePaused] = useState(false);
   const [scriptedSize, setScriptedSize] = useState(() => autoResizeProbeSizes[0] ?? { width: 760, height: 360 });
-  const [reportedGeometry, setReportedGeometry] = useState<RetroLcdGeometry | null>(null);
+  const [reportedGeometry, setReportedGeometry] = useState<RetroScreenGeometry | null>(null);
   const [settledResizeTick, setSettledResizeTick] = useState(0);
   const [redrawMeta, setRedrawMeta] = useState<ProbeRedrawMeta>({
     sequence: 0,
@@ -2476,7 +2463,7 @@ function AutoResizeProbeSurface({
 
   const redrawProbe = useCallback(
     (
-      geometry: RetroLcdGeometry,
+      geometry: RetroScreenGeometry,
       reason: ProbeRedrawMeta["reason"]
     ) => {
       const reply = buildTerminalSizeReply(geometry.rows, geometry.cols);
@@ -2544,7 +2531,7 @@ function AutoResizeProbeSurface({
         data-probe-last-redraw-rows={redrawMeta.rows}
         data-probe-last-redraw-cols={redrawMeta.cols}
       >
-        <RetroLcd
+        <RetroScreen
           mode="terminal"
           controller={controller}
           displayColorMode={displayColorMode}
@@ -2580,7 +2567,7 @@ function ResizablePanelLiveSurface({
 }: ResizablePanelLiveSurfaceProps) {
   const stageRef = useRef<HTMLDivElement | null>(null);
   const panelHostRef = useRef<HTMLDivElement | null>(null);
-  const [geometry, setGeometry] = useState<RetroLcdGeometry | null>(null);
+  const [geometry, setGeometry] = useState<RetroScreenGeometry | null>(null);
   const [paused, setPaused] = useState(false);
   const [scriptedSize, setScriptedSize] = useState(resizablePanelInitialSize);
   const steps = useMemo(
@@ -2652,7 +2639,7 @@ function ResizablePanelLiveSurface({
       }}
     >
       <div ref={panelHostRef} className="sb-retro-resize-demo-host">
-        <RetroLcd
+        <RetroScreen
           mode="terminal"
           resizable="both"
           resizableLeadingEdges
@@ -2675,7 +2662,7 @@ export function ResizablePanelStory() {
   const [activeHandleLabel, setActiveHandleLabel] = useState(
     resizablePanelLiveSteps[0]?.label ?? "right edge"
   );
-  const [geometry, setGeometry] = useState<RetroLcdGeometry | null>(null);
+  const [geometry, setGeometry] = useState<RetroScreenGeometry | null>(null);
 
   return (
     <StoryShell
@@ -2708,7 +2695,7 @@ export function ResizablePanelLeadingEdgesStory() {
   const [activeHandleLabel, setActiveHandleLabel] = useState(
     resizablePanelLeadingSteps[0]?.label ?? "top-left corner"
   );
-  const [geometry, setGeometry] = useState<RetroLcdGeometry | null>(null);
+  const [geometry, setGeometry] = useState<RetroScreenGeometry | null>(null);
 
   return (
     <StoryShell
@@ -2754,7 +2741,7 @@ export function ResponsivePanelStory() {
     { label: "Wide", value: 840 }
   ];
   const [width, setWidth] = useState(widths[1].value);
-  const [geometry, setGeometry] = useState<RetroLcdGeometry | null>(null);
+  const [geometry, setGeometry] = useState<RetroScreenGeometry | null>(null);
 
   return (
     <StoryShell
@@ -2789,7 +2776,7 @@ export function ResponsivePanelStory() {
         ))}
       </div>
       <Stage maxWidth={width}>
-        <RetroLcd
+        <RetroScreen
           mode="value"
           color={STORY_COLOR}
           value="A single component can live in a hero panel, a narrow card, or a command rail without losing the grid."
@@ -2820,7 +2807,7 @@ function DisplayColorModesStory() {
           title="Phosphor green"
           copy="The default projection for a clean monochrome terminal look."
         >
-          <RetroLcd
+          <RetroScreen
             mode="terminal"
             displayColorMode="phosphor-green"
             value={[
@@ -2834,7 +2821,7 @@ function DisplayColorModesStory() {
           title="Phosphor amber"
           copy="A warmer monochrome mode for calmer control-room styling."
         >
-          <RetroLcd
+          <RetroScreen
             mode="terminal"
             displayColorMode="phosphor-amber"
             value={[
@@ -2848,7 +2835,7 @@ function DisplayColorModesStory() {
           title="Phosphor ice"
           copy="A cooler monochrome palette when the vintage green is too heavy."
         >
-          <RetroLcd
+          <RetroScreen
             mode="terminal"
             displayColorMode="phosphor-ice"
             value={[
@@ -2862,7 +2849,7 @@ function DisplayColorModesStory() {
           title="ANSI classic"
           copy="Preserves the 16-color terminal palette while keeping the LCD frame."
         >
-          <RetroLcd
+          <RetroScreen
             mode="terminal"
             displayColorMode="ansi-classic"
             cursorMode="hollow"
@@ -2877,7 +2864,7 @@ function DisplayColorModesStory() {
           title="ANSI extended"
           copy="Carries indexed 256-color and truecolor output directly into the screen."
         >
-          <RetroLcd
+          <RetroScreen
             mode="terminal"
             displayColorMode="ansi-extended"
             cursorMode="hollow"
@@ -2953,7 +2940,7 @@ function LightDarkHostsSurface({
             The same ANSI stream stays legible on a pale LCD surface instead of assuming dark glass.
           </p>
         </div>
-        <RetroLcd
+        <RetroScreen
           mode="terminal"
           value={lightValue}
           displaySurfaceMode="light"
@@ -2973,7 +2960,7 @@ function LightDarkHostsSurface({
             The exact same ANSI colors read differently, but still clearly, on the classic dark surface.
           </p>
         </div>
-        <RetroLcd
+        <RetroScreen
           mode="terminal"
           value={darkValue}
           displaySurfaceMode="dark"
@@ -3064,7 +3051,7 @@ export function FeatureTourStory() {
       copy: "Value mode is the quietest path in. Hand it a string and it becomes a terminal-like display with wrapping, glow, and geometry baked in.",
       badges: ["value mode", "controlled text", "zero controller"],
       node: (
-        <RetroLcd
+        <RetroScreen
           key="feature-tour-display"
           mode="value"
           color={STORY_COLOR}
@@ -3080,7 +3067,7 @@ export function FeatureTourStory() {
       copy: "Turn on `editable` and the same component becomes an input with cursor handling, placeholders, submission hooks, and multi-line support.",
       badges: ["editable", "cursor aware", "submit hooks"],
       node: (
-        <RetroLcd
+        <RetroScreen
           key="feature-tour-editable"
           mode="value"
           editable
@@ -3109,7 +3096,7 @@ export function FeatureTourStory() {
       copy: "Terminal mode renders ANSI styling, scroll behavior, and cursor state, so logs and pseudo-TTYs can stay visually expressive without extra mapping.",
       badges: ["ansi", "scrolling buffer", "controller ready"],
       node: (
-        <RetroLcd
+        <RetroScreen
           key="feature-tour-terminal"
           mode="terminal"
           color={STORY_COLOR}
@@ -3126,7 +3113,7 @@ export function FeatureTourStory() {
       copy: "Prompt mode keeps the transcript shape tight. It is a small but expressive layer for command palettes, maintenance shells, and guided interactions.",
       badges: ["prompt session", "accept or reject", "guided commands"],
       node: (
-        <RetroLcd
+        <RetroScreen
           key="feature-tour-prompt"
           mode="prompt"
           autoFocus
@@ -3189,7 +3176,7 @@ export const CalmReadout: Story = {
       footer={<div className="sb-retro-status">Best when the display is pure output.</div>}
     >
       <Stage>
-        <RetroLcd {...args} />
+        <RetroScreen {...args} />
       </Stage>
     </StoryShell>
   )
@@ -3213,7 +3200,7 @@ export function AnsiSurfaceStory() {
       }
     >
       <Stage>
-        <RetroLcd
+        <RetroScreen
           mode="terminal"
           color={STORY_COLOR}
           cursorMode="hollow"

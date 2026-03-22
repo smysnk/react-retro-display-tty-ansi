@@ -1,10 +1,10 @@
-export type RetroLcdTerminalPasteEncodingOptions = {
+export type RetroScreenTerminalPasteEncodingOptions = {
   bracketedPasteMode?: boolean;
 };
 
-export const encodeRetroLcdTerminalPaste = (
+export const encodeRetroScreenTerminalPaste = (
   text: string,
-  options: RetroLcdTerminalPasteEncodingOptions = {}
+  options: RetroScreenTerminalPasteEncodingOptions = {}
 ) => {
   if (!options.bracketedPasteMode) {
     return text;
@@ -13,9 +13,5 @@ export const encodeRetroLcdTerminalPaste = (
   return `\u001b[200~${text}\u001b[201~`;
 };
 
-export const encodeRetroScreenTerminalPaste = encodeRetroLcdTerminalPaste;
-
-export const encodeRetroLcdTerminalFocusReport = (focused: boolean) =>
+export const encodeRetroScreenTerminalFocusReport = (focused: boolean) =>
   focused ? "\u001b[I" : "\u001b[O";
-
-export const encodeRetroScreenTerminalFocusReport = encodeRetroLcdTerminalFocusReport;

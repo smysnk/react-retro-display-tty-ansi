@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { RetroScreen } from "../react/RetroScreen";
 import {
+  BadAppleAnsiDemoStory,
   DisplayColorModesDemoStory,
   EditableModeDemoStory,
   FeatureTourStory,
@@ -50,6 +51,11 @@ export const TerminalModeDemo: Story = {
 export const PromptModeDemo: Story = {
   name: "Prompt Mode",
   render: () => <PromptModeDemoStory />
+};
+
+export const BadAppleAnsi: Story = {
+  name: "Bad Apple ANSI",
+  render: () => <BadAppleAnsiDemoStory />
 };
 
 export const DisplayColorModesDemo: Story = {

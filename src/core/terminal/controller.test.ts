@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { createRetroLcdController } from "./controller";
+import { createRetroScreenController } from "./controller";
 
-describe("createRetroLcdController", () => {
+describe("createRetroScreenController", () => {
   it("writes and notifies subscribers", () => {
-    const controller = createRetroLcdController({ rows: 2, cols: 4 });
+    const controller = createRetroScreenController({ rows: 2, cols: 4 });
     let notifications = 0;
     const unsubscribe = controller.subscribe(() => {
       notifications += 1;
@@ -20,7 +20,7 @@ describe("createRetroLcdController", () => {
   });
 
   it("replays history when resized", () => {
-    const controller = createRetroLcdController({ rows: 2, cols: 4 });
+    const controller = createRetroScreenController({ rows: 2, cols: 4 });
 
     controller.write("ABCDE");
     controller.resize(3, 3);
@@ -33,7 +33,7 @@ describe("createRetroLcdController", () => {
   });
 
   it("preserves cursor mode and visibility state", () => {
-    const controller = createRetroLcdController({ rows: 2, cols: 4 });
+    const controller = createRetroScreenController({ rows: 2, cols: 4 });
 
     controller.setCursorMode("hollow");
     controller.setCursorVisible(false);
@@ -46,7 +46,7 @@ describe("createRetroLcdController", () => {
   });
 
   it("replays ansi writes after resize", () => {
-    const controller = createRetroLcdController({ rows: 2, cols: 6 });
+    const controller = createRetroScreenController({ rows: 2, cols: 6 });
 
     controller.write("HELLO");
     controller.write("\u001b[2D");
@@ -61,7 +61,7 @@ describe("createRetroLcdController", () => {
   });
 
   it("scrolls older rows into scrollback when writes exceed the visible height", () => {
-    const controller = createRetroLcdController({ rows: 2, cols: 8 });
+    const controller = createRetroScreenController({ rows: 2, cols: 8 });
 
     controller.writeln("alpha");
     controller.writeln("beta");
@@ -74,7 +74,7 @@ describe("createRetroLcdController", () => {
   });
 
   it("batches writeMany into a single notification and replays it after resize", () => {
-    const controller = createRetroLcdController({ rows: 2, cols: 4 });
+    const controller = createRetroScreenController({ rows: 2, cols: 4 });
     let notifications = 0;
     controller.subscribe(() => {
       notifications += 1;
@@ -97,7 +97,7 @@ describe("createRetroLcdController", () => {
   });
 
   it("flushes exactly one notification for nested batches and suspended notifications", () => {
-    const controller = createRetroLcdController({ rows: 2, cols: 4 });
+    const controller = createRetroScreenController({ rows: 2, cols: 4 });
     let notifications = 0;
     controller.subscribe(() => {
       notifications += 1;

@@ -1,5 +1,5 @@
-import { RetroLcdAnsiParser } from "./ansi-parser";
-import type { RetroLcdTerminalCommand } from "./commands";
+import { RetroScreenAnsiParser } from "./ansi-parser";
+import type { RetroScreenTerminalCommand } from "./commands";
 import {
   applySgrParameters,
   cloneStyle,
@@ -7,35 +7,35 @@ import {
 } from "./sgr";
 import type { CursorMode } from "../types";
 import type {
-  RetroLcdCell,
-  RetroLcdCellStyle,
-  RetroLcdCursorState,
-  RetroLcdTerminalMouseTrackingMode,
-  RetroLcdTerminalModes,
-  RetroLcdScreenBufferOptions,
-  RetroLcdScreenSnapshot,
-  RetroLcdWriteOptions
+  RetroScreenCell,
+  RetroScreenCellStyle,
+  RetroScreenCursorState,
+  RetroScreenTerminalMouseTrackingMode,
+  RetroScreenTerminalModes,
+  RetroScreenScreenBufferOptions,
+  RetroScreenScreenSnapshot,
+  RetroScreenWriteOptions
 } from "./types";
 
 const clampDimension = (value: number) => Math.max(1, Math.floor(value) || 1);
 
-const createCell = (character: string, style: RetroLcdCellStyle): RetroLcdCell => ({
+const createCell = (character: string, style: RetroScreenCellStyle): RetroScreenCell => ({
   char: character,
   style: cloneStyle(style)
 });
 
-const cloneCell = (cell: RetroLcdCell): RetroLcdCell => createCell(cell.char, cell.style);
+const cloneCell = (cell: RetroScreenCell): RetroScreenCell => createCell(cell.char, cell.style);
 
-const createBlankLine = (cols: number, style: RetroLcdCellStyle = DEFAULT_CELL_STYLE) =>
+const createBlankLine = (cols: number, style: RetroScreenCellStyle = DEFAULT_CELL_STYLE) =>
   Array.from({ length: cols }, () => createCell(" ", style));
 
-const trimLine = (line: RetroLcdCell[]) =>
+const trimLine = (line: RetroScreenCell[]) =>
   line
     .map((cell) => cell.char)
     .join("")
     .replace(/\s+$/u, "");
 
-const cloneGrid = (grid: RetroLcdCell[][]) =>
+const cloneGrid = (grid: RetroScreenCell[][]) =>
   grid.map((line) => line.map((cell) => createCell(cell.char, cell.style)));
 
 const defaultSavedCursor = () => ({
@@ -43,7 +43,7 @@ const defaultSavedCursor = () => ({
   col: 0
 });
 
-const DEFAULT_TERMINAL_MODES: RetroLcdTerminalModes = {
+const DEFAULT_TERMINAL_MODES: RetroScreenTerminalModes = {
   insertMode: false,
   originMode: false,
   wraparoundMode: true,
@@ -55,40 +55,40 @@ const DEFAULT_TERMINAL_MODES: RetroLcdTerminalModes = {
   mouseProtocol: "none"
 };
 
-type RetroLcdBufferSurfaceState = {
-  grid: RetroLcdCell[][];
-  scrollbackCells: RetroLcdCell[][];
-  cursorState: RetroLcdCursorState;
+type RetroScreenBufferSurfaceState = {
+  grid: RetroScreenCell[][];
+  scrollbackCells: RetroScreenCell[][];
+  cursorState: RetroScreenCursorState;
   savedCursorState: {
     row: number;
     col: number;
   };
-  currentStyle: RetroLcdCellStyle;
+  currentStyle: RetroScreenCellStyle;
   pendingWrap: boolean;
   scrollRegionTop: number;
   scrollRegionBottom: number;
 };
 
-export class RetroLcdScreenBuffer {
+export class RetroScreenScreenBuffer {
   readonly rows: number;
   readonly cols: number;
   readonly scrollbackLimit: number;
   readonly tabWidth: number;
-  private grid: RetroLcdCell[][];
-  private scrollbackCells: RetroLcdCell[][];
-  private readonly parser: RetroLcdAnsiParser;
-  private cursorState: RetroLcdCursorState;
+  private grid: RetroScreenCell[][];
+  private scrollbackCells: RetroScreenCell[][];
+  private readonly parser: RetroScreenAnsiParser;
+  private cursorState: RetroScreenCursorState;
   private savedCursorState = defaultSavedCursor();
-  private currentStyle: RetroLcdCellStyle = cloneStyle(DEFAULT_CELL_STYLE);
-  private terminalModes: RetroLcdTerminalModes = { ...DEFAULT_TERMINAL_MODES };
+  private currentStyle: RetroScreenCellStyle = cloneStyle(DEFAULT_CELL_STYLE);
+  private terminalModes: RetroScreenTerminalModes = { ...DEFAULT_TERMINAL_MODES };
   private pendingWrap = false;
   private scrollRegionTop = 0;
   private scrollRegionBottom: number;
-  private primarySurface: RetroLcdBufferSurfaceState;
-  private alternateSurface: RetroLcdBufferSurfaceState;
+  private primarySurface: RetroScreenBufferSurfaceState;
+  private alternateSurface: RetroScreenBufferSurfaceState;
   private activeSurface: "primary" | "alternate" = "primary";
 
-  constructor(options: RetroLcdScreenBufferOptions) {
+  constructor(options: RetroScreenScreenBufferOptions) {
     this.rows = clampDimension(options.rows);
     this.cols = clampDimension(options.cols);
     this.scrollbackLimit = Math.max(0, Math.floor(options.scrollback ?? 200));
@@ -108,7 +108,7 @@ export class RetroLcdScreenBuffer {
     this.pendingWrap = this.primarySurface.pendingWrap;
     this.scrollRegionTop = this.primarySurface.scrollRegionTop;
     this.scrollRegionBottom = this.primarySurface.scrollRegionBottom;
-    this.parser = new RetroLcdAnsiParser({
+    this.parser = new RetroScreenAnsiParser({
       command: (command) => this.applyCommand(command)
     });
   }
@@ -140,7 +140,7 @@ export class RetroLcdScreenBuffer {
     this.parser.reset();
   }
 
-  write(data: string, options?: RetroLcdWriteOptions) {
+  write(data: string, options?: RetroScreenWriteOptions) {
     this.parser.feed(data);
 
     if (options?.appendNewline) {
@@ -172,7 +172,7 @@ export class RetroLcdScreenBuffer {
     return { ...this.cursorState };
   }
 
-  getSnapshot(): RetroLcdScreenSnapshot {
+  getSnapshot(): RetroScreenScreenSnapshot {
     const cells = cloneGrid(this.grid);
     const rawLines = cells.map((line) => line.map((cell) => cell.char).join(""));
     const scrollbackCells = cloneGrid(this.scrollbackCells);
@@ -191,7 +191,7 @@ export class RetroLcdScreenBuffer {
     };
   }
 
-  private applyCommand(command: RetroLcdTerminalCommand) {
+  private applyCommand(command: RetroScreenTerminalCommand) {
     switch (command.type) {
       case "print":
         this.writePrintable(command.char);
@@ -553,7 +553,7 @@ export class RetroLcdScreenBuffer {
 
   private setMode(prefix: string | undefined, params: number[], enabled: boolean) {
     const values = params.length > 0 ? params : [0];
-    const nextMouseTrackingMode = (value: number, active: boolean): RetroLcdTerminalMouseTrackingMode => {
+    const nextMouseTrackingMode = (value: number, active: boolean): RetroScreenTerminalMouseTrackingMode => {
       if (!active) {
         return "none";
       }
@@ -735,8 +735,8 @@ export class RetroLcdScreenBuffer {
   }: {
     cursorMode: CursorMode;
     cursorVisible?: boolean;
-    currentStyle?: RetroLcdCellStyle;
-  }): RetroLcdBufferSurfaceState {
+    currentStyle?: RetroScreenCellStyle;
+  }): RetroScreenBufferSurfaceState {
     return {
       grid: Array.from({ length: this.rows }, () => createBlankLine(this.cols)),
       scrollbackCells: [],
