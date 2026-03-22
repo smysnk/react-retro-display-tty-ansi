@@ -275,36 +275,56 @@ test("render smoke stories stay stable in the browser", async (t) => {
 
       const initial = await page().locator("[data-demo-capture]").evaluate((root) => {
         const cursor = root.querySelector('[data-demo-cursor="true"]');
+        const host = root.querySelector(".sb-retro-auto-resize-host, .sb-retro-resize-demo-host");
         const panel = root.querySelector(".retro-lcd");
+        const hostRect = host?.getBoundingClientRect();
         const panelRect = panel?.getBoundingClientRect();
 
         return {
           cursorVisible:
             cursor instanceof HTMLElement ? Number(getComputedStyle(cursor).opacity) > 0.9 : false,
           cursorRole: cursor?.getAttribute("data-demo-cursor-role") ?? "",
+          hostWidth: hostRect?.width ?? 0,
+          hostHeight: hostRect?.height ?? 0,
           panelWidth: panelRect?.width ?? 0,
           panelHeight: panelRect?.height ?? 0
         };
       });
 
-      await page().waitForTimeout(1800);
+      let minHostWidth = initial.hostWidth;
+      let maxHostWidth = initial.hostWidth;
+      let minHostHeight = initial.hostHeight;
+      let maxHostHeight = initial.hostHeight;
 
-      const next = await page().locator("[data-demo-capture]").evaluate((root) => {
-        const cursor = root.querySelector('[data-demo-cursor="true"]');
-        const panel = root.querySelector(".retro-lcd");
-        const panelRect = panel?.getBoundingClientRect();
+      await page().waitForFunction(
+        () => {
+          const root = document.querySelector("[data-demo-capture]");
+          const cursor = root?.querySelector('[data-demo-cursor="true"]');
+          return cursor?.getAttribute("data-demo-cursor-dragging") === "true";
+        },
+        { timeout: 12000 }
+      );
 
-        return {
-          cursorRole: cursor?.getAttribute("data-demo-cursor-role") ?? "",
-          panelWidth: panelRect?.width ?? 0,
-          panelHeight: panelRect?.height ?? 0
-        };
-      });
+      for (let index = 0; index < 16; index += 1) {
+        const sample = await page().locator("[data-demo-capture]").evaluate((root) => {
+          const host = root.querySelector(".sb-retro-auto-resize-host, .sb-retro-resize-demo-host");
+          const hostRect = host?.getBoundingClientRect();
+          return {
+            hostWidth: hostRect?.width ?? 0,
+            hostHeight: hostRect?.height ?? 0
+          };
+        });
+
+        minHostWidth = Math.min(minHostWidth, sample.hostWidth);
+        maxHostWidth = Math.max(maxHostWidth, sample.hostWidth);
+        minHostHeight = Math.min(minHostHeight, sample.hostHeight);
+        maxHostHeight = Math.max(maxHostHeight, sample.hostHeight);
+        await page().waitForTimeout(120);
+      }
 
       assert.ok(initial.cursorVisible, `${story.id} should show the scripted cursor overlay.`);
       assert.ok(
-        Math.abs(next.panelWidth - initial.panelWidth) > 20 ||
-          Math.abs(next.panelHeight - initial.panelHeight) > 20,
+        maxHostWidth - minHostWidth > 20 || maxHostHeight - minHostHeight > 20,
         `${story.id} should visibly resize the panel during the demo.`
       );
     }

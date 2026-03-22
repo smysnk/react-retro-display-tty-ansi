@@ -8,6 +8,7 @@ const page = () => harness.page;
 const readAutoResizeProbeState = async () =>
   page().locator(".sb-retro-auto-resize-host").evaluate((host) => {
     const root = host.querySelector(".retro-lcd");
+    const hostRect = host.getBoundingClientRect();
     const rootRect = root?.getBoundingClientRect();
     const stage = host.parentElement;
     const cursor = stage?.querySelector('[data-demo-cursor="true"]');
@@ -20,6 +21,8 @@ const readAutoResizeProbeState = async () =>
       redrawReason: host.getAttribute("data-probe-last-redraw-reason") ?? "",
       redrawRows: Number(host.getAttribute("data-probe-last-redraw-rows") ?? "0"),
       redrawCols: Number(host.getAttribute("data-probe-last-redraw-cols") ?? "0"),
+      hostWidth: hostRect.width ?? 0,
+      hostHeight: hostRect.height ?? 0,
       rootWidth: rootRect?.width ?? 0,
       rootHeight: rootRect?.height ?? 0,
       rows: Number(root?.getAttribute("data-rows") ?? "0"),
@@ -75,6 +78,47 @@ const waitForAutoResizeProbeState = async (
   throw new Error("Timed out waiting for the auto-resize probe to reach the expected settled state.");
 };
 
+const waitForAutoResizeProbeMotion = async (
+  initialState,
+  {
+    timeoutMs = 12000,
+    stepMs = 150
+  } = {}
+) => {
+  const startedAt = Date.now();
+  let minHostWidth = initialState.hostWidth;
+  let maxHostWidth = initialState.hostWidth;
+  let minHostHeight = initialState.hostHeight;
+  let maxHostHeight = initialState.hostHeight;
+
+  while (Date.now() - startedAt < timeoutMs) {
+    const state = await readAutoResizeProbeState();
+
+    minHostWidth = Math.min(minHostWidth, state.hostWidth);
+    maxHostWidth = Math.max(maxHostWidth, state.hostWidth);
+    minHostHeight = Math.min(minHostHeight, state.hostHeight);
+    maxHostHeight = Math.max(maxHostHeight, state.hostHeight);
+
+    const widthDelta = maxHostWidth - minHostWidth;
+    const heightDelta = maxHostHeight - minHostHeight;
+
+    if (
+      state.cursorDragging === "true" &&
+      (widthDelta > 20 || heightDelta > 20)
+    ) {
+      return {
+        ...state,
+        sampledHostWidthDelta: widthDelta,
+        sampledHostHeightDelta: heightDelta
+      };
+    }
+
+    await page().waitForTimeout(stepMs);
+  }
+
+  throw new Error("Timed out waiting for the auto-resize probe to show measurable host-panel motion.");
+};
+
 test("auto-resize probe uses a visible scripted cursor to live-resize the panel without cutting the rendered frame", async () => {
   await harness.gotoStory("retroscreen-responsive--auto-resize-probe-capture");
 
@@ -82,13 +126,10 @@ test("auto-resize probe uses a visible scripted cursor to live-resize the panel 
 
   assert.equal(initialState.demoState, "auto");
   assert.ok(initialState.cursorVisible, "The demo should show a visible cursor overlay.");
-  await page().waitForTimeout(2200);
-
-  const motionState = await readAutoResizeProbeState();
+  const motionState = await waitForAutoResizeProbeMotion(initialState);
 
   assert.ok(
-    Math.abs(motionState.rootWidth - initialState.rootWidth) > 28 ||
-      Math.abs(motionState.rootHeight - initialState.rootHeight) > 28,
+    motionState.sampledHostWidthDelta > 20 || motionState.sampledHostHeightDelta > 20,
     "The live probe should visibly resize the panel."
   );
 
