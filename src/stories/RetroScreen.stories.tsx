@@ -19,6 +19,12 @@ import { RetroScreen as RetroScreenBase } from "../react/RetroScreen";
 import { RetroScreenAnsiPlayer } from "../react/RetroScreenAnsiPlayer";
 import type { RetroScreenAnsiPlayerState } from "../react/useRetroScreenAnsiPlayer";
 import { loadBadAppleAnsiAsset, type BadAppleAnsiAsset } from "./bad-apple-ansi";
+import {
+  streamBadAppleGzipAnsiAsset,
+  type BadAppleGzipAnsiAsset
+} from "./bad-apple-gzip-ansi";
+import { AnsiGalleryViewer } from "./ansi-gallery";
+import { MatrixCodeRainScreen } from "./matrix-code-rain";
 
 const STORY_COLOR = "#97ff9b";
 
@@ -29,6 +35,8 @@ type StoryShellProps = {
   children: ReactNode;
   footer?: ReactNode;
 };
+
+type BadApplePlaybackPhase = "loading" | "playing" | "failed";
 
 type DisplayColorModeCardProps = {
   displayColorMode: RetroScreenDisplayColorMode;
@@ -1721,6 +1729,52 @@ export function WhiteRabbitSignalDemoStory() {
   return <WhiteRabbitSignalSurface capture />;
 }
 
+function MatrixCodeRainSurface({
+  capture = false
+}: {
+  capture?: boolean;
+}) {
+  const screen = (
+    <div className="sb-retro-matrix-rain-frame">
+      <MatrixCodeRainScreen />
+    </div>
+  );
+
+  if (capture) {
+    return (
+      <CaptureStage captureId="matrix-code-rain" maxWidth={940}>
+        {screen}
+      </CaptureStage>
+    );
+  }
+
+  return (
+    <StoryShell
+      kicker="Matrix Code Rain"
+      title="Let the code rain travel like it does on the operators' screens."
+      copy="This demo uses a generated monospaced Matrix font built from the local reference set while driving a stationary glyph field with moving illumination waves so the columns feel closer to the film than a simple falling-text effect."
+      footer={
+        <ul className="sb-retro-note-list">
+          <li>The glyphs stay planted on the grid while the glow waves descend through each column.</li>
+          <li>The demo uses ANSI truecolor shades to push the white-hot tracer and green trail depth.</li>
+        </ul>
+      }
+    >
+      <Stage maxWidth={940}>
+        {screen}
+      </Stage>
+    </StoryShell>
+  );
+}
+
+function MatrixCodeRainStory() {
+  return <MatrixCodeRainSurface />;
+}
+
+export function MatrixCodeRainDemoStory() {
+  return <MatrixCodeRainSurface capture />;
+}
+
 export function TerminalModeDemoStory() {
   const [controller] = useState(() =>
     createRetroScreenController({
@@ -2118,9 +2172,7 @@ function BadAppleAnsiSurface({
   capture?: boolean;
 }) {
   const [asset, setAsset] = useState<BadAppleAnsiAsset | null>(null);
-  const [playbackState, setPlaybackState] = useState<"loading" | "playing" | "failed">(
-    "loading"
-  );
+  const [playbackState, setPlaybackState] = useState<BadApplePlaybackPhase>("loading");
   const [playerState, setPlayerState] = useState<RetroScreenAnsiPlayerState | null>(null);
 
   useEffect(() => {
@@ -2213,6 +2265,114 @@ export function BadAppleAnsiStory() {
 
 export function BadAppleAnsiDemoStory() {
   return <BadAppleAnsiSurface capture />;
+}
+
+function BadAppleAnsiGzipSurface({
+  capture = false
+}: {
+  capture?: boolean;
+}) {
+  const [asset, setAsset] = useState<BadAppleGzipAnsiAsset | null>(null);
+  const [playbackState, setPlaybackState] = useState<BadApplePlaybackPhase>("loading");
+  const [playerState, setPlayerState] = useState<RetroScreenAnsiPlayerState | null>(null);
+
+  useEffect(() => {
+    const abortController = new AbortController();
+    let active = true;
+
+    streamBadAppleGzipAnsiAsset({
+      signal: abortController.signal,
+      onUpdate(nextAsset) {
+        if (!active) {
+          return;
+        }
+
+        setAsset(nextAsset);
+        setPlaybackState("playing");
+      }
+    }).catch((error) => {
+      if (!active || (error instanceof DOMException && error.name === "AbortError")) {
+        return;
+      }
+
+      console.error("Bad Apple ANSI gzip stream failed to load.", error);
+      setPlaybackState("failed");
+    });
+
+    return () => {
+      active = false;
+      abortController.abort();
+    };
+  }, []);
+  const loadingValue =
+    playbackState === "failed"
+      ? "Bad Apple ANSI gzip stream failed to load.\nSee the browser console for details."
+      : "Streaming Bad Apple ANSI over gzip...\nWaiting for the first decompressed frames.";
+  const player = (
+    <RetroScreenAnsiPlayer
+      rows={asset?.height ?? 25}
+      cols={asset?.width ?? 80}
+      byteStream={playbackState === "playing" && asset ? asset.byteStream : []}
+      frameDelayMs={asset?.frameDelayMs ?? 72}
+      complete={asset?.complete ?? false}
+      loop
+      loadingValue={loadingValue}
+      onPlaybackStateChange={setPlayerState}
+      displayColorMode="ansi-classic"
+      displayFontScale={1.22}
+      displayRowScale={1.14}
+      displayPadding={{ block: 8, inline: 12 }}
+      style={{ width: "1010px", height: "642px" }}
+    />
+  );
+
+  if (capture) {
+    return (
+      <CaptureStage captureId="ansi-art-bad-apple-gzip-stream" maxWidth={1100}>
+        {player}
+      </CaptureStage>
+    );
+  }
+
+  return (
+    <StoryShell
+      kicker="Streaming Gzip Playback"
+      title="Play Bad Apple!! from a gzipped ANSI stream as bytes arrive over HTTP."
+      copy={
+        "This demo fetches a `.ans.gz` asset, uses native HTTP gzip decoding when the server provides it, falls back to `DecompressionStream(\"gzip\")` when needed, and feeds each decompressed byte chunk into the reusable ANSI player. A small holdback window keeps the trailing SAUCE record out of the player, so frames can appear before the whole file finishes downloading."
+      }
+      footer={
+        <div className="sb-retro-status">
+          <span>
+            {asset
+              ? `Frame ${String((playerState?.frameIndex ?? 0) + 1).padStart(2, "0")} / ${playerState?.frameCount ?? "..."} · ${asset.width}x${asset.height} · ${asset.font} · ${asset.complete ? "stream complete" : `streaming ${Math.max(1, Math.round(asset.streamedByteCount / 1024))} KiB`}`
+              : "Opening gzipped Bad Apple stream..."}
+          </span>
+          <span>
+            Credit:{" "}
+            <a href="https://mistigris.org/" rel="noreferrer" target="_blank">
+              Mistigris
+            </a>
+            {asset ? ` · ${asset.title} by ${asset.author}` : ""}
+          </span>
+        </div>
+      }
+    >
+      <Stage maxWidth={1100}>{player}</Stage>
+    </StoryShell>
+  );
+}
+
+export function BadAppleAnsiGzipStreamStory() {
+  return <BadAppleAnsiGzipSurface />;
+}
+
+export function BadAppleAnsiGzipStreamDemoStory() {
+  return <BadAppleAnsiGzipSurface capture />;
+}
+
+export function LargestAnsiGalleryStory() {
+  return <AnsiGalleryViewer />;
 }
 
 function LiveTtyTerminalBridgeStory() {
@@ -3323,6 +3483,10 @@ export const TerminalStream: Story = {
 
 export const WhiteRabbitSignal: Story = {
   render: () => <WhiteRabbitSignalStory />
+};
+
+export const MatrixCodeRain: Story = {
+  render: () => <MatrixCodeRainStory />
 };
 
 export function AnsiSurfaceStory() {

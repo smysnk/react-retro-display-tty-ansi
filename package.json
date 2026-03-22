@@ -57,6 +57,7 @@
     "storybook": "storybook dev -p 6006",
     "storybook:build": "storybook build",
     "demo:webp": "storybook build && node ./scripts/generate-demo-webp.mjs",
+    "ansi:gallery:build": "node ./scripts/build-largest-ansi-gallery.mjs --count 200",
     "readme:videos:cookie": "node ./scripts/print-github-cookie.mjs",
     "readme:videos": "node ./scripts/upload-readme-videos.mjs",
     "test": "yarn test:station",

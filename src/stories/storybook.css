@@ -1,3 +1,9 @@
+@font-face {
+  font-family: "Matrix";
+  src: url("./assets/Matrix.ttf") format("truetype");
+  font-display: swap;
+}
+
 .sb-retro-page {
   min-height: 100vh;
   padding: 48px 24px;
@@ -71,6 +77,12 @@
 .sb-retro-frame {
   width: 100%;
   margin: 0 auto;
+  display: grid;
+  justify-items: center;
+}
+
+.sb-retro-matrix-rain-frame {
+  width: min(100%, 920px);
   display: grid;
   justify-items: center;
 }

@@ -45,6 +45,14 @@ const whiteRabbitSignalMp4File = resolve(
   outputDir,
   "react-retro-display-tty-ansi-white-rabbit-signal.mp4"
 );
+const matrixCodeRainWebpFile = resolve(
+  outputDir,
+  "react-retro-display-tty-ansi-matrix-code-rain.webp"
+);
+const matrixCodeRainMp4File = resolve(
+  outputDir,
+  "react-retro-display-tty-ansi-matrix-code-rain.mp4"
+);
 const displayColorModesWebpFile = resolve(
   outputDir,
   "react-retro-display-tty-ansi-display-color-modes.webp"
@@ -171,19 +179,47 @@ const createStaticServer = () =>
     }
   });
 
-const runImg2Webp = async ({ framesDir, fps, outputFile }) => {
+const runImg2Webp = async ({
+  framesDir,
+  fps,
+  outputFile,
+  quality = 82,
+  method = 6,
+  keyframeMin = 9,
+  keyframeMax = 17,
+  maxFrames
+}) => {
   const duration = Math.max(40, Math.round(1000 / fps));
   const frameFiles = (await readdir(framesDir))
     .filter((file) => file.endsWith(".png"))
     .sort((left, right) => left.localeCompare(right));
-  const args = ["-loop", "0", "-kmin", "9", "-kmax", "17", "-mixed"];
+  const selectedFrameFiles =
+    typeof maxFrames === "number" && Number.isFinite(maxFrames) && maxFrames > 0
+      ? frameFiles.slice(0, maxFrames)
+      : frameFiles;
+  const args = [
+    "-loop",
+    "0",
+    "-kmin",
+    String(keyframeMin),
+    "-kmax",
+    String(keyframeMax),
+    "-mixed"
+  ];
 
-  for (const [index, frameFile] of frameFiles.entries()) {
+  for (const [index, frameFile] of selectedFrameFiles.entries()) {
     if (index > 0) {
       args.push("-d", String(duration));
     }
 
-    args.push("-lossy", "-q", "82", "-m", "6", join(framesDir, frameFile));
+    args.push(
+      "-lossy",
+      "-q",
+      String(quality),
+      "-m",
+      String(method),
+      join(framesDir, frameFile)
+    );
   }
 
   args.push("-o", outputFile);
@@ -303,6 +339,25 @@ const captures = [
     outputs: [
       { type: "webp", file: whiteRabbitSignalWebpFile },
       { type: "mp4", file: whiteRabbitSignalMp4File }
+    ]
+  },
+  {
+    name: "matrix code rain",
+    storyId: "retroscreen-capture--matrix-code-rain-demo",
+    selector: "[data-demo-capture='matrix-code-rain']",
+    waitMs: 240,
+    fps: 12,
+    durationMs: 15000,
+    webp: {
+      quality: 60,
+      method: 5,
+      keyframeMin: 11,
+      keyframeMax: 24,
+      maxFrames: 60
+    },
+    outputs: [
+      { type: "webp", file: matrixCodeRainWebpFile },
+      { type: "mp4", file: matrixCodeRainMp4File }
     ]
   },
   {
@@ -570,7 +625,8 @@ const encodeCapture = async (capture, framesDir, frameCount) => {
       await runImg2Webp({
         framesDir,
         fps: capture.fps,
-        outputFile: output.file
+        outputFile: output.file,
+        ...(capture.webp ?? {})
       });
     } else {
       runFfmpegMp4({

@@ -35,6 +35,10 @@ const videoEntries = [
     file: resolve(rootDir, "docs/assets/react-retro-display-tty-ansi-white-rabbit-signal.mp4")
   },
   {
+    title: "Matrix Code Rain Demo",
+    file: resolve(rootDir, "docs/assets/react-retro-display-tty-ansi-matrix-code-rain.mp4")
+  },
+  {
     title: "Bad Apple ANSI Demo",
     file: resolve(rootDir, "docs/assets/react-retro-display-tty-ansi-bad-apple-ansi.mp4")
   },

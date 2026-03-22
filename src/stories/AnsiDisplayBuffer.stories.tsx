@@ -3,9 +3,11 @@ import { RetroScreen } from "../react/RetroScreen";
 import {
   AnsiSurfaceStory,
   BadAppleAnsiStory,
+  BadAppleAnsiGzipStreamStory,
   ControlCharacterReplayDemoStory,
   ControlCharacterReplayStory,
-  DisplayBufferStory
+  DisplayBufferStory,
+  LargestAnsiGalleryStory
 } from "./RetroScreen.stories";
 
 const meta = {
@@ -40,6 +42,16 @@ export const DisplayBuffer: Story = {
 export const BadAppleAnsi: Story = {
   name: "Bad Apple ANSI",
   render: () => <BadAppleAnsiStory />
+};
+
+export const BadAppleAnsiGzipStream: Story = {
+  name: "Bad Apple ANSI (Gzip Stream)",
+  render: () => <BadAppleAnsiGzipStreamStory />
+};
+
+export const LargestAnsiGallery: Story = {
+  name: "Largest ANSI Gallery",
+  render: () => <LargestAnsiGalleryStory />
 };
 
 export const ControlCharacterReplayCapture: Story = {

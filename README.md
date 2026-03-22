@@ -195,7 +195,39 @@ export function WhiteRabbitSignal() {
 
 The Storybook version uses timed writes and screen clears so the four-line sequence lands like a late-night intercepted signal instead of a static quote.
 
-### 3. Editable drafting
+### 3. Matrix code rain
+
+Use the terminal renderer as a dense animated display surface when you want the operators' green rain instead of a message prompt.
+
+[![Matrix Code Rain Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi/main/docs/assets/react-retro-display-tty-ansi-matrix-code-rain.webp)](https://github.com/user-attachments/assets/df2c7fdc-cd27-4296-8f70-1373fdfb63aa)
+
+```tsx
+import type { CSSProperties } from "react";
+import { RetroScreen, createRetroScreenController } from "react-retro-display-tty-ansi";
+
+const controller = createRetroScreenController({ rows: 24, cols: 58 });
+const matrixFontStyle = {
+  "--retro-lcd-font-family": "\"Matrix\""
+} as CSSProperties;
+
+<RetroScreen
+  mode="terminal"
+  controller={controller}
+  gridMode="static"
+  rows={24}
+  cols={58}
+  displayColorMode="ansi-extended"
+  color="#8efe8e"
+  displayFontScale={1.05}
+  displayRowScale={1.08}
+  displayPadding={{ block: 12, inline: 14 }}
+  style={matrixFontStyle}
+/>
+```
+
+The Storybook demo keeps the glyphs planted on the grid and moves waves of illumination through them so the effect feels closer to the movie than a simple falling-text loop. It uses the bundled `Matrix` font.
+
+### 4. Editable drafting
 
 Turn on `editable` when you want the same surface to behave like a controlled input.
 
@@ -223,7 +255,7 @@ export function DraftPad() {
 }
 ```
 
-### 4. Terminal output from a controller
+### 5. Terminal output from a controller
 
 Use a controller when the display should follow external writes over time.
 
@@ -326,7 +358,7 @@ and optional command/cwd/env override restrictions. See
 [examples/node-tty-websocket-server/README.md](/Users/josh/play/react-retro-display/examples/node-tty-websocket-server/README.md)
 for the available flags.
 
-### 5. Prompt-first interaction
+### 6. Prompt-first interaction
 
 Use `mode="prompt"` when the interface should feel like a guided shell.
 

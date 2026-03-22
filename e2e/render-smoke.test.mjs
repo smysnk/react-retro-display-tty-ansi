@@ -40,6 +40,43 @@ test("render smoke stories stay stable in the browser", async (t) => {
     }
   });
 
+  await t.test("matrix code rain story loads the Matrix font and animates visible columns", async () => {
+    await harness.gotoStory("retroscreen--matrix-code-rain");
+    await page().waitForSelector(".retro-lcd");
+    await page().waitForTimeout(240);
+
+    const initial = await page().locator(".retro-lcd").evaluate((root) => {
+      const body = root.querySelector(".retro-lcd__body");
+      const grid = root.querySelector(".retro-lcd__grid");
+
+      return {
+        text: (body?.textContent ?? "").replace(/\u00a0/gu, " "),
+        rows: Number(root.getAttribute("data-rows") ?? "0"),
+        cols: Number(root.getAttribute("data-cols") ?? "0"),
+        fontFamily:
+          grid instanceof HTMLElement ? getComputedStyle(grid).fontFamily : "",
+        lineCount: root.querySelectorAll(".retro-lcd__line").length
+      };
+    });
+
+    await page().waitForTimeout(420);
+
+    const nextText = await page()
+      .locator(".retro-lcd .retro-lcd__body")
+      .evaluate((body) => (body.textContent ?? "").replace(/\u00a0/gu, " "));
+
+    assert.equal(initial.rows, 24);
+    assert.equal(initial.cols, 58);
+    assert.equal(initial.lineCount, 24);
+    assert.match(initial.fontFamily, /Matrix/u);
+    assert.ok(initial.text.replace(/\s/gu, "").length > 300);
+    assert.notEqual(
+      nextText,
+      initial.text,
+      "The matrix rain story should continue animating after mount."
+    );
+  });
+
   await t.test(
     "display color modes story covers every supported display palette and ANSI projection path",
     async () => {

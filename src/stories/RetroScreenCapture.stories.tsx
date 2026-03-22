@@ -2,11 +2,13 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { RetroScreen } from "../react/RetroScreen";
 import {
   BadAppleAnsiDemoStory,
+  BadAppleAnsiGzipStreamDemoStory,
   DisplayColorModesDemoStory,
   EditableModeDemoStory,
   FeatureTourStory,
   LightDarkHostsDemoStory,
   LiveTtyTerminalBridgeDemoStory,
+  MatrixCodeRainDemoStory,
   PromptModeDemoStory,
   QuietOutputDemoStory,
   TerminalModeDemoStory,
@@ -59,9 +61,19 @@ export const WhiteRabbitSignalDemo: Story = {
   render: () => <WhiteRabbitSignalDemoStory />
 };
 
+export const MatrixCodeRainDemo: Story = {
+  name: "Matrix Code Rain",
+  render: () => <MatrixCodeRainDemoStory />
+};
+
 export const BadAppleAnsi: Story = {
   name: "Bad Apple ANSI",
   render: () => <BadAppleAnsiDemoStory />
+};
+
+export const BadAppleAnsiGzipStream: Story = {
+  name: "Bad Apple ANSI (Gzip Stream)",
+  render: () => <BadAppleAnsiGzipStreamDemoStory />
 };
 
 export const DisplayColorModesDemo: Story = {
