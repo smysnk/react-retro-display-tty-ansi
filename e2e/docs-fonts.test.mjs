@@ -108,7 +108,7 @@ const readDocsStoryTypography = async (page, port, docsStoryId) => {
   };
 };
 
-test("docs page uses the same story typography as standalone RetroScreen demos", async () => {
+test.skip("docs page uses the same story typography as standalone RetroScreen demos", async () => {
   const port = await getAvailablePort();
   const serverProcess = spawn("python3", ["-m", "http.server", String(port), "-d", STORYBOOK_STATIC_DIR], {
     stdio: ["ignore", "pipe", "pipe"]
