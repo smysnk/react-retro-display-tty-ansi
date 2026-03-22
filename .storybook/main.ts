@@ -25,6 +25,9 @@ const config: StorybookConfig = {
     name: "@storybook/react-vite",
     options: {}
   },
+  features: {
+    onboarding: false
+  },
   docs: {
     autodocs: "tag"
   },

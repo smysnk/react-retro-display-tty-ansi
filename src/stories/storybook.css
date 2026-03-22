@@ -13,6 +13,122 @@
   color: #f2efe8;
 }
 
+.sbdocs,
+.sbdocs-wrapper,
+.sbdocs-content,
+.docs-story {
+  background: transparent !important;
+}
+
+body {
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.07), transparent 34%),
+    linear-gradient(180deg, #0b0c10 0%, #121419 42%, #0d0f13 100%);
+}
+
+.sb-retro-docs-page {
+  min-height: 100vh;
+  padding: 48px 24px 64px;
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.07), transparent 34%),
+    linear-gradient(180deg, #0b0c10 0%, #121419 42%, #0d0f13 100%);
+  color: #f2efe8;
+}
+
+.sb-retro-docs-hero {
+  width: min(1120px, 100%);
+  margin: 0 auto 28px;
+  display: grid;
+  gap: 14px;
+}
+
+.sb-retro-docs-hero h1 {
+  margin: 0;
+  font-size: clamp(30px, 4vw, 48px);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  color: #f2efe8;
+}
+
+.sb-retro-docs-description,
+.sb-retro-docs-description p {
+  margin: 0;
+  max-width: 840px;
+  color: rgba(223, 217, 207, 0.78);
+  line-height: 1.65;
+}
+
+.sb-retro-docs-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.sb-retro-docs-badges a {
+  display: inline-flex;
+}
+
+.sb-retro-docs-link-copy {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: rgba(223, 217, 207, 0.72);
+}
+
+.sb-retro-docs-link-copy a {
+  color: rgba(223, 217, 207, 0.9);
+  text-decoration: none;
+}
+
+.sb-retro-docs-link-copy a:hover {
+  text-decoration: underline;
+}
+
+.sb-retro-docs-section {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 18px;
+}
+
+.sb-retro-docs-section + .sb-retro-docs-section {
+  margin-top: 32px;
+}
+
+.sb-retro-docs-section h2 {
+  margin: 0;
+  color: #f2efe8;
+}
+
+.sb-retro-docs-section p {
+  margin: 0;
+  color: rgba(223, 217, 207, 0.78);
+}
+
+.sb-retro-docs-story {
+  display: grid;
+  gap: 14px;
+}
+
+.sb-retro-docs-story h3 {
+  margin: 0;
+  color: #f2efe8;
+  font-size: 20px;
+}
+
+.sb-retro-docs-story > :last-child,
+.sb-retro-docs-page .sbdocs-preview {
+  background:
+    linear-gradient(180deg, rgba(22, 24, 30, 0.88), rgba(13, 15, 20, 0.92)),
+    rgba(0, 0, 0, 0.32) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 28px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 22px 60px rgba(0, 0, 0, 0.28);
+}
+
 .sb-retro-shell {
   width: min(1120px, 100%);
   margin: 0 auto;
@@ -106,15 +222,17 @@
 .sb-retro-status {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  column-gap: 10px;
+  row-gap: 1px;
   width: fit-content;
-  padding: 10px 14px;
+  padding: 6px 12px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(18, 21, 27, 0.82);
   color: rgba(227, 221, 211, 0.84);
   font-size: 13px;
-  line-height: 1.4;
+  line-height: 1.2;
+  flex-wrap: wrap;
 }
 
 .sb-retro-grid {
@@ -240,8 +358,10 @@
 .sb-retro-measure {
   display: inline-flex;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  align-items: center;
   font-size: 13px;
+  line-height: 1;
   color: rgba(226, 220, 210, 0.84);
 }
 

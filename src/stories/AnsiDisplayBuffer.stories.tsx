@@ -6,8 +6,7 @@ import {
   BadAppleAnsiGzipStreamStory,
   ControlCharacterReplayDemoStory,
   ControlCharacterReplayStory,
-  DisplayBufferStory,
-  LargestAnsiGalleryStory
+  DisplayBufferStory
 } from "./RetroScreen.stories";
 
 const meta = {
@@ -47,11 +46,6 @@ export const BadAppleAnsi: Story = {
 export const BadAppleAnsiGzipStream: Story = {
   name: "Bad Apple ANSI (Gzip Stream)",
   render: () => <BadAppleAnsiGzipStreamStory />
-};
-
-export const LargestAnsiGallery: Story = {
-  name: "Largest ANSI Gallery",
-  render: () => <LargestAnsiGalleryStory />
 };
 
 export const ControlCharacterReplayCapture: Story = {

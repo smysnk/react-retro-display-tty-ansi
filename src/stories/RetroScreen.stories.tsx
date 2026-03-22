@@ -3449,6 +3449,11 @@ const meta = {
   excludeStories: /.*Story$/,
   args: {
     color: STORY_COLOR
+  },
+  parameters: {
+    controls: {
+      disable: true
+    }
   }
 } satisfies Meta<typeof RetroScreen>;
 
