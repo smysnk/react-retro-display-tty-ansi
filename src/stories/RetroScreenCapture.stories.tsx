@@ -9,7 +9,8 @@ import {
   LiveTtyTerminalBridgeDemoStory,
   PromptModeDemoStory,
   QuietOutputDemoStory,
-  TerminalModeDemoStory
+  TerminalModeDemoStory,
+  WhiteRabbitSignalDemoStory
 } from "./RetroScreen.stories";
 
 const meta = {
@@ -51,6 +52,11 @@ export const TerminalModeDemo: Story = {
 export const PromptModeDemo: Story = {
   name: "Prompt Mode",
   render: () => <PromptModeDemoStory />
+};
+
+export const WhiteRabbitSignalDemo: Story = {
+  name: "White Rabbit Signal",
+  render: () => <WhiteRabbitSignalDemoStory />
 };
 
 export const BadAppleAnsi: Story = {

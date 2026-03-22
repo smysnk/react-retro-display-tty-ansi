@@ -53,6 +53,28 @@ const waitForAutoResizeProbeReady = async ({ timeoutMs = 30000, stepMs = 200 } =
   throw new Error("Timed out waiting for the auto-resize probe to render a visible scripted cursor.");
 };
 
+const waitForAutoResizeProbeState = async (
+  predicate,
+  {
+    timeoutMs = 30000,
+    stepMs = 200
+  } = {}
+) => {
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < timeoutMs) {
+    const state = await readAutoResizeProbeState();
+
+    if (predicate(state)) {
+      return state;
+    }
+
+    await page().waitForTimeout(stepMs);
+  }
+
+  throw new Error("Timed out waiting for the auto-resize probe to reach the expected settled state.");
+};
+
 test("auto-resize probe uses a visible scripted cursor to live-resize the panel without cutting the rendered frame", async () => {
   await harness.gotoStory("retroscreen-responsive--auto-resize-probe-capture");
 
@@ -70,9 +92,19 @@ test("auto-resize probe uses a visible scripted cursor to live-resize the panel 
     "The live probe should visibly resize the panel."
   );
 
-  await page().waitForTimeout(1400);
-
-  const settledState = await readAutoResizeProbeState();
+  const settledState = await waitForAutoResizeProbeState(
+    (state) =>
+      state.redrawSequence > initialState.redrawSequence &&
+      state.redrawReason === "transition-settle" &&
+      state.redrawRows === state.rows &&
+      state.redrawCols === state.cols &&
+      state.lines.length === state.rows &&
+      state.lines.every((line) => line.length === state.cols),
+    {
+      timeoutMs: 30000,
+      stepMs: 150
+    }
+  );
 
   assert.ok(
     settledState.redrawSequence > initialState.redrawSequence,

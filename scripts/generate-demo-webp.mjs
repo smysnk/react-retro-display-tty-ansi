@@ -37,6 +37,14 @@ const terminalModeMp4File = resolve(
 );
 const promptModeWebpFile = resolve(outputDir, "react-retro-display-tty-ansi-prompt-loop.webp");
 const promptModeMp4File = resolve(outputDir, "react-retro-display-tty-ansi-prompt-loop.mp4");
+const whiteRabbitSignalWebpFile = resolve(
+  outputDir,
+  "react-retro-display-tty-ansi-white-rabbit-signal.webp"
+);
+const whiteRabbitSignalMp4File = resolve(
+  outputDir,
+  "react-retro-display-tty-ansi-white-rabbit-signal.mp4"
+);
 const displayColorModesWebpFile = resolve(
   outputDir,
   "react-retro-display-tty-ansi-display-color-modes.webp"
@@ -283,6 +291,18 @@ const captures = [
     outputs: [
       { type: "webp", file: promptModeWebpFile },
       { type: "mp4", file: promptModeMp4File }
+    ]
+  },
+  {
+    name: "white rabbit signal",
+    storyId: "retroscreen-capture--white-rabbit-signal-demo",
+    selector: "[data-demo-capture='white-rabbit-signal']",
+    waitMs: 240,
+    fps: 16,
+    durationMs: 16000,
+    outputs: [
+      { type: "webp", file: whiteRabbitSignalWebpFile },
+      { type: "mp4", file: whiteRabbitSignalMp4File }
     ]
   },
   {

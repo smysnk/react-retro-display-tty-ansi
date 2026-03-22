@@ -1586,6 +1586,141 @@ function TerminalStreamStory() {
   );
 }
 
+function WhiteRabbitSignalSurface({
+  capture = false
+}: {
+  capture?: boolean;
+}) {
+  const [controller] = useState(() =>
+    createRetroScreenController({
+      rows: 5,
+      cols: 34,
+      cursorMode: "solid"
+    })
+  );
+
+  useEffect(() => {
+    controller.reset();
+    controller.resize(5, 34);
+    controller.setCursorMode("solid");
+    controller.setCursorVisible(true);
+
+    const timers: number[] = [];
+    let nextAt = 380;
+
+    const getSignalTypingDelay = (character: string, nextCharacter?: string) => {
+      if (character === " ") {
+        return 86;
+      }
+
+      if (character === ",") {
+        return 214;
+      }
+
+      if (character === "." && nextCharacter === ".") {
+        return 70;
+      }
+
+      if (character === ".") {
+        return 320;
+      }
+
+      if (/[A-Z]/u.test(character)) {
+        return 154;
+      }
+
+      return 122;
+    };
+
+    const scheduleTypedWrite = (text: string) => {
+      const characters = Array.from(text);
+
+      for (let index = 0; index < characters.length; index += 1) {
+        const character = characters[index]!;
+        timers.push(
+          window.setTimeout(() => {
+            controller.write(character);
+          }, nextAt)
+        );
+        nextAt += getSignalTypingDelay(character, characters[index + 1]);
+      }
+    };
+
+    const scheduleReset = () => {
+      timers.push(
+        window.setTimeout(() => {
+          controller.reset();
+          controller.resize(5, 34);
+          controller.setCursorMode("solid");
+          controller.setCursorVisible(true);
+        }, nextAt)
+      );
+      nextAt += 360;
+    };
+
+    scheduleTypedWrite("Wake up, Neo...");
+    nextAt += 1360;
+    scheduleReset();
+    scheduleTypedWrite("The Matrix has you...");
+    nextAt += 1220;
+    scheduleReset();
+    scheduleTypedWrite("Follow the white rabbit.");
+    nextAt += 1220;
+    scheduleReset();
+    scheduleTypedWrite("Knock, knock, Neo.");
+
+    return () => {
+      for (const timer of timers) {
+        window.clearTimeout(timer);
+      }
+    };
+  }, [controller]);
+
+  const screen = (
+    <RetroScreen
+      mode="terminal"
+      controller={controller}
+      color={STORY_COLOR}
+      displayPadding={{ block: 14, inline: 16 }}
+      style={{ minHeight: "212px" }}
+    />
+  );
+
+  if (capture) {
+    return (
+      <CaptureStage captureId="white-rabbit-signal" maxWidth={760}>
+        {screen}
+      </CaptureStage>
+    );
+  }
+
+  return (
+    <StoryShell
+      kicker="Signal Intercept"
+      title="Let a message arrive like a late-night terminal whisper."
+      copy="This story leans into the cinematic side of RetroScreen with the full four-beat Matrix screen sequence and a more film-like typing cadence."
+      footer={
+        <ul className="sb-retro-note-list">
+          <li>Built with the same controller-driven terminal path as the live stream demos.</li>
+          <li>The sequence resets between each line so every phrase lands on its own beat.</li>
+        </ul>
+      }
+    >
+      <Stage maxWidth={760}>
+        {screen}
+      </Stage>
+    </StoryShell>
+  );
+}
+
+function WhiteRabbitSignalStory() {
+  return <WhiteRabbitSignalSurface />;
+}
+
+export function WhiteRabbitSignalDemoStory() {
+  return <WhiteRabbitSignalSurface capture />;
+}
+
 export function TerminalModeDemoStory() {
   const [controller] = useState(() =>
     createRetroScreenController({
@@ -3184,6 +3319,10 @@ export const CalmReadout: Story = {
 
 export const TerminalStream: Story = {
   render: () => <TerminalStreamStory />
+};
+
+export const WhiteRabbitSignal: Story = {
+  render: () => <WhiteRabbitSignalStory />
 };
 
 export function AnsiSurfaceStory() {

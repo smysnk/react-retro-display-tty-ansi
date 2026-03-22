@@ -164,7 +164,38 @@ Use `mode="value"` when the display is just there to speak.
 />
 ```
 
-### 2. Editable drafting
+### 2. Signal intercept
+
+Use a controller when the display should reveal text over time and the cadence matters as much as the message.
+
+[![White Rabbit Signal Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi/main/docs/assets/react-retro-display-tty-ansi-white-rabbit-signal.webp)](https://github.com/user-attachments/assets/f05998aa-40a0-4c51-9612-025b5e5f5b29)
+
+```tsx
+import { useEffect } from "react";
+import {
+  RetroScreen,
+  createRetroScreenController
+} from "react-retro-display-tty-ansi";
+
+const controller = createRetroScreenController({
+  rows: 5,
+  cols: 34,
+  cursorMode: "solid"
+});
+
+export function WhiteRabbitSignal() {
+  useEffect(() => {
+    controller.reset();
+    controller.write("Wake up, Neo...");
+  }, []);
+
+  return <RetroScreen mode="terminal" controller={controller} />;
+}
+```
+
+The Storybook version uses timed writes and screen clears so the four-line sequence lands like a late-night intercepted signal instead of a static quote.
+
+### 3. Editable drafting
 
 Turn on `editable` when you want the same surface to behave like a controlled input.
 
@@ -192,7 +223,7 @@ export function DraftPad() {
 }
 ```
 
-### 3. Terminal output from a controller
+### 4. Terminal output from a controller
 
 Use a controller when the display should follow external writes over time.
 
@@ -295,7 +326,7 @@ and optional command/cwd/env override restrictions. See
 [examples/node-tty-websocket-server/README.md](/Users/josh/play/react-retro-display/examples/node-tty-websocket-server/README.md)
 for the available flags.
 
-### 4. Prompt-first interaction
+### 5. Prompt-first interaction
 
 Use `mode="prompt"` when the interface should feel like a guided shell.
 
