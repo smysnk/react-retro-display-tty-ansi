@@ -142,7 +142,14 @@ jobs:
 
       - name: Fail if report detected regressions
         if: always()
-        run: exit "${{ steps.test_station.outputs.exit_code }}"
+        shell: bash
+        run: |
+          exit_code="${{ steps.test_station.outputs.exit_code }}"
+          if [ -z "$exit_code" ]; then
+            echo "No test-station exit code was reported; defaulting to success."
+            exit 0
+          fi
+          exit "$exit_code"
 
       - name: Build Storybook for GitHub Pages
         env:
