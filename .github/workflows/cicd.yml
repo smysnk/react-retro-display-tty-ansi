@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -206,3 +206,30 @@ jobs:
           NPM_PUBLISH: "1"
           NPM_PROVENANCE: "1"
         run: bash ./scripts/release/release-npm-package.sh
+
+      - name: Build GitHub release notes
+        run: |
+          cat > .github-release-notes.md <<EOF
+          Release for \`${{ steps.package_version.outputs.package_name }}@${{ steps.package_version.outputs.package_version }}\`
+
+          - Commit: \`${{ github.sha }}\`
+          - npm: https://www.npmjs.com/package/${{ steps.package_version.outputs.package_name }}/v/${{ steps.package_version.outputs.package_version }}
+          - Storybook: https://smysnk.github.io/react-retro-display-tty-ansi/
+          EOF
+
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: v${{ steps.package_version.outputs.package_version }}
+          RELEASE_TITLE: react-retro-display-tty-ansi v${{ steps.package_version.outputs.package_version }}
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release edit "$RELEASE_TAG" \
+              --title "$RELEASE_TITLE" \
+              --notes-file .github-release-notes.md
+          else
+            gh release create "$RELEASE_TAG" \
+              --target "${GITHUB_SHA}" \
+              --title "$RELEASE_TITLE" \
+              --notes-file .github-release-notes.md
+          fi
