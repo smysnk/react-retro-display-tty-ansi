@@ -1,6 +1,6 @@
 {
   "name": "react-retro-display-tty-ansi",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A reusable React retro display component with value, terminal, and prompt modes.",
   "keywords": [
     "react",
