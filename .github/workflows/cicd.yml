@@ -127,9 +127,7 @@ jobs:
           completed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           export TEST_STATION_BUILD_COMPLETED_AT="$completed_at"
           echo "TEST_STATION_BUILD_COMPLETED_AT=$completed_at" >> "$GITHUB_ENV"
-          if ! node ./scripts/test-station/publish-ingest-report.mjs; then
-            echo "Warning: test-station ingest failed; continuing without blocking CI."
-          fi
+          node ./scripts/test-station/publish-ingest-report.mjs
 
       - name: Upload test artifacts
         if: always() && hashFiles('.test-results/test-station/report.json') != ''

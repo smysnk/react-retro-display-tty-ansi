@@ -36,11 +36,11 @@ const TEST_REPORT_URL = "https://test-station.smysnk.com/projects/react-retro-di
 const GITHUB_BADGE_URL =
   "https://img.shields.io/badge/github-smysnk%2Freact--retro--display--tty--ansi-181717?logo=github&logoColor=white";
 const TESTS_BADGE_URL =
-  "https://img.shields.io/endpoint?url=https%3A%2F%2Fsmysnk.github.io%2Freact-retro-display-tty-ansi%2Fbadges%2Ftests.json";
+  "https://img.shields.io/endpoint?url=https%3A%2F%2Ftest-station.smysnk.com%2Fapi%2Fbadges%2Ftests.json%3FprojectKey%3Dreact-retro-display-tty-ansi";
 const COVERAGE_BADGE_URL =
-  "https://img.shields.io/endpoint?url=https%3A%2F%2Fsmysnk.github.io%2Freact-retro-display-tty-ansi%2Fbadges%2Fcoverage.json";
+  "https://img.shields.io/endpoint?url=https%3A%2F%2Ftest-station.smysnk.com%2Fapi%2Fbadges%2Fcoverage.json%3FprojectKey%3Dreact-retro-display-tty-ansi";
 const HEALTH_BADGE_URL =
-  "https://img.shields.io/endpoint?url=https%3A%2F%2Fsmysnk.github.io%2Freact-retro-display-tty-ansi%2Fbadges%2Fhealth.json";
+  "https://img.shields.io/endpoint?url=https%3A%2F%2Ftest-station.smysnk.com%2Fapi%2Fbadges%2Fhealth.json%3FprojectKey%3Dreact-retro-display-tty-ansi";
 const NPM_BADGE_URL = "https://img.shields.io/npm/v/react-retro-display-tty-ansi?label=npm";
 
 const badgeLinks = [
@@ -55,17 +55,17 @@ const badgeLinks = [
     src: NPM_BADGE_URL
   },
   {
-    href: STORYBOOK_URL,
+    href: TEST_REPORT_URL,
     label: "test status",
     src: TESTS_BADGE_URL
   },
   {
-    href: STORYBOOK_URL,
+    href: TEST_REPORT_URL,
     label: "coverage",
     src: COVERAGE_BADGE_URL
   },
   {
-    href: STORYBOOK_URL,
+    href: TEST_REPORT_URL,
     label: "health",
     src: HEALTH_BADGE_URL
   }

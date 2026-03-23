@@ -3,8 +3,9 @@
 # react-retro-display-tty-ansi
 
 [![npm](https://img.shields.io/npm/v/react-retro-display-tty-ansi?label=npm)](https://www.npmjs.com/package/react-retro-display-tty-ansi)
-[![tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fsmysnk.github.io%2Freact-retro-display-tty-ansi%2Fbadges%2Ftests.json)](https://smysnk.github.io/react-retro-display-tty-ansi/)
-[![coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fsmysnk.github.io%2Freact-retro-display-tty-ansi%2Fbadges%2Fcoverage.json)](https://smysnk.github.io/react-retro-display-tty-ansi/)
+[![tests](https://img.shields.io/endpoint?url=https%3A%2F%2Ftest-station.smysnk.com%2Fapi%2Fbadges%2Ftests.json%3FprojectKey%3Dreact-retro-display-tty-ansi)](https://test-station.smysnk.com/projects/react-retro-display-tty-ansi)
+[![coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Ftest-station.smysnk.com%2Fapi%2Fbadges%2Fcoverage.json%3FprojectKey%3Dreact-retro-display-tty-ansi)](https://test-station.smysnk.com/projects/react-retro-display-tty-ansi)
+[![health](https://img.shields.io/endpoint?url=https%3A%2F%2Ftest-station.smysnk.com%2Fapi%2Fbadges%2Fhealth.json%3FprojectKey%3Dreact-retro-display-tty-ansi)](https://test-station.smysnk.com/projects/react-retro-display-tty-ansi)
 
 Storybook: [smysnk.github.io/react-retro-display-tty-ansi](https://smysnk.github.io/react-retro-display-tty-ansi/)
 
