@@ -24,7 +24,7 @@ export type RetroScreenRenderCell = RetroScreenCell & {
 
 export type RetroScreenRenderModel = {
   lines: string[];
-  cells?: RetroScreenRenderCell[][];
+  cells: RetroScreenRenderCell[][];
   cursor: RetroScreenCursorRenderState | null;
   isDimmed: boolean;
 };
@@ -181,11 +181,12 @@ export const buildTextRenderModel = ({
   const normalizedSelection = selection
     ? normalizeRetroScreenTextSelection(selection, text.length)
     : null;
+  const shouldExposeSourceOffsets = Boolean(includeSourceOffsets || normalizedSelection);
   const wrappedCellRows = wrapTextToCellRows(text, { cols: geometry.cols });
   const totalCells = wrappedCellRows.map((row) =>
     row.map((cell) =>
       createRenderCell(cell.char, {
-        sourceOffset: cell.sourceOffset,
+        sourceOffset: shouldExposeSourceOffsets ? cell.sourceOffset : null,
         isSelected: normalizedSelection
           ? cell.sourceOffset >= normalizedSelection.start &&
             cell.sourceOffset < normalizedSelection.end
@@ -194,7 +195,6 @@ export const buildTextRenderModel = ({
     )
   );
   const totalLines = totalCells.map((line) => line.map((cell) => cell.char).join(""));
-  const shouldExposeCells = Boolean(includeSourceOffsets || normalizedSelection);
 
   let cursor: RetroScreenCursorRenderState | null = null;
   let windowStart = 0;
@@ -234,9 +234,7 @@ export const buildTextRenderModel = ({
 
   return {
     lines: normalizeLines(totalLines.slice(windowStart, windowStart + geometry.rows), geometry.rows),
-    cells: shouldExposeCells
-      ? normalizeCellRows(totalCells.slice(windowStart, windowStart + geometry.rows), geometry.rows)
-      : undefined,
+    cells: normalizeCellRows(totalCells.slice(windowStart, windowStart + geometry.rows), geometry.rows),
     cursor,
     isDimmed: Boolean(dimmed)
   };
@@ -391,7 +389,13 @@ export const ansiSnapshotToRenderModelWindow = (
             });
           });
         })
-    : undefined;
+    : viewportLines.map((line) =>
+        Array.from({ length: viewport.cols }, (_, viewportColIndex) =>
+          createRenderCell(line[viewportColIndex] ?? " ", {
+            sourceOffset: null
+          })
+        )
+      );
 
   return {
     lines: viewportLines,
@@ -414,8 +418,6 @@ export const getValueDisplayText = (props: RetroScreenValueModeProps, focused: b
     dimmed: Boolean(props.placeholder && !focused)
   };
 };
-
-export const getLineDisplayText = (line: string) => (line.length > 0 ? line : "\u00a0");
 
 export const getCellCharacter = (cell: RetroScreenCell) => {
   if (cell.style.conceal) {

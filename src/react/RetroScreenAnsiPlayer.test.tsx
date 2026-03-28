@@ -7,6 +7,11 @@ import type { RetroScreenAnsiPlayerState } from "./useRetroScreenAnsiPlayer";
 const getBodyText = (container: HTMLElement) =>
   container.querySelector(".retro-screen__body")?.textContent?.replace(/\u00a0/gu, " ") ?? "";
 
+const getCellTexts = (container: HTMLElement) =>
+  Array.from(container.querySelectorAll(".retro-screen__cell")).map((cell) =>
+    (cell.textContent ?? "").replace(/\u00a0/gu, " ")
+  );
+
 describe("RetroScreenAnsiPlayer", () => {
   it("renders streamed ANSI bytes without requiring RetroScreen to load files", async () => {
     const encoder = new TextEncoder();
@@ -41,6 +46,8 @@ describe("RetroScreenAnsiPlayer", () => {
       expect(getBodyText(container)).toContain("AB");
     });
 
+    expect(container.querySelector(".retro-screen__line--cells")).not.toBeNull();
+    expect(getCellTexts(container).join("")).toContain("AB");
     expect(states.at(-1)?.isStreaming).toBe(true);
   });
 
@@ -79,6 +86,7 @@ describe("RetroScreenAnsiPlayer", () => {
       expect(bodyText).toContain("tail");
     });
 
+    expect(container.querySelector(".retro-screen__line--cells")).not.toBeNull();
     expect(onPlaybackStateChange).toHaveBeenCalled();
     expect(
       onPlaybackStateChange.mock.calls.some(
@@ -145,6 +153,8 @@ describe("RetroScreenAnsiPlayer", () => {
       expect(bodyText).not.toContain("ABCD");
     });
 
+    expect(container.querySelector(".retro-screen__line--cells")).not.toBeNull();
+    expect(getCellTexts(container).join("")).toContain("KLMNSTUV");
     const lastState = onPlaybackStateChange.mock.calls.at(-1)?.[0] as
       | RetroScreenAnsiPlayerState
       | undefined;

@@ -277,30 +277,20 @@
   white-space: pre;
   color: inherit;
   font-family: var(--retro-screen-font-family, "IBM Plex Mono"), monospace !important;
-  font-size: inherit;
+  font-size: 0;
   font-weight: inherit;
   font-style: inherit;
-  line-height: inherit;
-  letter-spacing: inherit;
+  line-height: 0;
+  letter-spacing: 0;
   transform: scaleY(var(--retro-screen-row-scale, 1));
   transform-origin: top center;
 }
 
-.retro-screen__line--cells {
-  font-size: 0;
-  line-height: 0;
-  letter-spacing: 0;
-}
-
 .retro-screen[data-display-character-sizing-mode="font"] .retro-screen__line {
   height: auto;
-  line-height: 1;
-  transform: none;
-}
-
-.retro-screen[data-display-character-sizing-mode="font"] .retro-screen__line--cells {
   font-size: inherit;
   line-height: 1;
+  transform: none;
 }
 
 .retro-screen[data-disable-cell-row-scale="true"] .retro-screen__line--cells {

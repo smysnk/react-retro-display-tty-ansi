@@ -16,7 +16,6 @@ import type {
 } from "../core/types";
 import {
   getCellCharacter,
-  getLineDisplayText,
   type RetroScreenRenderCell,
   type RetroScreenRenderModel
 } from "./retro-screen-render-model";
@@ -119,29 +118,23 @@ export function RetroScreenDisplay({
             )}
           >
             <div className="retro-screen__body" aria-live={mode === "terminal" ? "polite" : undefined}>
-              {renderModel.cells
-                ? renderModel.cells.map((line, rowIndex) => (
-                    <div
-                      className={joinClassNames("retro-screen__line", "retro-screen__line--cells")}
-                      key={`cells-${rowIndex}`}
+              {renderModel.cells.map((line, rowIndex) => (
+                <div
+                  className={joinClassNames("retro-screen__line", "retro-screen__line--cells")}
+                  key={`cells-${rowIndex}`}
+                >
+                  {line.map((cell, colIndex) => (
+                    <span
+                      className={getCellClassName(cell)}
+                      key={`${rowIndex}-${colIndex}-${cell.char}`}
+                      data-source-offset={cell.sourceOffset ?? undefined}
+                      style={getCellPresentationStyle(cell, displayColorMode, displaySurfaceMode)}
                     >
-                      {line.map((cell, colIndex) => (
-                        <span
-                          className={getCellClassName(cell)}
-                          key={`${rowIndex}-${colIndex}-${cell.char}`}
-                          data-source-offset={cell.sourceOffset ?? undefined}
-                          style={getCellPresentationStyle(cell, displayColorMode, displaySurfaceMode)}
-                        >
-                          {getCellCharacter(cell)}
-                        </span>
-                      ))}
-                    </div>
-                  ))
-                : renderModel.lines.map((line, index) => (
-                    <div className="retro-screen__line" key={`${index}-${line}`}>
-                      {getLineDisplayText(line)}
-                    </div>
+                      {getCellCharacter(cell)}
+                    </span>
                   ))}
+                </div>
+              ))}
             </div>
             {renderModel.cursor ? (
               <div

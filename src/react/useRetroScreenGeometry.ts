@@ -53,6 +53,9 @@ const areGeometriesEqual = (left: RetroScreenGeometry, right: RetroScreenGeometr
   left.innerHeight === right.innerHeight &&
   left.fontSize === right.fontSize;
 
+const roundMeasuredDimension = (value: number) =>
+  Number.isFinite(value) && value > 0 ? Math.round(value * 1000) / 1000 : value;
+
 const measureCurrentGeometry = ({
   screenRef,
   probeRef,
@@ -86,12 +89,12 @@ const measureCurrentGeometry = ({
     return DEFAULT_GEOMETRY;
   }
 
-  const cellWidth = probeRect.width > 0 ? probeRect.width : DEFAULT_GEOMETRY.cellWidth;
-  const cellHeight = probeRect.height > 0 ? probeRect.height : DEFAULT_GEOMETRY.cellHeight;
+  const cellWidth = probeRect.width > 0 ? roundMeasuredDimension(probeRect.width) : DEFAULT_GEOMETRY.cellWidth;
+  const cellHeight = probeRect.height > 0 ? roundMeasuredDimension(probeRect.height) : DEFAULT_GEOMETRY.cellHeight;
   const computedProbeFontSize = Number.parseFloat(window.getComputedStyle(probeNode).fontSize);
   const measuredFontSize =
     Number.isFinite(computedProbeFontSize) && computedProbeFontSize > 0
-      ? computedProbeFontSize
+      ? roundMeasuredDimension(computedProbeFontSize)
       : DEFAULT_GEOMETRY.fontSize;
 
   if (gridMode === "static") {
@@ -111,7 +114,7 @@ const measureCurrentGeometry = ({
     innerHeight: Math.max(0, screenRect.height),
     cellWidth,
     cellHeight,
-    fontSize: cellHeight
+    fontSize: measuredFontSize
   });
 };
 

@@ -16,6 +16,11 @@ const getVisibleLines = (container: HTMLElement) =>
     (line.textContent ?? "").replace(/\u00a0/gu, " ")
   );
 
+const getCellTexts = (container: HTMLElement) =>
+  Array.from(container.querySelectorAll(".retro-screen__cell")).map((cell) =>
+    (cell.textContent ?? "").replace(/\u00a0/gu, " ")
+  );
+
 const createClipboardData = () => {
   const store = new Map<string, string>();
 
@@ -108,9 +113,13 @@ const getContrastRatio = (foreground: string, background: string) => {
 
 describe("RetroScreen", () => {
   it("renders value mode text", () => {
-    render(<RetroScreen mode="value" value="HELLO LCD" />);
+    const { container } = render(<RetroScreen mode="value" value="HELLO LCD" />);
 
-    expect(screen.getByText("HELLO LCD")).toBeInTheDocument();
+    expect(
+      document.querySelector(".retro-screen__body")?.textContent?.replace(/\u00a0/gu, " ")
+    ).toContain("HELLO LCD");
+    expect(container.querySelector(".retro-screen__line--cells")).not.toBeNull();
+    expect(getCellTexts(container).join("")).toContain("HELLO LCD");
   });
 
   it("renders styled value-mode cells when provided", () => {
@@ -399,6 +408,8 @@ describe("RetroScreen", () => {
     });
 
     expect(getBodyText(container)).toContain("shell ready");
+    expect(container.querySelector(".retro-screen__line--cells")).not.toBeNull();
+    expect(getCellTexts(container).join("")).toContain("shell ready");
     expect(onSessionEvent).toHaveBeenCalledWith({ type: "ready", pid: 99 });
     expect(onSessionStateChange).toHaveBeenCalledWith("open");
 
@@ -1006,6 +1017,8 @@ describe("RetroScreen", () => {
     const { container } = render(<RetroScreen mode="prompt" value="status" />);
 
     expect(getBodyText(container)).toContain("> status");
+    expect(container.querySelector(".retro-screen__line--cells")).not.toBeNull();
+    expect(getCellTexts(container).join("")).toContain("> status");
   });
 
   it("submits accepted prompt commands and prints the response protocol", async () => {
@@ -1028,6 +1041,7 @@ describe("RetroScreen", () => {
     expect(bodyText).toContain("alpha");
     expect(bodyText).toContain("beta");
     expect(bodyText).toContain("> ");
+    expect(container.querySelector(".retro-screen__line--cells")).not.toBeNull();
   });
 
   it("submits rejected prompt commands with ERROR", async () => {
@@ -1246,10 +1260,11 @@ describe("RetroScreen", () => {
     );
 
     const placeholderLine = placeholderView.container.querySelector(
-      ".retro-screen__line"
+      ".retro-screen__line--cells"
     ) as HTMLElement | null;
     expect(placeholderLine).not.toBeNull();
     const placeholderColor = window.getComputedStyle(placeholderLine!).color;
+    expect(getCellTexts(placeholderView.container).join("")).toContain("What are you thinking about?");
 
     placeholderView.unmount();
 
@@ -1419,6 +1434,7 @@ describe("RetroScreen", () => {
     const input = container.querySelector(".retro-screen__input") as HTMLTextAreaElement | null;
     expect(viewport).not.toBeNull();
     expect(input).not.toBeNull();
+    expect(container.querySelector(".retro-screen__line--cells")).not.toBeNull();
 
     fireEvent.mouseDown(viewport!, {
       clientX: 13,
