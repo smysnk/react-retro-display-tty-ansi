@@ -365,18 +365,6 @@ Use `mode="prompt"` when the interface should feel like a guided shell.
 
 [![Prompt Interaction Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi-ascii/main/docs/assets/react-retro-display-tty-ansi-ascii-prompt-loop.webp)](https://github.com/user-attachments/assets/75eec8ea-6da7-41f4-98be-f17e5284980a)
 
-The Apple DOS 3.3 demo sits nicely in the same family when you want the interface to feel boot-first and command-led instead of form-like.
-
-[![Apple II DOS 3.3 Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi-ascii/main/docs/assets/react-retro-display-tty-ansi-ascii-apple2-dos33.webp)](https://github.com/user-attachments/assets/6e254c74-0973-4395-8cfc-4daddb57468d)
-
-Under the hood, the Apple II shell is built as a small userland runtime on top of `mode="terminal"` instead of trying to force the one-shot prompt path to behave like BASIC. The Storybook surface feeds keyboard bytes into a session store that owns the boot transcript, prompt state, numbered program lines, and shell mode transitions. That session then hands stored BASIC lines to a parser/interpreter pair that supports immediate commands like `LIST`, `NEW`, and `RUN`, plus resumable program execution for `INPUT` and `BREAK`.
-
-Implementation notes:
-
-- `src/stories/Apple2Basic.stories.tsx` wires `RetroScreen` to the Apple session and powers both the interactive story and the deterministic capture/demo variants.
-- `src/stories/apple2-basic/apple2-basic-shell-session.ts` manages uppercase input, line editing, transcript updates, prompt switching, and asynchronous runner scheduling.
-- `src/stories/apple2-basic/apple2-basic-parser.ts` parses immediate commands, numbered program lines, and the supported BASIC statement/expression subset.
-- `src/stories/apple2-basic/apple2-basic-interpreter.ts` compiles stored lines into a resumable runner so `RUN`, `INPUT`, `GOTO`, `IF ... THEN`, `END`, and `CTRL+C` / `BREAK` behave like a shell instead of a static transcript.
 
 ```tsx
 <RetroScreen
@@ -400,6 +388,19 @@ Implementation notes:
   }}
 />
 ```
+
+The Apple DOS 3.3 demo sits nicely in the same family when you want the interface to feel boot-first and command-led instead of form-like.
+
+[![Apple II DOS 3.3 Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi-ascii/main/docs/assets/react-retro-display-tty-ansi-ascii-apple2-dos33.webp)](https://github.com/user-attachments/assets/6e254c74-0973-4395-8cfc-4daddb57468d)
+
+Under the hood, the Apple II shell is built as a small userland runtime on top of `mode="terminal"` instead of trying to force the one-shot prompt path to behave like BASIC. The Storybook surface feeds keyboard bytes into a session store that owns the boot transcript, prompt state, numbered program lines, and shell mode transitions. That session then hands stored BASIC lines to a parser/interpreter pair that supports immediate commands like `LIST`, `NEW`, and `RUN`, plus resumable program execution for `INPUT` and `BREAK`.
+
+Implementation notes:
+
+- `src/stories/Apple2Basic.stories.tsx` wires `RetroScreen` to the Apple session and powers both the interactive story and the deterministic capture/demo variants.
+- `src/stories/apple2-basic/apple2-basic-shell-session.ts` manages uppercase input, line editing, transcript updates, prompt switching, and asynchronous runner scheduling.
+- `src/stories/apple2-basic/apple2-basic-parser.ts` parses immediate commands, numbered program lines, and the supported BASIC statement/expression subset.
+- `src/stories/apple2-basic/apple2-basic-interpreter.ts` compiles stored lines into a resumable runner so `RUN`, `INPUT`, `GOTO`, `IF ... THEN`, `END`, and `CTRL+C` / `BREAK` behave like a shell instead of a static transcript.
 
 ## Display Buffer And Follow Mode
 
