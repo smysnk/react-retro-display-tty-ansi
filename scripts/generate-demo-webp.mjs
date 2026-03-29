@@ -37,6 +37,14 @@ const terminalModeMp4File = resolve(
 );
 const promptModeWebpFile = resolve(outputDir, "react-retro-display-tty-ansi-ascii-prompt-loop.webp");
 const promptModeMp4File = resolve(outputDir, "react-retro-display-tty-ansi-ascii-prompt-loop.mp4");
+const apple2Dos33WebpFile = resolve(
+  outputDir,
+  "react-retro-display-tty-ansi-ascii-apple2-dos33.webp"
+);
+const apple2Dos33Mp4File = resolve(
+  outputDir,
+  "react-retro-display-tty-ansi-ascii-apple2-dos33.mp4"
+);
 const whiteRabbitSignalWebpFile = resolve(
   outputDir,
   "react-retro-display-tty-ansi-ascii-white-rabbit-signal.webp"
@@ -335,6 +343,25 @@ const captures = [
     outputs: [
       { type: "webp", file: promptModeWebpFile },
       { type: "mp4", file: promptModeMp4File }
+    ]
+  },
+  {
+    name: "apple ii dos 3.3",
+    storyId: "retroscreen-capture--apple-2-dos-33-demo",
+    selector: "[data-demo-capture='apple2-dos33']",
+    waitMs: 260,
+    fps: 12,
+    durationMs: 34000,
+    webp: {
+      quality: 62,
+      method: 5,
+      keyframeMin: 9,
+      keyframeMax: 21,
+      maxFrames: 72
+    },
+    outputs: [
+      { type: "webp", file: apple2Dos33WebpFile },
+      { type: "mp4", file: apple2Dos33Mp4File }
     ]
   },
   {

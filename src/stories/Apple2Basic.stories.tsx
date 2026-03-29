@@ -347,6 +347,31 @@ export function Apple2BasicDemoStory() {
   );
 }
 
+export function Apple2Dos33DemoStory() {
+  return (
+    <CaptureStage captureId="apple2-dos33" maxWidth={APPLE2_DOS33_STAGE_MAX_WIDTH}>
+      <Apple2BasicShellSurface
+        bootLines={apple2Dos33BootLines}
+        rows={APPLE2_DOS33_ROWS}
+        cols={APPLE2_DOS33_COLS}
+        scriptedSteps={apple2Dos33BootPromptScript}
+        screenColor={APPLE2_DOS33_COLOR}
+        displayColorMode="phosphor-ice"
+        displayLayoutMode="fit-width"
+        displayFontSizingMode="fit-cols"
+        displayPadding={APPLE2_DOS33_DISPLAY_PADDING}
+        displayFontScale={1.04}
+        displayRowScale={1}
+        displayScanlines
+        disableCellRowScale
+        focusGlow={false}
+        screenClassName="sb-apple2-screen sb-apple2-dos33-screen"
+        screenStyle={APPLE2_DOS33_SCREEN_STYLE}
+      />
+    </CaptureStage>
+  );
+}
+
 export function Apple2Dos33BootPromptStory() {
   return (
     <StoryShell

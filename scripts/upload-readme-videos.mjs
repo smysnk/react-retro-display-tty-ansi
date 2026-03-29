@@ -31,6 +31,10 @@ const videoEntries = [
     file: resolve(rootDir, "docs/assets/react-retro-display-tty-ansi-ascii-prompt-loop.mp4")
   },
   {
+    title: "Apple II DOS 3.3 Demo",
+    file: resolve(rootDir, "docs/assets/react-retro-display-tty-ansi-ascii-apple2-dos33.mp4")
+  },
+  {
     title: "White Rabbit Signal Demo",
     file: resolve(rootDir, "docs/assets/react-retro-display-tty-ansi-ascii-white-rabbit-signal.mp4")
   },

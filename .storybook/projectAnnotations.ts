@@ -62,6 +62,7 @@ export const projectAnnotations: Preview = {
             "Capture",
             [
               "Docs",
+              "Apple II DOS 3.3",
               "Apple II BASIC",
               "Midjourney Galaxy",
               "Bad Apple ANSI",

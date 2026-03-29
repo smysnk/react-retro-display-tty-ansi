@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { RetroScreen } from "../react/RetroScreen";
-import { Apple2BasicDemoStory } from "./Apple2Basic.stories";
+import { Apple2BasicDemoStory, Apple2Dos33DemoStory } from "./Apple2Basic.stories";
 import {
   BadAppleAnsiDemoStory,
   BadAppleAnsiGzipStreamDemoStory,
@@ -61,6 +61,11 @@ export const PromptModeDemo: Story = {
 export const Apple2BasicDemo: Story = {
   name: "Apple II BASIC",
   render: () => <Apple2BasicDemoStory />
+};
+
+export const Apple2Dos33Demo: Story = {
+  name: "Apple II DOS 3.3",
+  render: () => <Apple2Dos33DemoStory />
 };
 
 export const WhiteRabbitSignalDemo: Story = {
