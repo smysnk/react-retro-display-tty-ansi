@@ -39,6 +39,10 @@ const videoEntries = [
     file: resolve(rootDir, "docs/assets/react-retro-display-tty-ansi-ascii-matrix-code-rain.mp4")
   },
   {
+    title: "Midjourney Galaxy Demo",
+    file: resolve(rootDir, "docs/assets/react-retro-display-tty-ansi-ascii-midjourney-galaxy.mp4")
+  },
+  {
     title: "Bad Apple ANSI Demo",
     file: resolve(rootDir, "docs/assets/react-retro-display-tty-ansi-ascii-bad-apple-ansi.mp4")
   },

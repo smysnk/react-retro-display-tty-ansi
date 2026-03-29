@@ -63,6 +63,7 @@ export const projectAnnotations: Preview = {
             [
               "Docs",
               "Apple II BASIC",
+              "Midjourney Galaxy",
               "Bad Apple ANSI",
               "Bad Apple ANSI (Gzip Stream)",
               "Display Color Modes",

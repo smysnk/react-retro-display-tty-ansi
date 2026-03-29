@@ -53,6 +53,14 @@ const matrixCodeRainMp4File = resolve(
   outputDir,
   "react-retro-display-tty-ansi-ascii-matrix-code-rain.mp4"
 );
+const midjourneyGalaxyWebpFile = resolve(
+  outputDir,
+  "react-retro-display-tty-ansi-ascii-midjourney-galaxy.webp"
+);
+const midjourneyGalaxyMp4File = resolve(
+  outputDir,
+  "react-retro-display-tty-ansi-ascii-midjourney-galaxy.mp4"
+);
 const displayColorModesWebpFile = resolve(
   outputDir,
   "react-retro-display-tty-ansi-ascii-display-color-modes.webp"
@@ -358,6 +366,25 @@ const captures = [
     outputs: [
       { type: "webp", file: matrixCodeRainWebpFile },
       { type: "mp4", file: matrixCodeRainMp4File }
+    ]
+  },
+  {
+    name: "midjourney galaxy",
+    storyId: "retroscreen-capture--midjourney-galaxy-demo",
+    selector: "[data-demo-capture='midjourney-galaxy']",
+    waitMs: 280,
+    fps: 12,
+    durationMs: 36000,
+    webp: {
+      quality: 64,
+      method: 5,
+      keyframeMin: 9,
+      keyframeMax: 21,
+      maxFrames: 72
+    },
+    outputs: [
+      { type: "webp", file: midjourneyGalaxyWebpFile },
+      { type: "mp4", file: midjourneyGalaxyMp4File }
     ]
   },
   {

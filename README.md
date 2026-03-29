@@ -515,6 +515,13 @@ Reach for `ansi-classic` when you want the familiar 16-color terminal profile, o
 
 ## ANSI Art Playback
 
+The Midjourney galaxy demo uses the same `RetroScreen` cell pipeline to start from a drifting text field and pull it into a bright spiral structure.
+
+[![Midjourney Galaxy Demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi-ascii/main/docs/assets/react-retro-display-tty-ansi-ascii-midjourney-galaxy.webp)](https://github.com/user-attachments/assets/623e6b5a-e0c6-4815-9b8b-6ea1b8145469)
+
+Open it here:
+[smysnk.github.io/react-retro-display-tty-ansi-ascii/?path=/story/retroscreen--midjourney-vortex](https://smysnk.github.io/react-retro-display-tty-ansi-ascii/?path=/story/retroscreen--midjourney-vortex)
+
 Storybook now includes a dedicated `Bad Apple ANSI` demo that loads the real ANSI release,
 decodes the original IBM VGA / CP437 bytes outside the display component, and then feeds those
 bytes into the reusable `RetroScreenAnsiPlayer` wrapper. The player incrementally materializes

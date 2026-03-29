@@ -1858,7 +1858,25 @@ export function MatrixCodeRainDemoStory() {
   return <MatrixCodeRainSurface capture />;
 }
 
-function MidjourneyVortexSurface() {
+function MidjourneyVortexSurface({
+  capture = false
+}: {
+  capture?: boolean;
+}) {
+  const screen = (
+    <div className="sb-retro-midjourney-vortex-frame">
+      <MidjourneyVortexScreen />
+    </div>
+  );
+
+  if (capture) {
+    return (
+      <CaptureStage captureId="midjourney-galaxy" maxWidth={1560}>
+        {screen}
+      </CaptureStage>
+    );
+  }
+
   return (
     <StoryShell
       kicker="Cinematic Morph"
@@ -1872,9 +1890,7 @@ function MidjourneyVortexSurface() {
       }
     >
       <Stage maxWidth={1560}>
-        <div className="sb-retro-midjourney-vortex-frame">
-          <MidjourneyVortexScreen />
-        </div>
+        {screen}
       </Stage>
     </StoryShell>
   );
@@ -1882,6 +1898,10 @@ function MidjourneyVortexSurface() {
 
 function MidjourneyVortexStory() {
   return <MidjourneyVortexSurface />;
+}
+
+export function MidjourneyGalaxyDemoStory() {
+  return <MidjourneyVortexSurface capture />;
 }
 
 export function TerminalModeDemoStory() {

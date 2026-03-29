@@ -10,6 +10,7 @@ import {
   LightDarkHostsDemoStory,
   LiveTtyTerminalBridgeDemoStory,
   MatrixCodeRainDemoStory,
+  MidjourneyGalaxyDemoStory,
   PromptModeDemoStory,
   QuietOutputDemoStory,
   TerminalModeDemoStory,
@@ -70,6 +71,11 @@ export const WhiteRabbitSignalDemo: Story = {
 export const MatrixCodeRainDemo: Story = {
   name: "Matrix Code Rain",
   render: () => <MatrixCodeRainDemoStory />
+};
+
+export const MidjourneyGalaxyDemo: Story = {
+  name: "Midjourney Galaxy",
+  render: () => <MidjourneyGalaxyDemoStory />
 };
 
 export const BadAppleAnsi: Story = {
