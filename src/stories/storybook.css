@@ -153,6 +153,16 @@ body {
   min-height: 320px;
 }
 
+.sb-retro-docs-story-preview-host > .sb-retro-page {
+  min-height: auto;
+  padding-top: 32px;
+  padding-bottom: 32px;
+}
+
+.sb-retro-docs-story-preview-host > .sb-retro-page .sb-retro-shell {
+  gap: 16px;
+}
+
 .sb-retro-docs-story-preview-host[data-mounted="false"] {
   display: grid;
 }
