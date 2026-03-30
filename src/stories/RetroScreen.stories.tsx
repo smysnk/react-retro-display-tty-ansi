@@ -24,6 +24,7 @@ import {
   type BadAppleGzipAnsiAsset
 } from "./bad-apple-gzip-ansi";
 import { AnsiGalleryViewer } from "./ansi-gallery";
+import { useDocsStoryPreviewMode } from "./docs-preview-mode";
 import { MatrixCodeRainScreen } from "./matrix-code-rain";
 import { MidjourneyVortexScreen } from "./midjourney-vortex";
 
@@ -1274,9 +1275,11 @@ const playTraceScenario = (
 };
 
 function StoryShell({ kicker, title, copy, children, footer }: StoryShellProps) {
+  const docsPreviewMode = useDocsStoryPreviewMode();
+
   return (
-    <div className="sb-retro-page">
-      <div className="sb-retro-shell">
+    <div className={`sb-retro-page${docsPreviewMode ? " sb-retro-page--docs-preview" : ""}`}>
+      <div className={`sb-retro-shell${docsPreviewMode ? " sb-retro-shell--docs-preview" : ""}`}>
         <div className="sb-retro-heading">
           <span className="sb-retro-kicker">{kicker}</span>
           <h1 className="sb-retro-title">{title}</h1>

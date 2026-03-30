@@ -35,6 +35,13 @@
   color: #f2efe8;
 }
 
+.sb-retro-page--docs-preview {
+  min-height: auto;
+  padding-top: 32px;
+  padding-bottom: 32px;
+  background: transparent;
+}
+
 .sbdocs,
 .sbdocs-wrapper,
 .sbdocs-content,
@@ -153,16 +160,6 @@ body {
   min-height: 320px;
 }
 
-.sb-retro-docs-story-preview-host > .sb-retro-page {
-  min-height: auto;
-  padding-top: 32px;
-  padding-bottom: 32px;
-}
-
-.sb-retro-docs-story-preview-host > .sb-retro-page .sb-retro-shell {
-  gap: 16px;
-}
-
 .sb-retro-docs-story-preview-host[data-mounted="false"] {
   display: grid;
 }
@@ -226,6 +223,10 @@ body {
   display: grid;
   gap: 20px;
   justify-items: center;
+}
+
+.sb-retro-shell--docs-preview {
+  gap: 16px;
 }
 
 .sb-retro-shell--capture {

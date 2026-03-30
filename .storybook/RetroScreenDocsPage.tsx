@@ -5,6 +5,7 @@ import * as RetroScreenStories from "../src/stories/RetroScreen.stories";
 import * as AnsiDisplayBufferStories from "../src/stories/AnsiDisplayBuffer.stories";
 import * as EditorStories from "../src/stories/Editor.stories";
 import * as ResizeResponsiveStories from "../src/stories/ResizeResponsive.stories";
+import { DocsStoryPreviewProvider } from "../src/stories/docs-preview-mode";
 import { projectAnnotations } from "./projectAnnotations";
 
 const GITHUB_REPOSITORY_URL = "https://github.com/smysnk/react-retro-display-tty-ansi";
@@ -140,7 +141,9 @@ function LazyStoryPreview({
       ref={hostRef}
     >
       {mounted ? (
-        <Story />
+        <DocsStoryPreviewProvider value>
+          <Story />
+        </DocsStoryPreviewProvider>
       ) : (
         <div className="sb-retro-docs-story-placeholder">
           <span>Loading preview when visible…</span>
