@@ -69,6 +69,22 @@ describe("RetroScreenAnsiParser", () => {
     ]);
   });
 
+  it("dispatches phase 2 addressing, erase-char, and repeat-char CSI sequences", () => {
+    const handlers = createHandlers();
+    const parser = new RetroScreenAnsiParser(handlers);
+
+    parser.feed("\u001b[2E\u001b[3F\u001b[4G\u001b[5d\u001b[6X\u001b[7b");
+
+    expect(handlers.command.mock.calls.map(([command]) => command)).toEqual([
+      { type: "cursorNextLine", count: 2 },
+      { type: "cursorPreviousLine", count: 3 },
+      { type: "cursorHorizontalAbsolute", col: 4 },
+      { type: "cursorVerticalAbsolute", row: 5 },
+      { type: "eraseChars", count: 6 },
+      { type: "repeatPrecedingCharacter", count: 7 }
+    ]);
+  });
+
   it("keeps partial escape sequences across multiple writes", () => {
     const handlers = createHandlers();
     const parser = new RetroScreenAnsiParser(handlers);

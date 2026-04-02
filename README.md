@@ -671,6 +671,8 @@ controller.write(
 The same trace fixtures used in Storybook are also exercised in the terminal verification layers:
 
 ```bash
+yarn check:ansi-display-report
+yarn test:e2e:ansi-display
 yarn test:conformance
 yarn test:tty
 yarn test:e2e:tty
@@ -679,6 +681,11 @@ yarn test:e2e
 
 The TTY-specific checks skip themselves automatically in environments where `node-pty` cannot
 allocate a TTY session, but they run normally on TTY-capable developer machines and CI runners.
+
+The authoritative display-facing ANSI ledger lives in
+[`docs/ansi-display-support-matrix.md`](./docs/ansi-display-support-matrix.md). It is generated
+from the conformance matrix source and verified in CI so the published status stays in sync with
+the implementation.
 
 ## Ease Of Integration
 

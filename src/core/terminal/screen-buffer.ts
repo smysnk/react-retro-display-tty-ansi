@@ -38,6 +38,14 @@ const trimLine = (line: RetroScreenCell[]) =>
 const cloneGrid = (grid: RetroScreenCell[][]) =>
   grid.map((line) => line.map((cell) => createCell(cell.char, cell.style)));
 
+const createEraseStyle = (style: RetroScreenCellStyle): RetroScreenCellStyle => ({
+  ...cloneStyle(style),
+  foreground: {
+    mode: "default",
+    value: 0
+  }
+});
+
 const defaultSavedCursor = () => ({
   row: 0,
   col: 0
@@ -64,6 +72,7 @@ type RetroScreenBufferSurfaceState = {
     col: number;
   };
   currentStyle: RetroScreenCellStyle;
+  lastPrintedCharacter: string | null;
   pendingWrap: boolean;
   scrollRegionTop: number;
   scrollRegionBottom: number;
@@ -80,6 +89,7 @@ export class RetroScreenScreenBuffer {
   private cursorState: RetroScreenCursorState;
   private savedCursorState = defaultSavedCursor();
   private currentStyle: RetroScreenCellStyle = cloneStyle(DEFAULT_CELL_STYLE);
+  private lastPrintedCharacter: string | null = null;
   private terminalModes: RetroScreenTerminalModes = { ...DEFAULT_TERMINAL_MODES };
   private pendingWrap = false;
   private scrollRegionTop = 0;
@@ -105,6 +115,7 @@ export class RetroScreenScreenBuffer {
     this.cursorState = { ...this.primarySurface.cursorState };
     this.savedCursorState = { ...this.primarySurface.savedCursorState };
     this.currentStyle = cloneStyle(this.primarySurface.currentStyle);
+    this.lastPrintedCharacter = this.primarySurface.lastPrintedCharacter;
     this.pendingWrap = this.primarySurface.pendingWrap;
     this.scrollRegionTop = this.primarySurface.scrollRegionTop;
     this.scrollRegionBottom = this.primarySurface.scrollRegionBottom;
@@ -136,6 +147,7 @@ export class RetroScreenScreenBuffer {
     this.loadSurface("primary");
     this.currentStyle = cloneStyle(DEFAULT_CELL_STYLE);
     this.savedCursorState = defaultSavedCursor();
+    this.lastPrintedCharacter = null;
     this.terminalModes = { ...DEFAULT_TERMINAL_MODES };
     this.parser.reset();
   }
@@ -225,6 +237,18 @@ export class RetroScreenScreenBuffer {
       case "cursorBackward":
         this.cursorBackward(command.count);
         return;
+      case "cursorHorizontalAbsolute":
+        this.cursorHorizontalAbsolute(command.col);
+        return;
+      case "cursorVerticalAbsolute":
+        this.cursorVerticalAbsolute(command.row);
+        return;
+      case "cursorNextLine":
+        this.cursorNextLine(command.count);
+        return;
+      case "cursorPreviousLine":
+        this.cursorPreviousLine(command.count);
+        return;
       case "cursorPosition":
         this.cursorPosition(command.row, command.col);
         return;
@@ -233,6 +257,12 @@ export class RetroScreenScreenBuffer {
         return;
       case "deleteChars":
         this.deleteChars(command.count);
+        return;
+      case "eraseChars":
+        this.eraseChars(command.count);
+        return;
+      case "repeatPrecedingCharacter":
+        this.repeatPrecedingCharacter(command.count);
         return;
       case "insertLines":
         this.insertLines(command.count);
@@ -299,6 +329,7 @@ export class RetroScreenScreenBuffer {
     }
 
     this.grid[this.cursorState.row][targetCol] = createCell(character, this.currentStyle);
+    this.lastPrintedCharacter = character;
 
     if (targetCol === this.cols - 1) {
       this.cursorState.col = this.cols;
@@ -343,16 +374,33 @@ export class RetroScreenScreenBuffer {
     this.cursorState.col = Math.max(0, this.cursorState.col - Math.max(1, count));
   }
 
+  private cursorHorizontalAbsolute(col: number) {
+    this.normalizeCursorForMovement();
+    this.pendingWrap = false;
+    this.cursorState.col = Math.min(this.cols - 1, Math.max(0, Math.max(1, col) - 1));
+  }
+
+  private cursorVerticalAbsolute(row: number) {
+    this.normalizeCursorForMovement();
+    this.pendingWrap = false;
+    this.moveCursorTo(this.resolveAbsoluteRow(row), this.cursorState.col);
+  }
+
+  private cursorNextLine(count: number) {
+    this.cursorDown(count);
+    this.carriageReturn();
+  }
+
+  private cursorPreviousLine(count: number) {
+    this.cursorUp(count);
+    this.carriageReturn();
+  }
+
   private cursorPosition(row: number, col: number) {
     this.pendingWrap = false;
     const targetRow = Math.max(1, row);
     const targetCol = Math.max(1, col);
-    const resolvedRow = this.terminalModes.originMode
-      ? Math.min(
-          this.scrollRegionBottom,
-          Math.max(this.scrollRegionTop, this.scrollRegionTop + targetRow - 1)
-        )
-      : Math.min(this.rows - 1, Math.max(0, targetRow - 1));
+    const resolvedRow = this.resolveAbsoluteRow(targetRow);
 
     this.moveCursorTo(resolvedRow, Math.min(this.cols - 1, Math.max(0, targetCol - 1)));
   }
@@ -365,6 +413,32 @@ export class RetroScreenScreenBuffer {
   private deleteChars(count: number) {
     this.normalizeCursorForMovement();
     this.deleteCells(this.cursorState.row, this.cursorState.col, count);
+  }
+
+  private eraseChars(count: number) {
+    this.normalizeCursorForMovement();
+    const eraseCount = Math.min(this.cols - this.cursorState.col, Math.max(1, Math.floor(count)));
+    const eraseStyle = createEraseStyle(this.currentStyle);
+
+    for (
+      let col = this.cursorState.col;
+      col < Math.min(this.cols, this.cursorState.col + eraseCount);
+      col += 1
+    ) {
+      this.grid[this.cursorState.row][col] = createCell(" ", eraseStyle);
+    }
+  }
+
+  private repeatPrecedingCharacter(count: number) {
+    if (!this.lastPrintedCharacter) {
+      return;
+    }
+
+    const repeatCount = Math.max(1, Math.floor(count));
+
+    for (let index = 0; index < repeatCount; index += 1) {
+      this.writePrintable(this.lastPrintedCharacter);
+    }
   }
 
   private insertLines(count: number) {
@@ -447,36 +521,39 @@ export class RetroScreenScreenBuffer {
 
   private eraseInLine(mode: number) {
     const row = this.cursorState.row;
+    const eraseStyle = createEraseStyle(this.currentStyle);
 
     switch (mode) {
       case 1:
         for (let col = 0; col <= this.cursorState.col; col += 1) {
-          this.grid[row][col] = createCell(" ", this.currentStyle);
+          this.grid[row][col] = createCell(" ", eraseStyle);
         }
         return;
       case 2:
-        this.grid[row] = createBlankLine(this.cols, this.currentStyle);
+        this.grid[row] = createBlankLine(this.cols, eraseStyle);
         return;
       default:
         for (let col = this.cursorState.col; col < this.cols; col += 1) {
-          this.grid[row][col] = createCell(" ", this.currentStyle);
+          this.grid[row][col] = createCell(" ", eraseStyle);
         }
     }
   }
 
   private eraseInDisplay(mode: number) {
+    const eraseStyle = createEraseStyle(this.currentStyle);
+
     switch (mode) {
       case 1:
         for (let row = 0; row < this.cursorState.row; row += 1) {
-          this.grid[row] = createBlankLine(this.cols, this.currentStyle);
+          this.grid[row] = createBlankLine(this.cols, eraseStyle);
         }
         for (let col = 0; col <= this.cursorState.col; col += 1) {
-          this.grid[this.cursorState.row][col] = createCell(" ", this.currentStyle);
+          this.grid[this.cursorState.row][col] = createCell(" ", eraseStyle);
         }
         return;
       case 2:
         for (let row = 0; row < this.rows; row += 1) {
-          this.grid[row] = createBlankLine(this.cols, this.currentStyle);
+          this.grid[row] = createBlankLine(this.cols, eraseStyle);
         }
         return;
       case 3:
@@ -485,10 +562,10 @@ export class RetroScreenScreenBuffer {
         return;
       default:
         for (let col = this.cursorState.col; col < this.cols; col += 1) {
-          this.grid[this.cursorState.row][col] = createCell(" ", this.currentStyle);
+          this.grid[this.cursorState.row][col] = createCell(" ", eraseStyle);
         }
         for (let row = this.cursorState.row + 1; row < this.rows; row += 1) {
-          this.grid[row] = createBlankLine(this.cols, this.currentStyle);
+          this.grid[row] = createBlankLine(this.cols, eraseStyle);
         }
     }
   }
@@ -651,6 +728,17 @@ export class RetroScreenScreenBuffer {
     this.cursorState.col = 0;
   }
 
+  private resolveAbsoluteRow(row: number) {
+    const targetRow = Math.max(1, Math.floor(row));
+
+    return this.terminalModes.originMode
+      ? Math.min(
+          this.scrollRegionBottom,
+          Math.max(this.scrollRegionTop, this.scrollRegionTop + targetRow - 1)
+        )
+      : Math.min(this.rows - 1, Math.max(0, targetRow - 1));
+  }
+
   private isCursorWithinScrollRegion() {
     return (
       this.cursorState.row >= this.scrollRegionTop && this.cursorState.row <= this.scrollRegionBottom
@@ -697,6 +785,10 @@ export class RetroScreenScreenBuffer {
   ) {
     const shiftCount = Math.min(bottom - top + 1, Math.max(1, Math.floor(count)));
 
+    if (this.savedCursorState.row >= top && this.savedCursorState.row <= bottom) {
+      this.savedCursorState.row = Math.max(top, this.savedCursorState.row - shiftCount);
+    }
+
     for (let index = 0; index < shiftCount; index += 1) {
       const shifted = this.grid[top];
 
@@ -718,6 +810,10 @@ export class RetroScreenScreenBuffer {
 
   private shiftLinesDown(top: number, bottom: number, count: number) {
     const shiftCount = Math.min(bottom - top + 1, Math.max(1, Math.floor(count)));
+
+    if (this.savedCursorState.row >= top && this.savedCursorState.row <= bottom) {
+      this.savedCursorState.row = Math.min(bottom, this.savedCursorState.row + shiftCount);
+    }
 
     for (let index = 0; index < shiftCount; index += 1) {
       for (let row = bottom; row > top; row -= 1) {
@@ -748,6 +844,7 @@ export class RetroScreenScreenBuffer {
       },
       savedCursorState: defaultSavedCursor(),
       currentStyle: cloneStyle(currentStyle),
+      lastPrintedCharacter: null,
       pendingWrap: false,
       scrollRegionTop: 0,
       scrollRegionBottom: this.rows - 1
@@ -765,6 +862,7 @@ export class RetroScreenScreenBuffer {
     surface.cursorState = { ...this.cursorState };
     surface.savedCursorState = { ...this.savedCursorState };
     surface.currentStyle = cloneStyle(this.currentStyle);
+    surface.lastPrintedCharacter = this.lastPrintedCharacter;
     surface.pendingWrap = this.pendingWrap;
     surface.scrollRegionTop = this.scrollRegionTop;
     surface.scrollRegionBottom = this.scrollRegionBottom;
@@ -778,6 +876,7 @@ export class RetroScreenScreenBuffer {
     this.cursorState = { ...surface.cursorState };
     this.savedCursorState = { ...surface.savedCursorState };
     this.currentStyle = cloneStyle(surface.currentStyle);
+    this.lastPrintedCharacter = surface.lastPrintedCharacter;
     this.pendingWrap = surface.pendingWrap;
     this.scrollRegionTop = surface.scrollRegionTop;
     this.scrollRegionBottom = surface.scrollRegionBottom;

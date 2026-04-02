@@ -13,6 +13,8 @@ const NPM_PACKAGE_URL = "https://www.npmjs.com/package/react-retro-display-tty-a
 const STORYBOOK_URL = "https://smysnk.github.io/react-retro-display-tty-ansi/";
 const CI_WORKFLOW_URL =
   "https://github.com/smysnk/react-retro-display-tty-ansi-ascii/actions/workflows/cicd.yml";
+const ANSI_DISPLAY_SUPPORT_REPORT_URL =
+  "https://github.com/smysnk/react-retro-display-tty-ansi-ascii/blob/main/docs/ansi-display-support-matrix.md";
 const PUBLISHED_BADGE_BASE_URL =
   "https://smysnk.github.io/react-retro-display-tty-ansi-ascii/badges";
 const GITHUB_BADGE_URL =
@@ -195,6 +197,10 @@ export function RetroScreenDocsPage() {
         <div className="sb-retro-docs-link-copy">
           <a href={STORYBOOK_URL} target="_blank" rel="noreferrer">
             Published Storybook
+          </a>
+          <span aria-hidden="true">·</span>
+          <a href={ANSI_DISPLAY_SUPPORT_REPORT_URL} target="_blank" rel="noreferrer">
+            ANSI Display Support Matrix
           </a>
           <span aria-hidden="true">·</span>
           <a href={CI_WORKFLOW_URL} target="_blank" rel="noreferrer">

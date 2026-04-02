@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ansiOracleFixtures } from "./ansi-sequence-matrix";
+import { editorRedrawTraceFixture } from "./fixtures/real-world/editor-redraw.trace.fixture";
 import { pendingWrapLastColumnFixture } from "./fixtures/pending-wrap-last-column.fixture";
 import { progressRewriteTraceFixture } from "./fixtures/real-world/progress-rewrite.trace.fixture";
 import { shellSessionTraceFixture } from "./fixtures/real-world/shell-session.trace.fixture";
@@ -12,7 +13,8 @@ const fixtures = [
   ...ansiOracleFixtures,
   shellSessionTraceFixture,
   progressRewriteTraceFixture,
-  statusPaneTraceFixture
+  statusPaneTraceFixture,
+  editorRedrawTraceFixture
 ];
 
 describe("terminal conformance oracle", () => {

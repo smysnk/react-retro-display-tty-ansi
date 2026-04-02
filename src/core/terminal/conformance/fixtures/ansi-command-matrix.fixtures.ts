@@ -71,6 +71,46 @@ export const cursorPositionFixture: RetroScreenTerminalFixture = {
   chunkModes: ["fixture", "joined", "byte"]
 };
 
+export const cursorHorizontalAbsoluteFixture: RetroScreenTerminalFixture = {
+  name: "cursor-horizontal-absolute",
+  description: "CSI G should move the cursor to an absolute 1-based column in the current row.",
+  classification: "implemented",
+  rows: 1,
+  cols: 6,
+  chunks: ["ABCDE\u001b[2GZ"],
+  chunkModes: ["fixture", "joined", "byte"]
+};
+
+export const cursorVerticalAbsoluteFixture: RetroScreenTerminalFixture = {
+  name: "cursor-vertical-absolute",
+  description: "CSI d should move the cursor to an absolute 1-based row while preserving the column.",
+  classification: "implemented",
+  rows: 3,
+  cols: 6,
+  chunks: ["ABCD\u001b[3dZ"],
+  chunkModes: ["fixture", "joined", "byte"]
+};
+
+export const cursorNextLineFixture: RetroScreenTerminalFixture = {
+  name: "cursor-next-line",
+  description: "CSI E should move down by rows and return to the first column.",
+  classification: "implemented",
+  rows: 3,
+  cols: 6,
+  chunks: ["AB\u001b[2EZ"],
+  chunkModes: ["fixture", "joined", "byte"]
+};
+
+export const cursorPreviousLineFixture: RetroScreenTerminalFixture = {
+  name: "cursor-previous-line",
+  description: "CSI F should move up by rows and return to the first column.",
+  classification: "implemented",
+  rows: 3,
+  cols: 6,
+  chunks: ["AB\r\nCD\u001b[1FZ"],
+  chunkModes: ["fixture", "joined", "byte"]
+};
+
 export const eraseInLineFixture: RetroScreenTerminalFixture = {
   name: "erase-in-line",
   description: "CSI K should erase the active row from the cursor through the end of the line.",
@@ -78,6 +118,16 @@ export const eraseInLineFixture: RetroScreenTerminalFixture = {
   rows: 1,
   cols: 6,
   chunks: ["HELLO\u001b[1D\u001b[K"],
+  chunkModes: ["fixture", "joined", "byte"]
+};
+
+export const eraseCharsFixture: RetroScreenTerminalFixture = {
+  name: "erase-chars",
+  description: "CSI X should erase characters in place without moving the cursor.",
+  classification: "implemented",
+  rows: 1,
+  cols: 6,
+  chunks: ["HELLO\u001b[3D\u001b[2X"],
   chunkModes: ["fixture", "joined", "byte"]
 };
 
@@ -98,6 +148,16 @@ export const ansiSaveRestoreFixture: RetroScreenTerminalFixture = {
   rows: 3,
   cols: 6,
   chunks: ["AB\u001b[s\u001b[3;3HZ\u001b[uC"],
+  chunkModes: ["fixture", "joined", "byte"]
+};
+
+export const repeatPrecedingCharacterFixture: RetroScreenTerminalFixture = {
+  name: "repeat-preceding-character",
+  description: "CSI b should repeat the most recent printable character.",
+  classification: "implemented",
+  rows: 1,
+  cols: 6,
+  chunks: ["A\u001b[3b"],
   chunkModes: ["fixture", "joined", "byte"]
 };
 
@@ -130,9 +190,15 @@ export const ansiCommandMatrixFixtures = [
   cursorDownFixture,
   cursorForwardFixture,
   cursorPositionFixture,
+  cursorHorizontalAbsoluteFixture,
+  cursorVerticalAbsoluteFixture,
+  cursorNextLineFixture,
+  cursorPreviousLineFixture,
   eraseInLineFixture,
+  eraseCharsFixture,
   eraseInDisplayFixture,
   ansiSaveRestoreFixture,
+  repeatPrecedingCharacterFixture,
   resetToInitialStateFixture,
   sgrAttributesFixture
 ] satisfies RetroScreenTerminalFixture[];

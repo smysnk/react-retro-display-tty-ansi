@@ -213,6 +213,15 @@ export class RetroScreenAnsiParser {
       case "D":
         this.handlers.command({ type: "cursorBackward", count: firstParam(params) });
         return;
+      case "E":
+        this.handlers.command({ type: "cursorNextLine", count: firstParam(params) });
+        return;
+      case "F":
+        this.handlers.command({ type: "cursorPreviousLine", count: firstParam(params) });
+        return;
+      case "G":
+        this.handlers.command({ type: "cursorHorizontalAbsolute", col: firstParam(params) });
+        return;
       case "L":
         this.handlers.command({ type: "insertLines", count: firstParam(params) });
         return;
@@ -235,6 +244,15 @@ export class RetroScreenAnsiParser {
           row: params[0] || 1,
           col: params[1] || 1
         });
+        return;
+      case "X":
+        this.handlers.command({ type: "eraseChars", count: firstParam(params) });
+        return;
+      case "b":
+        this.handlers.command({ type: "repeatPrecedingCharacter", count: firstParam(params) });
+        return;
+      case "d":
+        this.handlers.command({ type: "cursorVerticalAbsolute", row: firstParam(params) });
         return;
       case "r":
         this.handlers.command({

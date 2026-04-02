@@ -177,6 +177,24 @@ describe("RetroScreenScreenBuffer", () => {
     });
   });
 
+  it("supports CHA, VPA, CNL, and CPL cursor addressing commands", () => {
+    const buffer = new RetroScreenScreenBuffer({ rows: 4, cols: 6 });
+
+    buffer.write("ABCD");
+    buffer.write("\u001b[2GZ");
+    buffer.write("\u001b[4dQ");
+    buffer.write("\u001b[1FJ");
+    buffer.write("\u001b[2EK");
+
+    expect(buffer.getSnapshot()).toMatchObject({
+      rawLines: ["AZCD  ", "      ", "J     ", "K Q   "],
+      cursor: {
+        row: 3,
+        col: 1
+      }
+    });
+  });
+
   it("supports insert and delete character operations", () => {
     const buffer = new RetroScreenScreenBuffer({ rows: 2, cols: 7 });
 
@@ -190,6 +208,36 @@ describe("RetroScreenScreenBuffer", () => {
       cursor: {
         row: 0,
         col: 3
+      }
+    });
+  });
+
+  it("supports ECH without moving the cursor", () => {
+    const buffer = new RetroScreenScreenBuffer({ rows: 2, cols: 6 });
+
+    buffer.write("HELLO");
+    buffer.write("\u001b[3D");
+    buffer.write("\u001b[2X");
+
+    expect(buffer.getSnapshot()).toMatchObject({
+      rawLines: ["HE  O ", "      "],
+      cursor: {
+        row: 0,
+        col: 2
+      }
+    });
+  });
+
+  it("supports REP using the most recent printable character", () => {
+    const buffer = new RetroScreenScreenBuffer({ rows: 2, cols: 6 });
+
+    buffer.write("A\u001b[3b");
+
+    expect(buffer.getSnapshot()).toMatchObject({
+      lines: ["AAAA", ""],
+      cursor: {
+        row: 0,
+        col: 4
       }
     });
   });
@@ -286,6 +334,25 @@ describe("RetroScreenScreenBuffer", () => {
     });
   });
 
+  it("uses default foreground with the active background when erase commands blank cells", () => {
+    const buffer = new RetroScreenScreenBuffer({ rows: 2, cols: 8 });
+
+    buffer.write("\u001b[31;44mREDROW");
+    buffer.write("\u001b[1;3H\u001b[2K");
+
+    const snapshot = buffer.getSnapshot();
+    expect(snapshot.cells[0][0].style).toMatchObject({
+      foreground: {
+        mode: "default",
+        value: 0
+      },
+      background: {
+        mode: "palette",
+        value: 4
+      }
+    });
+  });
+
   it("supports save and restore cursor", () => {
     const buffer = new RetroScreenScreenBuffer({ rows: 3, cols: 6 });
 
@@ -298,6 +365,24 @@ describe("RetroScreenScreenBuffer", () => {
 
     expect(buffer.getSnapshot()).toMatchObject({
       lines: ["ABC", "", "  Z"]
+    });
+  });
+
+  it("keeps saved cursor state aligned with scrolled content before restore", () => {
+    const buffer = new RetroScreenScreenBuffer({ rows: 2, cols: 6 });
+
+    buffer.write("ROW1\r\nROW2");
+    buffer.write("\u001b[s");
+    buffer.write("\u001b[2;2H\u001b[K");
+    buffer.write("\r\nNEXT");
+    buffer.write("\u001b[uZ");
+
+    expect(buffer.getSnapshot()).toMatchObject({
+      rawLines: ["R   Z ", "NEXT  "],
+      cursor: {
+        row: 0,
+        col: 5
+      }
     });
   });
 

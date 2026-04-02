@@ -65,7 +65,7 @@ test("live TTY bridge story can drive a real TTY session end to end", {
     }
   });
 
-  await harness.gotoStory("retroscreen--live-tty-terminal-bridge");
+  await harness.gotoStory("retroscreen-capture--live-tty-terminal-bridge-demo");
   await page().waitForSelector('.retro-screen[data-session-state="open"]');
   await waitForTerminalText("READY");
 
