@@ -37,6 +37,20 @@ const firstParam = (params: number[], fallback = 1) => {
   return value && value > 0 ? value : fallback;
 };
 
+const isIgnoredControlCharacter = (character: string) => {
+  const codePoint = character.codePointAt(0);
+
+  if (typeof codePoint !== "number") {
+    return false;
+  }
+
+  return (
+    (codePoint >= 0x00 && codePoint < 0x20) ||
+    codePoint === 0x7f ||
+    (codePoint >= 0x80 && codePoint <= 0x9f)
+  );
+};
+
 export class RetroScreenAnsiParser {
   private state: ParserState = "text";
   private escIntermediateBuffer = "";
@@ -99,6 +113,10 @@ export class RetroScreenAnsiParser {
         this.handlers.command({ type: "bell" });
         return;
       default:
+        if (isIgnoredControlCharacter(character)) {
+          return;
+        }
+
         this.handlers.command({ type: "print", char: character });
     }
   }

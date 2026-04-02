@@ -2,6 +2,7 @@ import { RetroScreenAnsiParser } from "./ansi-parser";
 import type { RetroScreenTerminalCommand } from "./commands";
 import {
   applySgrParameters,
+  cloneColor,
   cloneStyle,
   DEFAULT_CELL_STYLE
 } from "./sgr";
@@ -19,31 +20,47 @@ import type {
 
 const clampDimension = (value: number) => Math.max(1, Math.floor(value) || 1);
 
-const createCell = (character: string, style: RetroScreenCellStyle): RetroScreenCell => ({
+const createCell = (
+  character: string,
+  style: RetroScreenCellStyle,
+  options?: { written?: boolean }
+): RetroScreenCell => ({
   char: character,
-  style: cloneStyle(style)
+  style: cloneStyle(style),
+  written: options?.written ?? false
 });
 
-const cloneCell = (cell: RetroScreenCell): RetroScreenCell => createCell(cell.char, cell.style);
+const cloneCell = (cell: RetroScreenCell): RetroScreenCell =>
+  createCell(cell.char, cell.style, { written: cell.written ?? false });
 
 const createBlankLine = (cols: number, style: RetroScreenCellStyle = DEFAULT_CELL_STYLE) =>
   Array.from({ length: cols }, () => createCell(" ", style));
 
-const trimLine = (line: RetroScreenCell[]) =>
-  line
-    .map((cell) => cell.char)
-    .join("")
-    .replace(/\s+$/u, "");
+const trimLine = (line: RetroScreenCell[]) => {
+  let lastVisibleIndex = -1;
 
-const cloneGrid = (grid: RetroScreenCell[][]) =>
-  grid.map((line) => line.map((cell) => createCell(cell.char, cell.style)));
+  for (let index = 0; index < line.length; index += 1) {
+    const cell = line[index];
+    if (!cell) {
+      continue;
+    }
+
+    if (cell.char !== " " || cell.written) {
+      lastVisibleIndex = index;
+    }
+  }
+
+  return line
+    .slice(0, lastVisibleIndex + 1)
+    .map((cell) => cell.char)
+    .join("");
+};
+
+const cloneGrid = (grid: RetroScreenCell[][]) => grid.map((line) => line.map((cell) => cloneCell(cell)));
 
 const createEraseStyle = (style: RetroScreenCellStyle): RetroScreenCellStyle => ({
-  ...cloneStyle(style),
-  foreground: {
-    mode: "default",
-    value: 0
-  }
+  ...cloneStyle(DEFAULT_CELL_STYLE),
+  background: cloneColor(style.background)
 });
 
 const defaultSavedCursor = () => ({
@@ -221,7 +238,7 @@ export class RetroScreenScreenBuffer {
         this.insertTab();
         return;
       case "formFeed":
-        this.clear();
+        this.lineFeed();
         return;
       case "bell":
         return;
@@ -328,7 +345,9 @@ export class RetroScreenScreenBuffer {
       this.insertBlankCells(this.cursorState.row, targetCol, 1);
     }
 
-    this.grid[this.cursorState.row][targetCol] = createCell(character, this.currentStyle);
+    this.grid[this.cursorState.row][targetCol] = createCell(character, this.currentStyle, {
+      written: true
+    });
     this.lastPrintedCharacter = character;
 
     if (targetCol === this.cols - 1) {
@@ -480,20 +499,28 @@ export class RetroScreenScreenBuffer {
     this.moveCursorHome();
   }
 
-  private lineFeed() {
-    if (this.pendingWrap || this.cursorState.col >= this.cols) {
+  private lineFeed(options?: { preserveFullWidthEraseStyle?: boolean }) {
+    const hadWrappedCursor = this.pendingWrap || this.cursorState.col >= this.cols;
+
+    if (hadWrappedCursor) {
       this.cursorState.col = Math.max(0, this.cols - 1);
       this.pendingWrap = false;
     }
 
     if (this.isCursorWithinScrollRegion()) {
       if (this.cursorState.row === this.scrollRegionBottom) {
+        const preservedCol = this.cursorState.col;
         this.shiftLinesUp(this.scrollRegionTop, this.scrollRegionBottom, 1, {
           captureScrollback:
             !this.terminalModes.alternateScreenBufferMode &&
             this.scrollRegionTop === 0 &&
             this.scrollRegionBottom === this.rows - 1
         });
+        if (options?.preserveFullWidthEraseStyle || hadWrappedCursor) {
+          this.paintScrolledInLineFeedPrefix(this.scrollRegionBottom, this.cols);
+        } else {
+          this.paintScrolledInLineFeedPrefix(this.scrollRegionBottom, preservedCol);
+        }
         return;
       }
 
@@ -660,9 +687,7 @@ export class RetroScreenScreenBuffer {
             break;
           case 7:
             this.terminalModes.wraparoundMode = enabled;
-            if (!enabled) {
-              this.pendingWrap = false;
-            }
+            this.pendingWrap = enabled ? this.cursorState.col >= this.cols : false;
             break;
           case 25:
             this.setCursorVisible(enabled);
@@ -706,7 +731,7 @@ export class RetroScreenScreenBuffer {
   private prepareCursorForPrint() {
     if (this.pendingWrap) {
       this.carriageReturn();
-      this.lineFeed();
+      this.lineFeed({ preserveFullWidthEraseStyle: true });
       this.pendingWrap = false;
       return;
     }
@@ -747,6 +772,7 @@ export class RetroScreenScreenBuffer {
 
   private insertBlankCells(row: number, col: number, count: number) {
     const shiftCount = Math.min(this.cols - col, Math.max(1, Math.floor(count)));
+    const blankStyle = createEraseStyle(this.currentStyle);
 
     if (shiftCount <= 0) {
       return;
@@ -757,12 +783,13 @@ export class RetroScreenScreenBuffer {
     }
 
     for (let target = col; target < Math.min(this.cols, col + shiftCount); target += 1) {
-      this.grid[row][target] = createCell(" ", this.currentStyle);
+      this.grid[row][target] = createCell(" ", blankStyle);
     }
   }
 
   private deleteCells(row: number, col: number, count: number) {
     const shiftCount = Math.min(this.cols - col, Math.max(1, Math.floor(count)));
+    const blankStyle = createEraseStyle(this.currentStyle);
 
     if (shiftCount <= 0) {
       return;
@@ -773,7 +800,7 @@ export class RetroScreenScreenBuffer {
     }
 
     for (let target = this.cols - shiftCount; target < this.cols; target += 1) {
-      this.grid[row][target] = createCell(" ", this.currentStyle);
+      this.grid[row][target] = createCell(" ", blankStyle);
     }
   }
 
@@ -784,6 +811,7 @@ export class RetroScreenScreenBuffer {
     options?: { captureScrollback?: boolean }
   ) {
     const shiftCount = Math.min(bottom - top + 1, Math.max(1, Math.floor(count)));
+    const blankStyle = createEraseStyle(this.currentStyle);
 
     if (this.savedCursorState.row >= top && this.savedCursorState.row <= bottom) {
       this.savedCursorState.row = Math.max(top, this.savedCursorState.row - shiftCount);
@@ -804,12 +832,13 @@ export class RetroScreenScreenBuffer {
         this.grid[row] = this.grid[row + 1];
       }
 
-      this.grid[bottom] = createBlankLine(this.cols, this.currentStyle);
+      this.grid[bottom] = createBlankLine(this.cols, blankStyle);
     }
   }
 
   private shiftLinesDown(top: number, bottom: number, count: number) {
     const shiftCount = Math.min(bottom - top + 1, Math.max(1, Math.floor(count)));
+    const blankStyle = createEraseStyle(this.currentStyle);
 
     if (this.savedCursorState.row >= top && this.savedCursorState.row <= bottom) {
       this.savedCursorState.row = Math.min(bottom, this.savedCursorState.row + shiftCount);
@@ -820,7 +849,21 @@ export class RetroScreenScreenBuffer {
         this.grid[row] = this.grid[row - 1];
       }
 
-      this.grid[top] = createBlankLine(this.cols, this.currentStyle);
+      this.grid[top] = createBlankLine(this.cols, blankStyle);
+    }
+  }
+
+  private paintScrolledInLineFeedPrefix(row: number, preservedCol: number) {
+    const fillCount = Math.min(this.cols, Math.max(0, Math.floor(preservedCol)));
+
+    if (fillCount <= 0) {
+      return;
+    }
+
+    const fillStyle = createEraseStyle(this.currentStyle);
+
+    for (let col = 0; col < fillCount; col += 1) {
+      this.grid[row][col] = createCell(" ", fillStyle);
     }
   }
 

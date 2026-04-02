@@ -5,6 +5,8 @@ on:
     branches:
       - main
   pull_request:
+  schedule:
+    - cron: "0 7 * * *"
   workflow_dispatch:
     inputs:
       publish_npm:
@@ -24,6 +26,7 @@ permissions:
 
 jobs:
   ci:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -243,3 +246,60 @@ jobs:
               --title "$RELEASE_TITLE" \
               --notes-file .github-release-notes.md
           fi
+
+  ansi_parity_scheduled:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+
+      - name: Upgrade npm
+        run: npm install --global npm@latest
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Activate project Yarn
+        run: corepack prepare "$(node -p 'require(\"./package.json\").packageManager')" --activate
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Detect browser executable
+        id: browser
+        shell: bash
+        run: |
+          for candidate in \
+            /usr/bin/google-chrome \
+            /usr/bin/google-chrome-stable \
+            /usr/bin/chromium \
+            /usr/bin/chromium-browser
+          do
+            if [ -x "$candidate" ]; then
+              echo "path=$candidate" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done
+          echo "No Chrome or Chromium executable found on the runner." >&2
+          exit 1
+
+      - name: Run scheduled ANSI gallery parity suite
+        run: yarn test:ansi:gallery:scheduled
+
+      - name: Run scheduled browser ANSI gallery parity suite
+        env:
+          CHROME_PATH: ${{ steps.browser.outputs.path }}
+          ANSI_GALLERY_BROWSER_IDS: 101-ag-cansi-ag-ve-ans
+          ANSI_GALLERY_BROWSER_SAMPLE_EVERY: 65536
+        run: yarn test:e2e:ansi-gallery:scheduled
+
+      - name: Run nightly full browser ANSI parity suite
+        env:
+          CHROME_PATH: ${{ steps.browser.outputs.path }}
+        run: yarn test:e2e:ansi-byte-parity:nightly

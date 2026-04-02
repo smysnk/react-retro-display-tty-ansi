@@ -30,6 +30,20 @@ describe("RetroScreenScreenBuffer", () => {
     });
   });
 
+  it("treats form feed like a vertical advance instead of clearing the screen", () => {
+    const buffer = new RetroScreenScreenBuffer({ rows: 3, cols: 6 });
+
+    buffer.write("ABC\fZ");
+
+    expect(buffer.getSnapshot()).toMatchObject({
+      rawLines: ["ABC   ", "   Z  ", "      "],
+      cursor: {
+        row: 1,
+        col: 4
+      }
+    });
+  });
+
   it("supports carriage return by returning to column zero", () => {
     const buffer = new RetroScreenScreenBuffer({ rows: 2, cols: 6 });
 
@@ -140,6 +154,33 @@ describe("RetroScreenScreenBuffer", () => {
     });
   });
 
+  it("preserves explicitly printed trailing spaces in scrollback strings", () => {
+    const buffer = new RetroScreenScreenBuffer({ rows: 1, cols: 8, scrollback: 4 });
+
+    buffer.write("ABC   \r\nNEXT");
+
+    const snapshot = buffer.getSnapshot();
+    expect(snapshot.scrollbackCells[0]?.slice(0, 6).map((cell) => cell.written)).toEqual([
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]);
+    expect(snapshot.scrollback).toEqual(["ABC   "]);
+  });
+
+  it("still trims erased trailing blanks out of scrollback strings", () => {
+    const buffer = new RetroScreenScreenBuffer({ rows: 1, cols: 8, scrollback: 4 });
+
+    buffer.write("ABC");
+    buffer.write("\u001b[K\r\nNEXT");
+
+    const snapshot = buffer.getSnapshot();
+    expect(snapshot.scrollback).toEqual(["ABC"]);
+  });
+
   it("supports explicit cursor movement and cursor state updates", () => {
     const buffer = new RetroScreenScreenBuffer({
       rows: 2,
@@ -224,6 +265,43 @@ describe("RetroScreenScreenBuffer", () => {
       cursor: {
         row: 0,
         col: 2
+      }
+    });
+  });
+
+  it("uses erase-style blanks when insert and delete create spaces under active color", () => {
+    const buffer = new RetroScreenScreenBuffer({ rows: 1, cols: 6 });
+
+    buffer.write("\u001b[1;5;33;44mABCD");
+    buffer.write("\u001b[3D\u001b[@");
+
+    let snapshot = buffer.getSnapshot();
+    expect(snapshot.cells[0]?.[1]?.style).toMatchObject({
+      bold: false,
+      blink: false,
+      foreground: {
+        mode: "default",
+        value: 0
+      },
+      background: {
+        mode: "palette",
+        value: 4
+      }
+    });
+
+    buffer.write("\u001b[P");
+
+    snapshot = buffer.getSnapshot();
+    expect(snapshot.cells[0]?.[5]?.style).toMatchObject({
+      bold: false,
+      blink: false,
+      foreground: {
+        mode: "default",
+        value: 0
+      },
+      background: {
+        mode: "palette",
+        value: 4
       }
     });
   });
@@ -561,6 +639,79 @@ describe("RetroScreenScreenBuffer", () => {
       modes: {
         wraparoundMode: false
       }
+    });
+  });
+
+  it("restores pending wrap when wraparound is re-enabled at the post-final-column position", () => {
+    const buffer = new RetroScreenScreenBuffer({ rows: 3, cols: 4 });
+
+    buffer.write("ABCD");
+    buffer.write("E");
+    buffer.write("\u001b[?7lWXYZQ");
+    buffer.write("\u001b[?7h");
+
+    expect(buffer.getSnapshot()).toMatchObject({
+      lines: ["ABCD", "EWXQ", ""],
+      cursor: {
+        row: 1,
+        col: 4
+      },
+      pendingWrap: true,
+      modes: {
+        wraparoundMode: true
+      }
+    });
+  });
+
+  it("uses erase-style blanks for scrolled-in rows under active color", () => {
+    const buffer = new RetroScreenScreenBuffer({ rows: 3, cols: 4 });
+
+    buffer.write("\u001b[1;5;33;44m");
+    buffer.write("\u001b[3;1H");
+    buffer.write("\n");
+
+    const snapshot = buffer.getSnapshot();
+    expect(snapshot.cursor).toMatchObject({
+      row: 2,
+      col: 0
+    });
+    expect(snapshot.cells[2]?.[0]?.style).toMatchObject({
+      bold: false,
+      blink: false,
+      foreground: {
+        mode: "default",
+        value: 0
+      },
+      background: {
+        mode: "palette",
+        value: 4
+      }
+    });
+  });
+
+  it("preserves the active background across the pre-cursor prefix when bottom-row LF scrolls", () => {
+    const buffer = new RetroScreenScreenBuffer({ rows: 3, cols: 4 });
+
+    buffer.write("\u001b[40m");
+    buffer.write("\u001b[3;1H");
+    buffer.write("   \n");
+
+    const snapshot = buffer.getSnapshot();
+    expect(snapshot.cursor).toMatchObject({
+      row: 2,
+      col: 3
+    });
+    expect(snapshot.cells[2]?.[0]?.style.background).toMatchObject({
+      mode: "palette",
+      value: 0
+    });
+    expect(snapshot.cells[2]?.[2]?.style.background).toMatchObject({
+      mode: "palette",
+      value: 0
+    });
+    expect(snapshot.cells[2]?.[3]?.style.background).toMatchObject({
+      mode: "palette",
+      value: 0
     });
   });
 

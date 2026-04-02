@@ -36,6 +36,18 @@ export const insertDeleteInteractionFixture: RetroScreenTerminalFixture = {
   randomChunkSeeds: [29, 229]
 };
 
+export const formFeedLineAdvanceFixture: RetroScreenTerminalFixture = {
+  name: "form-feed-line-advance",
+  description:
+    "FF should match xterm's vertical-advance behavior instead of clearing the visible frame.",
+  classification: "implemented",
+  rows: 3,
+  cols: 6,
+  chunks: ["ABC\fZ"],
+  chunkModes: ["fixture", "joined", "byte"],
+  randomChunkSeeds: [27, 227]
+};
+
 export const wraparoundFinalColumnInteractionFixture: RetroScreenTerminalFixture = {
   name: "wraparound-final-column-interaction",
   description:
@@ -77,6 +89,18 @@ export const styledEraseInteractionFixture: RetroScreenTerminalFixture = {
   randomChunkSeeds: [41, 401]
 };
 
+export const scrollBlankStyleInteractionFixture: RetroScreenTerminalFixture = {
+  name: "scroll-blank-style-interaction",
+  description:
+    "Bottom-row LF/FF scrolling should preserve the current background only across the pre-cursor prefix, matching xterm's styled-space behavior.",
+  classification: "implemented",
+  rows: 3,
+  cols: 4,
+  chunks: ["\u001b[40m", "\u001b[3;1H", "   \n"],
+  chunkModes: ["fixture", "joined", "byte"],
+  randomChunkSeeds: [47, 407]
+};
+
 export const alternateScreenRestoreFixture: RetroScreenTerminalFixture = {
   name: "alternate-screen-restore",
   description:
@@ -93,6 +117,7 @@ export const ansiInteractionFixtures = [
   originModeCursorPositionFixture,
   scrollRegionIndexingFixture,
   insertDeleteInteractionFixture,
+  formFeedLineAdvanceFixture,
   wraparoundFinalColumnInteractionFixture,
   saveRestoreEraseScrollFixture,
   styledEraseInteractionFixture,

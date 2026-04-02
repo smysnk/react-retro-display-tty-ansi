@@ -22,6 +22,18 @@ describe("RetroScreenAnsiParser", () => {
     ]);
   });
 
+  it("ignores unsupported C0 controls instead of printing literal glyphs", () => {
+    const handlers = createHandlers();
+    const parser = new RetroScreenAnsiParser(handlers);
+
+    parser.feed(`A\u0000\u001a\u007f\u0094B`);
+
+    expect(handlers.command.mock.calls.map(([command]) => command)).toEqual([
+      { type: "print", char: "A" },
+      { type: "print", char: "B" }
+    ]);
+  });
+
   it("dispatches cursor movement CSI sequences", () => {
     const handlers = createHandlers();
     const parser = new RetroScreenAnsiParser(handlers);

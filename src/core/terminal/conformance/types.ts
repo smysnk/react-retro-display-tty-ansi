@@ -49,7 +49,7 @@ export type RetroScreenNormalizedModes = {
 };
 
 export type RetroScreenNormalizedTerminalSnapshot = {
-  source: "retro-lcd" | "xterm-headless";
+  source: "retro-lcd" | "xterm-headless" | "xterm-pty";
   rows: number;
   cols: number;
   viewportY: number;
@@ -86,4 +86,40 @@ export type RetroScreenFixtureRunResult = {
   retroScreen: RetroScreenNormalizedTerminalSnapshot;
   xterm: RetroScreenNormalizedTerminalSnapshot;
   diffs: string[];
+};
+
+export type RetroScreenByteParityFixture = {
+  name: string;
+  description: string;
+  rows: number;
+  cols: number;
+  scrollback?: number;
+  bytes: Uint8Array;
+};
+
+export type RetroScreenByteParityAdapter = {
+  source: RetroScreenNormalizedTerminalSnapshot["source"];
+  reset?: () => void | Promise<void>;
+  write: (chunk: string) => void | Promise<void>;
+  snapshot: () =>
+    | RetroScreenNormalizedTerminalSnapshot
+    | Promise<RetroScreenNormalizedTerminalSnapshot>;
+  dispose?: () => void | Promise<void>;
+};
+
+export type RetroScreenByteParityMismatch = {
+  offset: number;
+  byte: number;
+  byteHex: string;
+  bytePreview: string;
+  diffs: string[];
+  retroScreen: RetroScreenNormalizedTerminalSnapshot;
+  reference: RetroScreenNormalizedTerminalSnapshot;
+};
+
+export type RetroScreenByteParityRunResult = {
+  fixture: RetroScreenByteParityFixture;
+  stepsMatched: number;
+  reproduction: string;
+  mismatch: RetroScreenByteParityMismatch | null;
 };

@@ -28,6 +28,26 @@ const normalizeCell = (cell: RetroScreenCell): RetroScreenNormalizedCell => ({
   style: normalizeCellStyle(cell)
 });
 
+const normalizeScrollbackLine = (line: RetroScreenCell[]) => {
+  let lastVisibleIndex = -1;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const cell = line[index];
+    if (!cell) {
+      continue;
+    }
+
+    if (cell.char !== " " || cell.written) {
+      lastVisibleIndex = index;
+    }
+  }
+
+  return line
+    .slice(0, lastVisibleIndex + 1)
+    .map((cell) => cell.char)
+    .join("");
+};
+
 export const normalizeRetroScreenSnapshot = (
   snapshot: RetroScreenScreenSnapshot
 ): RetroScreenNormalizedTerminalSnapshot => ({
@@ -40,7 +60,7 @@ export const normalizeRetroScreenSnapshot = (
   rawLines: [...snapshot.rawLines],
   wrapped: Array.from({ length: snapshot.rows }, () => false),
   cells: snapshot.cells.map((line) => line.map((cell) => normalizeCell(cell))),
-  scrollback: [...snapshot.scrollback],
+  scrollback: snapshot.scrollbackCells.map((line) => normalizeScrollbackLine(line)),
   cursor: {
     row: snapshot.cursor.row,
     col: snapshot.cursor.col,

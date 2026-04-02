@@ -30,6 +30,7 @@ export type RetroScreenCellStyle = {
 export type RetroScreenCell = {
   char: string;
   style: RetroScreenCellStyle;
+  written?: boolean;
 };
 
 export type RetroScreenCursorState = {
