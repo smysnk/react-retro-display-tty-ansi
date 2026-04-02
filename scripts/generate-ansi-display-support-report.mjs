@@ -318,7 +318,21 @@ const nextReport = report.join("\n");
 const checkMode = process.argv.includes("--check");
 
 if (checkMode) {
-  const existingReport = await readFile(reportPath, "utf8");
+  let existingReport;
+
+  try {
+    existingReport = await readFile(reportPath, "utf8");
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+      console.error(
+        "docs/ansi-display-support-matrix.md is missing. Run `yarn report:ansi-display` and commit the generated file."
+      );
+      process.exit(1);
+    }
+
+    throw error;
+  }
+
   if (existingReport !== nextReport) {
     console.error(
       "docs/ansi-display-support-matrix.md is out of date. Run `yarn report:ansi-display`."

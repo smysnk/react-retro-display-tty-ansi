@@ -23,73 +23,7 @@ permissions:
   id-token: write
 
 jobs:
-  ansi-fidelity:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: "20"
-          registry-url: "https://registry.npmjs.org"
-
-      - name: Upgrade npm
-        run: npm install --global npm@latest
-
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Activate project Yarn
-        run: corepack prepare "$(node -p 'require("./package.json").packageManager')" --activate
-
-      - name: Check Yarn version
-        run: yarn --version
-
-      - name: Install dependencies
-        run: yarn install --immutable
-
-      - name: Detect browser executable
-        id: browser
-        shell: bash
-        run: |
-          for candidate in \
-            /usr/bin/google-chrome \
-            /usr/bin/google-chrome-stable \
-            /usr/bin/chromium \
-            /usr/bin/chromium-browser
-          do
-            if [ -x "$candidate" ]; then
-              echo "path=$candidate" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-          done
-          echo "No Chrome or Chromium executable found on the runner." >&2
-          exit 1
-
-      - name: Run terminal conformance regression suite
-        run: yarn test:conformance
-
-      - name: Build Storybook for ANSI browser fidelity
-        run: yarn storybook:build
-
-      - name: Run ANSI browser fidelity suite
-        env:
-          CHROME_PATH: ${{ steps.browser.outputs.path }}
-        run: yarn test:e2e:ansi-display:built
-
-      - name: Run TTY terminal-app fidelity suite
-        env:
-          CHROME_PATH: ${{ steps.browser.outputs.path }}
-        run: yarn node --test ./e2e/tty-*.test.mjs
-
-      - name: Verify published ANSI support report
-        run: yarn check:ansi-display-report
-
   ci:
-    if: github.ref == 'refs/heads/main'
-    needs: ansi-fidelity
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -116,9 +50,6 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
-      - name: Run terminal conformance regression suite
-        run: yarn test:conformance
-
       - name: Detect browser executable
         id: browser
         shell: bash
@@ -137,10 +68,10 @@ jobs:
           echo "No Chrome or Chromium executable found on the runner." >&2
           exit 1
 
-      - name: Run browser smoke suite
+      - name: Run unified validation suite
         env:
           CHROME_PATH: ${{ steps.browser.outputs.path }}
-        run: yarn test:e2e
+        run: yarn test:ci
 
       - name: Capture test-station start time
         run: echo "TEST_STATION_BUILD_STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
@@ -215,26 +146,31 @@ jobs:
           exit "$exit_code"
 
       - name: Build Storybook for GitHub Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           STORYBOOK_BASE_PATH: /react-retro-display-tty-ansi-ascii/
         run: yarn storybook:build
 
       - name: Build test-station badge payloads
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           npx --yes @test-station/cli@0.2.40 pages --input ./.test-results/test-station/report.json --output ./.tmp-test-station-pages
           mkdir -p storybook-static/badges
           cp -R ./.tmp-test-station-pages/badges/. storybook-static/badges/
 
       - name: Upload Storybook Pages artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v4
         with:
           path: storybook-static
 
       - name: Deploy Storybook to GitHub Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         id: deployment
         uses: actions/deploy-pages@v4
 
       - name: Set npm package version from build number
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           BUILD_NUMBER: ${{ github.run_number }}
           VERSION_MAJOR: ${{ vars.NPM_VERSION_MAJOR || '0' }}
@@ -244,10 +180,12 @@ jobs:
         run: bash ./scripts/release/set-version-from-build.sh
 
       - name: Validate npm release package
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: bash
         run: bash ./scripts/release/release-npm-package.sh
 
       - name: Check whether this version is already published
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         id: package_version
         shell: bash
         run: |
@@ -266,11 +204,11 @@ jobs:
           fi
 
       - name: Build package for npm publish
-        if: steps.package_version.outputs.should_publish == 'true'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.package_version.outputs.should_publish == 'true'
         run: yarn build
 
       - name: Publish npm package
-        if: steps.package_version.outputs.should_publish == 'true' && (github.event_name == 'push' || inputs.publish_npm)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.package_version.outputs.should_publish == 'true' && (github.event_name == 'push' || inputs.publish_npm)
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_PUBLISH: "1"
@@ -278,6 +216,7 @@ jobs:
         run: bash ./scripts/release/release-npm-package.sh
 
       - name: Build GitHub release notes
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           cat > .github-release-notes.md <<EOF
           Release for \`${{ steps.package_version.outputs.package_name }}@${{ steps.package_version.outputs.package_version }}\`
@@ -288,6 +227,7 @@ jobs:
           EOF
 
       - name: Create or update GitHub release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: v${{ steps.package_version.outputs.package_version }}
