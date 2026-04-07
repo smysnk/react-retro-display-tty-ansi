@@ -85,9 +85,25 @@
 }
 
 .retro-screen__bezel,
+.retro-screen__touch-overlay,
 .retro-screen__screen {
   position: absolute;
   inset: 0;
+}
+
+.retro-screen__touch-overlay {
+  position: absolute;
+  inset: 12px;
+  z-index: 2;
+  border-radius: 8px;
+  background: transparent;
+  pointer-events: auto;
+  touch-action: none;
+  overscroll-behavior: contain;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .retro-screen__bezel {

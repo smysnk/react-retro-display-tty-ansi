@@ -51,6 +51,28 @@ const mockScreenRect = (container: HTMLElement, rect: DOMRectInit) => {
   );
 };
 
+const dispatchPointerEvent = (
+  element: Element,
+  type: string,
+  init: {
+    pointerId: number;
+    clientX: number;
+    clientY: number;
+    pointerType: string;
+    buttons: number;
+  }
+) => {
+  const event = new Event(type, { bubbles: true, cancelable: true });
+  Object.defineProperties(event, {
+    pointerId: { value: init.pointerId, configurable: true },
+    clientX: { value: init.clientX, configurable: true },
+    clientY: { value: init.clientY, configurable: true },
+    pointerType: { value: init.pointerType, configurable: true },
+    buttons: { value: init.buttons, configurable: true }
+  });
+  fireEvent(element, event);
+};
+
 const createMockTerminalSession = (
   initialState: RetroScreenTerminalSession["getState"] extends () => infer T ? T : never = "idle"
 ) => {
@@ -609,6 +631,151 @@ describe("RetroScreen", () => {
     });
 
     expect(onTerminalData).toHaveBeenCalledWith("\r");
+  });
+
+  it("emits a touch cell event on pointer down with measured grid coordinates", () => {
+    const onTouchCell = vi.fn();
+    const { container } = render(
+      <RetroScreen
+        mode="terminal"
+        gridMode="static"
+        rows={25}
+        cols={80}
+        touchInput={{
+          enabled: true,
+          overlayTestId: "touch-overlay",
+          onTouchCell
+        }}
+      />
+    );
+
+    mockScreenRect(container, {
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 50
+    });
+
+    const overlay = screen.getByTestId("touch-overlay") as HTMLDivElement;
+    Object.defineProperty(overlay, "setPointerCapture", {
+      value: vi.fn(),
+      configurable: true
+    });
+    Object.defineProperty(overlay, "releasePointerCapture", {
+      value: vi.fn(),
+      configurable: true
+    });
+    Object.defineProperty(overlay, "hasPointerCapture", {
+      value: vi.fn(() => true),
+      configurable: true
+    });
+
+    dispatchPointerEvent(overlay, "pointerdown", {
+      pointerId: 1,
+      clientX: 56,
+      clientY: 46,
+      pointerType: "touch",
+      buttons: 1
+    });
+
+    expect(onTouchCell).toHaveBeenCalledTimes(1);
+    expect(onTouchCell).toHaveBeenCalledWith({
+      row: 24,
+      col: 45,
+      rows: 25,
+      cols: 80,
+      phase: "down",
+      pointerType: "touch",
+      buttons: 1
+    });
+  });
+
+  it("treats a long press as a single touch event until release", () => {
+    const onTouchCell = vi.fn();
+    const { container } = render(
+      <RetroScreen
+        mode="terminal"
+        gridMode="static"
+        rows={25}
+        cols={80}
+        touchInput={{
+          enabled: true,
+          overlayTestId: "touch-overlay",
+          onTouchCell
+        }}
+      />
+    );
+
+    mockScreenRect(container, {
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 50
+    });
+
+    const overlay = screen.getByTestId("touch-overlay") as HTMLDivElement;
+    Object.defineProperty(overlay, "setPointerCapture", {
+      value: vi.fn(),
+      configurable: true
+    });
+    Object.defineProperty(overlay, "releasePointerCapture", {
+      value: vi.fn(),
+      configurable: true
+    });
+    Object.defineProperty(overlay, "hasPointerCapture", {
+      value: vi.fn(() => true),
+      configurable: true
+    });
+
+    dispatchPointerEvent(overlay, "pointerdown", {
+      pointerId: 1,
+      clientX: 56,
+      clientY: 46,
+      pointerType: "touch",
+      buttons: 1
+    });
+    dispatchPointerEvent(overlay, "pointermove", {
+      pointerId: 1,
+      clientX: 60,
+      clientY: 46,
+      pointerType: "touch",
+      buttons: 1
+    });
+    dispatchPointerEvent(overlay, "pointerdown", {
+      pointerId: 2,
+      clientX: 10,
+      clientY: 4,
+      pointerType: "touch",
+      buttons: 1
+    });
+
+    expect(onTouchCell).toHaveBeenCalledTimes(1);
+
+    dispatchPointerEvent(overlay, "pointerup", {
+      pointerId: 1,
+      clientX: 60,
+      clientY: 46,
+      pointerType: "touch",
+      buttons: 0
+    });
+    dispatchPointerEvent(overlay, "pointerdown", {
+      pointerId: 2,
+      clientX: 10,
+      clientY: 4,
+      pointerType: "touch",
+      buttons: 1
+    });
+
+    expect(onTouchCell).toHaveBeenCalledTimes(2);
+    expect(onTouchCell).toHaveBeenLastCalledWith({
+      row: 3,
+      col: 9,
+      rows: 25,
+      cols: 80,
+      phase: "down",
+      pointerType: "touch",
+      buttons: 1
+    });
   });
 
   it("stops propagation for captured printable terminal keys", () => {

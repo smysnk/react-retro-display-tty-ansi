@@ -45,6 +45,24 @@ export type RetroScreenGeometry = {
   fontSize: number;
 };
 
+export type RetroScreenTouchPhase = "down" | "move" | "up";
+
+export type RetroScreenTouchCellEvent = {
+  row: number;
+  col: number;
+  rows: number;
+  cols: number;
+  phase: RetroScreenTouchPhase;
+  pointerType: string;
+  buttons: number;
+};
+
+export type RetroScreenTouchInputOptions = {
+  enabled?: boolean;
+  overlayTestId?: string;
+  onTouchCell?: (event: RetroScreenTouchCellEvent) => void | Promise<void>;
+};
+
 export type RetroScreenSharedProps = {
   color?: string;
   displayColorMode?: RetroScreenDisplayColorMode;
@@ -73,6 +91,7 @@ export type RetroScreenSharedProps = {
   onTouchStartCapture?: TouchEventHandler<HTMLDivElement>;
   onFocusChange?: (focused: boolean) => void;
   onGeometryChange?: (geometry: RetroScreenGeometry) => void;
+  touchInput?: RetroScreenTouchInputOptions;
 };
 
 export type RetroScreenController = {

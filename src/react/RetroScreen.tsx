@@ -9,6 +9,7 @@ import {
   type FormEvent,
   type KeyboardEvent,
   type MouseEvent,
+  type PointerEvent,
   type WheelEvent
 } from "react";
 import type { RetroScreenScreenSnapshot } from "../core/terminal/types";
@@ -68,6 +69,14 @@ const clampSelection = (value: number, text: string) =>
 const isMouseTrackingActive = (snapshot: RetroScreenScreenSnapshot) =>
   snapshot.modes.mouseTrackingMode !== "none" && snapshot.modes.mouseProtocol === "sgr";
 
+const shouldHandleRetroTouchPointer = ({
+  enabled,
+  phase
+}: {
+  enabled?: boolean;
+  phase: "down" | "move" | "up";
+}) => Boolean(enabled) && phase === "down";
+
 const isEditorWordNavigationModifier = (event: KeyboardEvent<HTMLTextAreaElement>) =>
   event.altKey || event.ctrlKey || event.metaKey;
 
@@ -121,6 +130,7 @@ export function RetroScreen(props: RetroScreenProps) {
   const editorProps = props.mode === "editor" ? props : null;
   const terminalProps = props.mode === "terminal" ? props : null;
   const promptProps = props.mode === "prompt" ? props : null;
+  const touchInput = props.touchInput;
   const screenRef = useRef<HTMLDivElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const probeRef = useRef<HTMLSpanElement | null>(null);
@@ -130,6 +140,7 @@ export function RetroScreen(props: RetroScreenProps) {
   const editorSelectionAnchorRef = useRef<number | null>(null);
   const editorSelectionDraggingRef = useRef(false);
   const previousEditableValueRef = useRef(valueProps?.value ?? "");
+  const activeTouchPointerIdRef = useRef<number | null>(null);
   const internalTerminalController = useRetroScreenController({
     rows: staticGridActive ? props.rows : undefined,
     cols: staticGridActive ? props.cols : undefined,
@@ -924,6 +935,69 @@ export function RetroScreen(props: RetroScreenProps) {
     };
   };
 
+  const handleTouchOverlayPointer = async (
+    event: PointerEvent<HTMLDivElement>,
+    phase: "down" | "move" | "up"
+  ) => {
+    if (phase === "up") {
+      if (activeTouchPointerIdRef.current === event.pointerId) {
+        activeTouchPointerIdRef.current = null;
+      }
+
+      try {
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+          event.currentTarget.releasePointerCapture(event.pointerId);
+        }
+      } catch {
+        // Ignore unsupported pointer capture APIs in older browsers/jsdom.
+      }
+
+      return;
+    }
+
+    if (!touchInput?.onTouchCell || !shouldHandleRetroTouchPointer({ enabled: touchInput.enabled, phase })) {
+      return;
+    }
+
+    if (
+      activeTouchPointerIdRef.current !== null &&
+      activeTouchPointerIdRef.current !== event.pointerId
+    ) {
+      return;
+    }
+
+    const screenNode = screenRef.current;
+    if (!screenNode) {
+      return;
+    }
+
+    const { row, col } = getRetroScreenPointerGridPosition({
+      clientX: event.clientX,
+      clientY: event.clientY,
+      rect: screenNode.getBoundingClientRect(),
+      geometry
+    });
+
+    activeTouchPointerIdRef.current = event.pointerId;
+
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // Ignore unsupported pointer capture APIs in older browsers/jsdom.
+    }
+
+    event.preventDefault();
+    await touchInput.onTouchCell({
+      row,
+      col,
+      rows: geometry.rows,
+      cols: geometry.cols,
+      phase,
+      pointerType: event.pointerType,
+      buttons: event.buttons
+    });
+  };
+
   const maybeEmitFocusReport = (focusedState: boolean) => {
     if (
       props.mode !== "terminal" ||
@@ -1216,6 +1290,25 @@ export function RetroScreen(props: RetroScreenProps) {
       }
     >
       <div className="retro-screen__bezel" aria-hidden="true" />
+      {touchInput?.enabled ? (
+        <div
+          className="retro-screen__touch-overlay"
+          data-testid={touchInput.overlayTestId}
+          aria-hidden="true"
+          onPointerCancel={(event) => {
+            void handleTouchOverlayPointer(event, "up");
+          }}
+          onPointerDown={(event) => {
+            void handleTouchOverlayPointer(event, "down");
+          }}
+          onPointerMove={(event) => {
+            void handleTouchOverlayPointer(event, "move");
+          }}
+          onPointerUp={(event) => {
+            void handleTouchOverlayPointer(event, "up");
+          }}
+        />
+      ) : null}
       <RetroScreenDisplay
         mode={props.mode}
         renderModel={renderModel}

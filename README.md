@@ -45,6 +45,66 @@ That is the whole entry point.
 You hand the component a mode, a value or controller when needed, and let it handle the grid,
 wrapping, cursor rendering, and terminal feel.
 
+## Touch Input
+
+Use `touchInput` when the display itself should behave like a touch surface and report
+grid-aligned cell hits back to the host application.
+
+The touch contract is intentionally simple:
+
+- the component emits 1-based `row` and `col` coordinates
+- it also reports the measured `rows` and `cols` that were active for that touch
+- input is delivered as a single `down` event for each press
+- long presses do not stream repeated events
+- move events are ignored by default in touch mode
+- the next touch is not accepted until the current press is released
+
+That makes it a good fit for grid-driven interfaces such as soft terminals, retro games,
+touch menus, and keypad-like overlays where the host wants to interpret one deliberate press
+at a time.
+
+```tsx
+import { useState } from "react";
+import { RetroScreen } from "react-retro-display-tty-ansi-ascii";
+import "react-retro-display-tty-ansi-ascii/styles.css";
+
+export function TouchDemo() {
+  const [lastTouch, setLastTouch] = useState("Tap the screen");
+
+  return (
+    <RetroScreen
+      mode="terminal"
+      gridMode="static"
+      rows={12}
+      cols={32}
+      value={[
+        "┌──────────────────────────────┐",
+        "│                              │",
+        "│          TOUCH ME            │",
+        "│                              │",
+        "│   ↑ up          right →      │",
+        "│                              │",
+        "│   ← left       down ↓        │",
+        "│                              │",
+        "│                              │",
+        "│                              │",
+        "│                              │",
+        "└──────────────────────────────┘"
+      ].join("\\n")}
+      touchInput={{
+        enabled: true,
+        onTouchCell: ({ row, col, rows, cols, pointerType }) => {
+          setLastTouch(`${pointerType} @ ${row},${col} inside ${rows}x${cols}`);
+        }
+      }}
+    />
+  );
+}
+```
+
+The host remains responsible for deciding what a touch means. RetroScreen only handles the
+overlay, pointer capture, hit testing, and the single-press-until-release behavior.
+
 ## Display Padding
 
 Use `displayPadding` when the screen content should sit tighter to the glass or breathe a little
