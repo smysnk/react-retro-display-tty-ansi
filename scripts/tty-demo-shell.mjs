@@ -56,7 +56,12 @@ export const createRetroTtyDemoShell = async ({
     bashRcFile,
     zshRcFile,
     cleanup: async () => {
-      await rm(homeDir, { recursive: true, force: true });
+      await rm(homeDir, {
+        recursive: true,
+        force: true,
+        maxRetries: 10,
+        retryDelay: 100
+      });
     }
   };
 };
