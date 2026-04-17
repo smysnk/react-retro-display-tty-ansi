@@ -335,6 +335,20 @@ export const useRetroScreenAnsiSnapshotPlayer = ({
 
     let active = true;
     let rafId = 0;
+    const lockToFinalFrame = complete && !loop && frameDelayMs <= 0;
+
+    if (lockToFinalFrame) {
+      const finalFrameIncluded = complete && playbackSnapshot.currentFrame.text.length > 0;
+      const frameCount =
+        playbackSnapshot.completedFrames.length + (finalFrameIncluded ? 1 : 0);
+      const finalTick = Math.max(0, frameCount - 1);
+
+      setPlaybackTick((current) => (current === finalTick ? current : finalTick));
+
+      return () => {
+        active = false;
+      };
+    }
 
     const tick = () => {
       if (!active) {
@@ -361,6 +375,7 @@ export const useRetroScreenAnsiSnapshotPlayer = ({
     const finalFrameIncluded = complete && playbackSnapshot.currentFrame.text.length > 0;
     const frameCount =
       playbackSnapshot.completedFrames.length + (finalFrameIncluded ? 1 : 0);
+    const lockToFinalFrame = complete && !loop && frameDelayMs <= 0;
 
     if (frameCount === 0) {
       const hasCurrentFrame = playbackSnapshot.currentFrame.text.trim().length > 0;
@@ -402,7 +417,9 @@ export const useRetroScreenAnsiSnapshotPlayer = ({
     }
 
     const boundedFrameIndex =
-      complete && loop
+      lockToFinalFrame
+        ? frameCount - 1
+        : complete && loop
         ? playbackTick % frameCount
         : Math.min(playbackTick, frameCount - 1);
 
@@ -442,6 +459,7 @@ export const useRetroScreenAnsiSnapshotPlayer = ({
     } satisfies RetroScreenAnsiSnapshotPlayerState;
   }, [
     complete,
+    frameDelayMs,
     loadingValue,
     loop,
     normalizedMetadata,

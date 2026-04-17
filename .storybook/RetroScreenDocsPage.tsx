@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState, type ComponentType } from "react";
+import type { ComponentType } from "react";
 import { Description, Subtitle, Title } from "@storybook/addon-docs/blocks";
 import { composeStories, setProjectAnnotations } from "@storybook/react-vite";
 import * as RetroScreenStories from "../src/stories/RetroScreen.stories";
 import * as AnsiDisplayBufferStories from "../src/stories/AnsiDisplayBuffer.stories";
 import * as EditorStories from "../src/stories/Editor.stories";
 import * as ResizeResponsiveStories from "../src/stories/ResizeResponsive.stories";
-import { DocsStoryPreviewProvider } from "../src/stories/docs-preview-mode";
+import { RetroDocsStoryPreview } from "../src/stories/retro-docs-story-preview";
 import { projectAnnotations } from "./projectAnnotations";
 
 const GITHUB_REPOSITORY_URL = "https://github.com/smysnk/react-retro-display-tty-ansi";
@@ -60,6 +60,7 @@ setProjectAnnotations(projectAnnotations);
 const {
   CalmReadout,
   DisplayColorModes,
+  FitWidthLockedFrame,
   LightDarkHosts,
   MatrixCodeRain,
   MidjourneyVortex,
@@ -91,70 +92,6 @@ const {
   ResponsivePanel
 } = composeStories(ResizeResponsiveStories);
 
-function LazyStoryPreview({
-  story: Story,
-  eager = false
-}: {
-  story: ComponentType;
-  eager?: boolean;
-}) {
-  const hostRef = useRef<HTMLDivElement | null>(null);
-  const [mounted, setMounted] = useState(eager);
-
-  useEffect(() => {
-    if (mounted) {
-      return undefined;
-    }
-
-    const hostNode = hostRef.current;
-
-    if (!hostNode || typeof IntersectionObserver === "undefined") {
-      setMounted(true);
-      return undefined;
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const isVisible = entries.some((entry) => entry.isIntersecting);
-
-        if (!isVisible) {
-          return;
-        }
-
-        setMounted(true);
-        observer.disconnect();
-      },
-      {
-        rootMargin: "400px 0px"
-      }
-    );
-
-    observer.observe(hostNode);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [mounted]);
-
-  return (
-    <div
-      className="sb-retro-docs-story-preview-host"
-      data-mounted={mounted ? "true" : "false"}
-      ref={hostRef}
-    >
-      {mounted ? (
-        <DocsStoryPreviewProvider value>
-          <Story />
-        </DocsStoryPreviewProvider>
-      ) : (
-        <div className="sb-retro-docs-story-placeholder">
-          <span>Loading preview when visible…</span>
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function RetroScreenDocsPage() {
   const renderStory = (
     story: ComponentType | undefined,
@@ -172,12 +109,7 @@ export function RetroScreenDocsPage() {
     const eager = options?.eager ?? false;
 
     return (
-      <div className="sb-retro-docs-story" data-docs-story={key} key={key}>
-        {storyTitle ? <h3>{storyTitle}</h3> : null}
-        <div className="sb-retro-docs-story-preview">
-          <LazyStoryPreview eager={eager} story={Story} />
-        </div>
-      </div>
+      <RetroDocsStoryPreview eager={eager} key={key} story={Story} storyKey={key} storyTitle={storyTitle} />
     );
   };
 
@@ -216,6 +148,7 @@ export function RetroScreenDocsPage() {
         <p>The main readout, terminal, prompt, and cinematic demos live here.</p>
         {[
           renderStory(CalmReadout, "calm-readout", { eager: true }),
+          renderStory(FitWidthLockedFrame, "fit-width-locked-frame", { eager: true }),
           renderStory(TerminalStream, "terminal-stream", { eager: true }),
           renderStory(PromptLoop, "prompt-loop"),
           renderStory(WhiteRabbitSignal, "white-rabbit-signal"),

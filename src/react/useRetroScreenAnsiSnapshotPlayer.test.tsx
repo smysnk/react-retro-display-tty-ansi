@@ -1,4 +1,4 @@
-import { render, waitFor } from "@testing-library/react";
+import { act, render, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -136,5 +136,44 @@ describe("useRetroScreenAnsiSnapshotPlayer", () => {
       expect(latestState?.lines).toHaveLength(25);
       expect(latestState?.displayValue.length ?? 0).toBeLessThanOrEqual(25 * 80 + 24);
     });
+  });
+
+  it("can lock directly to the final frame when complete playback uses a non-positive frame delay", async () => {
+    const encoder = new TextEncoder();
+    let latestState: RetroScreenAnsiSnapshotPlayerState | null = null;
+
+    function Harness() {
+      const state = useRetroScreenAnsiSnapshotPlayer({
+        byteStream: [encoder.encode("\u001b[2;1Htail\u001b[1;1Hhead")],
+        metadata: {
+          title: "frames",
+          author: "artist",
+          group: "crew",
+          font: "IBM VGA",
+          width: 8,
+          height: 2,
+        },
+        complete: true,
+        frameDelayMs: 0,
+      });
+
+      latestState = state;
+      return <output data-testid="snapshot-state">{state.displayValue}</output>;
+    }
+
+    render(<Harness />);
+
+    await waitFor(() => {
+      expect(latestState?.frameCount).toBe(2);
+      expect(latestState?.frameIndex).toBe(1);
+      expect(latestState?.displayValue).toBe("head    \ntail    ");
+    });
+
+    await act(async () => {
+      await new Promise((resolve) => window.setTimeout(resolve, 32));
+    });
+
+    expect(latestState?.frameIndex).toBe(1);
+    expect(latestState?.displayValue).toBe("head    \ntail    ");
   });
 });

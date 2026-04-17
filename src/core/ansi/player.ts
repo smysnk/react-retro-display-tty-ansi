@@ -502,6 +502,7 @@ export const createRetroScreenAnsiSnapshotStream = ({
   let cursorCol = 0;
   let previousAbsoluteRow: number | null = null;
   let previousAbsoluteCol: number | null = null;
+  let pendingWrap = false;
   let pendingEscape: string | null = null;
   let currentStyle = cloneStyle(DEFAULT_CELL_STYLE);
 
@@ -570,6 +571,35 @@ export const createRetroScreenAnsiSnapshotStream = ({
     cursorRow = clamp(cursorRow + 1, 0, normalizedRows - 1);
   };
 
+  const prepareCursorForPrint = () => {
+    if (pendingWrap) {
+      newLine();
+      pendingWrap = false;
+      return;
+    }
+
+    if (cursorCol >= normalizedCols) {
+      cursorCol = Math.max(0, normalizedCols - 1);
+    }
+  };
+
+  const normalizeCursorForMovement = () => {
+    if (pendingWrap || cursorCol >= normalizedCols) {
+      cursorCol = Math.max(0, normalizedCols - 1);
+      pendingWrap = false;
+    }
+  };
+
+  const carriageReturn = () => {
+    pendingWrap = false;
+    cursorCol = 0;
+  };
+
+  const lineFeed = () => {
+    normalizeCursorForMovement();
+    cursorRow = clamp(cursorRow + 1, 0, normalizedRows - 1);
+  };
+
   const handleCsiSequence = (sequence: string) => {
     const finalByte = sequence.at(-1) ?? "";
     const rawParams = sequence.slice(2, -1);
@@ -597,6 +627,7 @@ export const createRetroScreenAnsiSnapshotStream = ({
         pushCompletedFrame();
       }
 
+      pendingWrap = false;
       cursorRow = nextAbsoluteRow;
       cursorCol = nextAbsoluteCol;
       previousAbsoluteRow = nextAbsoluteRow;
@@ -609,12 +640,27 @@ export const createRetroScreenAnsiSnapshotStream = ({
       return;
     }
 
-    if (finalByte === "C") {
-      if (cursorCol === normalizedCols - 1) {
-        newLine();
-      }
+    if (finalByte === "A") {
+      normalizeCursorForMovement();
+      cursorRow = clamp(cursorRow - getCursorParam(0, 1), 0, normalizedRows - 1);
+      return;
+    }
 
+    if (finalByte === "B") {
+      normalizeCursorForMovement();
+      cursorRow = clamp(cursorRow + getCursorParam(0, 1), 0, normalizedRows - 1);
+      return;
+    }
+
+    if (finalByte === "C") {
+      normalizeCursorForMovement();
       cursorCol = clamp(cursorCol + getCursorParam(0, 1), 0, normalizedCols - 1);
+      return;
+    }
+
+    if (finalByte === "D") {
+      normalizeCursorForMovement();
+      cursorCol = clamp(cursorCol - getCursorParam(0, 1), 0, normalizedCols - 1);
     }
   };
 
@@ -646,15 +692,16 @@ export const createRetroScreenAnsiSnapshotStream = ({
       }
 
       if (character === "\r") {
-        cursorCol = 0;
+        carriageReturn();
         continue;
       }
 
       if (character === "\n") {
-        newLine();
+        lineFeed();
         continue;
       }
 
+      prepareCursorForPrint();
       const nextCell = createAnsiCell(character, currentStyle);
 
       if (normalizedStorageMode === "sparse") {
@@ -678,9 +725,11 @@ export const createRetroScreenAnsiSnapshotStream = ({
       markFrameDirty();
 
       if (cursorCol === normalizedCols - 1) {
-        newLine();
+        cursorCol = normalizedCols;
+        pendingWrap = true;
       } else {
         cursorCol += 1;
+        pendingWrap = false;
       }
     }
 
@@ -708,6 +757,7 @@ export const createRetroScreenAnsiSnapshotStream = ({
       cursorCol = 0;
       previousAbsoluteRow = null;
       previousAbsoluteCol = null;
+      pendingWrap = false;
       pendingEscape = null;
       currentStyle = cloneStyle(DEFAULT_CELL_STYLE);
     }

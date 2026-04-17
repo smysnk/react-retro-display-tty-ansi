@@ -164,4 +164,30 @@ describe("ANSI snapshot stream", () => {
       },
     });
   });
+
+  it("preserves delayed-wrap semantics when carriage return clears a full-width pending wrap", () => {
+    const stream = createRetroScreenAnsiSnapshotStream({
+      rows: 2,
+      cols: 4,
+    });
+    const snapshot = stream.appendText("ABCD\rEF");
+
+    expect(snapshot.currentFrame.lines).toEqual([
+      "EFCD",
+      "    ",
+    ]);
+  });
+
+  it("normalizes pending wrap before CSI cursor movement commands", () => {
+    const stream = createRetroScreenAnsiSnapshotStream({
+      rows: 2,
+      cols: 4,
+    });
+    const snapshot = stream.appendText("ABCD\u001b[DZ");
+
+    expect(snapshot.currentFrame.lines).toEqual([
+      "ABZD",
+      "    ",
+    ]);
+  });
 });

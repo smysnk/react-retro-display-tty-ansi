@@ -24,19 +24,11 @@ import {
   type BadAppleGzipAnsiAsset
 } from "./bad-apple-gzip-ansi";
 import { AnsiGalleryViewer } from "./ansi-gallery";
-import { useDocsStoryPreviewMode } from "./docs-preview-mode";
 import { MatrixCodeRainScreen } from "./matrix-code-rain";
 import { MidjourneyVortexScreen } from "./midjourney-vortex";
+import { CaptureStage, Stage, StoryShell } from "./retro-story-shell";
 
 const STORY_COLOR = "#97ff9b";
-
-type StoryShellProps = {
-  kicker: string;
-  title: string;
-  copy: string;
-  children: ReactNode;
-  footer?: ReactNode;
-};
 
 type BadApplePlaybackPhase = "loading" | "playing" | "failed";
 
@@ -1274,34 +1266,6 @@ const playTraceScenario = (
   };
 };
 
-function StoryShell({ kicker, title, copy, children, footer }: StoryShellProps) {
-  const docsPreviewMode = useDocsStoryPreviewMode();
-
-  return (
-    <div className={`sb-retro-page${docsPreviewMode ? " sb-retro-page--docs-preview" : ""}`}>
-      <div className={`sb-retro-shell${docsPreviewMode ? " sb-retro-shell--docs-preview" : ""}`}>
-        <div className="sb-retro-heading">
-          <span className="sb-retro-kicker">{kicker}</span>
-          <h1 className="sb-retro-title">{title}</h1>
-          <p className="sb-retro-copy">{copy}</p>
-        </div>
-        {children}
-        {footer}
-      </div>
-    </div>
-  );
-}
-
-function Stage({ children, maxWidth = 860 }: { children: ReactNode; maxWidth?: number }) {
-  return (
-    <div className="sb-retro-stage">
-      <div className="sb-retro-frame" style={{ maxWidth }}>
-        {children}
-      </div>
-    </div>
-  );
-}
-
 function DisplayColorModeCard({
   displayColorMode,
   title,
@@ -1316,30 +1280,6 @@ function DisplayColorModeCard({
         <p className="sb-retro-mode-description">{copy}</p>
       </div>
       {children}
-    </div>
-  );
-}
-
-function CaptureStage({
-  captureId,
-  children,
-  maxWidth = 860
-}: {
-  captureId: string;
-  children: ReactNode;
-  maxWidth?: number;
-}) {
-  return (
-    <div className="sb-retro-page sb-retro-page--capture">
-      <div className="sb-retro-shell sb-retro-shell--capture">
-        <div className="sb-retro-stage sb-retro-stage--capture">
-          <div className="sb-retro-frame" style={{ maxWidth }}>
-            <div className="sb-retro-capture-root" data-demo-capture={captureId}>
-              {children}
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
@@ -3676,7 +3616,9 @@ export const FitWidthLockedFrame: Story = {
         data-fit-width-jitter-stage="true"
         style={{
           margin: "0 auto",
-          width: "min(1180px, calc(100vw - 48px))"
+          width: "100%",
+          maxWidth: "1180px",
+          justifySelf: "stretch"
         }}
       >
         <RetroScreen

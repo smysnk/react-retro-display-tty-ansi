@@ -79,6 +79,8 @@
     "test:e2e:ansi-gallery:scheduled": "storybook build && ANSI_GALLERY_BROWSER_PARITY=1 yarn node --test ./e2e/ansi-byte-parity-gallery.test.mjs",
     "test:e2e:ansi-byte-parity:nightly": "storybook build && ANSI_BROWSER_NIGHTLY_PARITY=1 yarn node --test ./e2e/ansi-byte-parity-nightly.test.mjs",
     "test:e2e:layout": "storybook build && yarn node ./e2e/layout-stability.mjs",
+    "test:e2e:docs-preview": "storybook build && yarn test:e2e:docs-preview:built",
+    "test:e2e:docs-preview:built": "yarn node --test ./e2e/storybook-docs-preview-parity.test.mjs ./e2e/storybook-docs-preview-visual-parity.test.mjs ./e2e/storybook-docs-overflow.test.mjs",
     "test:e2e:tty": "storybook build && node --test ./e2e/tty-*.test.mjs",
     "test:e2e": "storybook build && yarn test:e2e:built",
     "test:e2e:built": "yarn node --test ./e2e/*.test.mjs",
