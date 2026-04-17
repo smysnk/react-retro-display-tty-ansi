@@ -45,7 +45,9 @@ jobs:
         run: corepack enable
 
       - name: Activate project Yarn
-        run: corepack prepare "$(node -p 'require("./package.json").packageManager')" --activate
+        run: |
+          package_manager="$(node -p "require('./package.json').packageManager")"
+          corepack prepare "$package_manager" --activate
 
       - name: Check Yarn version
         run: yarn --version
@@ -195,8 +197,8 @@ jobs:
         id: package_version
         shell: bash
         run: |
-          package_name="$(node -p "require('./package.json').name")"
-          package_version="$(node -p "require('./package.json').version")"
+          package_name="$(node -e "process.stdout.write(require('./package.json').name)")"
+          package_version="$(node -e "process.stdout.write(require('./package.json').version)")"
 
           echo "package_name=$package_name" >> "$GITHUB_OUTPUT"
           echo "package_version=$package_version" >> "$GITHUB_OUTPUT"
@@ -269,7 +271,9 @@ jobs:
         run: corepack enable
 
       - name: Activate project Yarn
-        run: corepack prepare "$(node -p 'require(\"./package.json\").packageManager')" --activate
+        run: |
+          package_manager="$(node -p "require('./package.json').packageManager")"
+          corepack prepare "$package_manager" --activate
 
       - name: Install dependencies
         run: yarn install --immutable
