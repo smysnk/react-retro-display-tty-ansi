@@ -1,11 +1,27 @@
+import { readFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { gunzipSync } from "node:zlib";
+
 import { describe, expect, it } from "vitest";
+import { Terminal } from "@xterm/headless";
 
 import {
   createRetroScreenAnsiFrameStream,
   createRetroScreenAnsiSnapshotStream,
+  decodeRetroScreenAnsiBytes,
   materializeRetroScreenAnsiFrames,
   materializeRetroScreenAnsiSnapshots,
+  stripRetroScreenAnsiSauce,
 } from "./player";
+import { normalizeXtermSnapshot } from "../terminal/conformance/normalize-xterm";
+
+const ansiDir =
+  typeof import.meta.dirname === "string" ? import.meta.dirname : dirname(fileURLToPath(import.meta.url));
+const solidWaste87260FixturePath = resolve(ansiDir, "fixtures/solid-waste-87260.ans.gz");
+
+const loadSolidWaste87260Fixture = async () =>
+  new Uint8Array(gunzipSync(await readFile(solidWaste87260FixturePath)));
 
 describe("ANSI snapshot stream", () => {
   it("preserves true source rows and cols while exposing line arrays", () => {
@@ -189,5 +205,43 @@ describe("ANSI snapshot stream", () => {
       "ABZD",
       "    ",
     ]);
+  });
+
+  it("scrolls the visible viewport upward when line feed lands on the bottom row", () => {
+    const stream = createRetroScreenAnsiSnapshotStream({
+      rows: 2,
+      cols: 4,
+    });
+    const snapshot = stream.appendText("AAAA\r\nBBBB\r\nCCCC");
+
+    expect(snapshot.currentFrame.lines).toEqual([
+      "BBBB",
+      "CCCC",
+    ]);
+  });
+
+  it("matches the terminal reference for the Solid Waste 87260 artifact", async () => {
+    const rawBytes = await loadSolidWaste87260Fixture();
+    const payloadBytes = stripRetroScreenAnsiSauce(rawBytes);
+    const terminal = new Terminal({
+      allowProposedApi: true,
+      rows: 25,
+      cols: 80,
+      scrollback: 200,
+    });
+    const decodedText = decodeRetroScreenAnsiBytes(payloadBytes);
+
+    await new Promise<void>((resolveWrite) => {
+      terminal.write(decodedText, () => resolveWrite());
+    });
+
+    const referenceSnapshot = normalizeXtermSnapshot(terminal);
+    const snapshot = createRetroScreenAnsiSnapshotStream({
+      rows: 25,
+      cols: 80,
+    }).appendChunk(payloadBytes);
+
+    expect(snapshot.currentFrame.lines).toEqual(referenceSnapshot.rawLines);
+    terminal.dispose();
   });
 });

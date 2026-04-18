@@ -566,8 +566,44 @@ export const createRetroScreenAnsiSnapshotStream = ({
     );
   };
 
+  const createBlankDenseRow = () =>
+    Array.from({ length: normalizedCols }, () => createAnsiCell());
+
+  const scrollViewportUp = () => {
+    if (grid) {
+      grid.shift();
+      grid.push(createBlankDenseRow());
+    }
+
+    if (normalizedStorageMode === "sparse") {
+      const nextSparseGrid: RetroScreenAnsiSparseGrid = new Map();
+
+      for (const [rowIndex, row] of sparseGrid) {
+        if (rowIndex <= 0) {
+          continue;
+        }
+
+        const nextRowIndex = rowIndex - 1;
+
+        if (nextRowIndex < normalizedRows) {
+          nextSparseGrid.set(nextRowIndex, row);
+        }
+      }
+
+      sparseGrid = nextSparseGrid;
+    }
+
+    markFrameDirty();
+  };
+
   const newLine = () => {
     cursorCol = 0;
+
+    if (cursorRow === normalizedRows - 1) {
+      scrollViewportUp();
+      return;
+    }
+
     cursorRow = clamp(cursorRow + 1, 0, normalizedRows - 1);
   };
 
@@ -597,6 +633,12 @@ export const createRetroScreenAnsiSnapshotStream = ({
 
   const lineFeed = () => {
     normalizeCursorForMovement();
+
+    if (cursorRow === normalizedRows - 1) {
+      scrollViewportUp();
+      return;
+    }
+
     cursorRow = clamp(cursorRow + 1, 0, normalizedRows - 1);
   };
 
