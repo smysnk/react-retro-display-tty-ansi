@@ -48,6 +48,18 @@ export const formFeedLineAdvanceFixture: RetroScreenTerminalFixture = {
   randomChunkSeeds: [27, 227]
 };
 
+export const verticalTabLineAdvanceFixture: RetroScreenTerminalFixture = {
+  name: "vertical-tab-line-advance",
+  description:
+    "VT should match xterm's vertical-advance behavior instead of leaving later text on the same row.",
+  classification: "implemented",
+  rows: 3,
+  cols: 6,
+  chunks: ["ABC\vZ"],
+  chunkModes: ["fixture", "joined", "byte"],
+  randomChunkSeeds: [28, 228]
+};
+
 export const wraparoundFinalColumnInteractionFixture: RetroScreenTerminalFixture = {
   name: "wraparound-final-column-interaction",
   description:
@@ -118,6 +130,7 @@ export const ansiInteractionFixtures = [
   scrollRegionIndexingFixture,
   insertDeleteInteractionFixture,
   formFeedLineAdvanceFixture,
+  verticalTabLineAdvanceFixture,
   wraparoundFinalColumnInteractionFixture,
   saveRestoreEraseScrollFixture,
   styledEraseInteractionFixture,

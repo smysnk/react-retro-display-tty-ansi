@@ -21,7 +21,10 @@ import {
   sgrAttributesFixture,
   tabExpansionFixture
 } from "./fixtures/ansi-command-matrix.fixtures";
-import { ansiInteractionFixtures } from "./fixtures/ansi-interaction.fixtures";
+import {
+  ansiInteractionFixtures,
+  verticalTabLineAdvanceFixture,
+} from "./fixtures/ansi-interaction.fixtures";
 import { backspaceWithoutOverwriteFixture } from "./fixtures/backspace-without-overwrite.fixture";
 import { decSaveRestoreFixture } from "./fixtures/dec-save-restore.fixture";
 import { decWraparoundToggleFixture } from "./fixtures/dec-wraparound-toggle.fixture";
@@ -133,6 +136,15 @@ export const ansiSupportedSequenceCases = [
     expectedCommands: [{ type: "tab" }],
     coverage: "oracle-backed",
     fixture: tabExpansionFixture
+  },
+  {
+    id: "c0-vertical-tab",
+    family: "c0",
+    description: "VT should dispatch the same line-feed behavior xterm applies.",
+    sequence: "\v",
+    expectedCommands: [{ type: "lineFeed" }],
+    coverage: "oracle-backed",
+    fixture: verticalTabLineAdvanceFixture
   },
   {
     id: "c0-form-feed",
@@ -809,6 +821,14 @@ export const ansiDisplayFacingCommandInventory = [
     sequences: ["\t"],
     status: "oracle-backed",
     caseIds: ["c0-tab"]
+  },
+  {
+    id: "c0-vertical-tab",
+    family: "c0",
+    description: "VT advances vertically the same way xterm treats a line feed.",
+    sequences: ["\v"],
+    status: "oracle-backed",
+    caseIds: ["c0-vertical-tab"]
   },
   {
     id: "c0-form-feed",

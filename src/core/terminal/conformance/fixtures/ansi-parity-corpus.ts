@@ -12,6 +12,7 @@ import {
   formFeedLineAdvanceFixture,
   insertDeleteInteractionFixture,
   styledEraseInteractionFixture,
+  verticalTabLineAdvanceFixture,
   wraparoundFinalColumnInteractionFixture
 } from "./ansi-interaction.fixtures";
 import { decSaveRestoreFixture } from "./dec-save-restore.fixture";
@@ -101,6 +102,7 @@ export const byteParityPhase2Corpus = [
   defineEntry("styled-erase", styledEraseInteractionFixture, ["erase", "styled-blanks", "interaction"]),
   defineEntry("insert-delete-interaction", insertDeleteInteractionFixture, ["insert", "delete", "interaction"]),
   defineEntry("form-feed-line-advance", formFeedLineAdvanceFixture, ["control", "form-feed", "line-feed-like"]),
+  defineEntry("vertical-tab-line-advance", verticalTabLineAdvanceFixture, ["control", "vertical-tab", "line-feed-like"]),
   defineEntry("wraparound-toggle", wraparoundFinalColumnInteractionFixture, ["wrap", "mode-interaction"])
 ] satisfies RetroScreenAnsiParityCorpusEntry[];
 

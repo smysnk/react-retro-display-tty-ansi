@@ -10,9 +10,10 @@ describe("RetroScreenAnsiParser", () => {
     const handlers = createHandlers();
     const parser = new RetroScreenAnsiParser(handlers);
 
-    parser.feed("\n\r\b\t\f\u0007");
+    parser.feed("\n\v\r\b\t\f\u0007");
 
     expect(handlers.command.mock.calls.map(([command]) => command.type)).toEqual([
+      "lineFeed",
       "lineFeed",
       "carriageReturn",
       "backspace",

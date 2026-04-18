@@ -97,6 +97,9 @@ export class RetroScreenAnsiParser {
       case "\n":
         this.handlers.command({ type: "lineFeed" });
         return;
+      case "\v":
+        this.handlers.command({ type: "lineFeed" });
+        return;
       case "\r":
         this.handlers.command({ type: "carriageReturn" });
         return;
