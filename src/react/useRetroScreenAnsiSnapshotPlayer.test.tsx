@@ -1,5 +1,5 @@
 import { act, render, waitFor } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   type RetroScreenAnsiSnapshotPlayerState,
@@ -175,5 +175,131 @@ describe("useRetroScreenAnsiSnapshotPlayer", () => {
 
     expect(latestState?.frameIndex).toBe(1);
     expect(latestState?.displayValue).toBe("head    \ntail    ");
+  });
+
+  it("loops across completed snapshot frames when looping playback is enabled", async () => {
+    const encoder = new TextEncoder();
+    let latestState: RetroScreenAnsiSnapshotPlayerState | null = null;
+    let scheduledFrame: FrameRequestCallback | null = null;
+    let now = 0;
+    const performanceNowSpy = vi
+      .spyOn(performance, "now")
+      .mockImplementation(() => now);
+    const requestAnimationFrameSpy = vi
+      .spyOn(window, "requestAnimationFrame")
+      .mockImplementation((callback: FrameRequestCallback) => {
+        scheduledFrame = callback;
+        return 1;
+      });
+    const cancelAnimationFrameSpy = vi
+      .spyOn(window, "cancelAnimationFrame")
+      .mockImplementation(() => {});
+
+    function Harness() {
+      const state = useRetroScreenAnsiSnapshotPlayer({
+        byteStream: [
+          encoder.encode("\u001b[2;1Htail"),
+          encoder.encode("\u001b[1;1Hhead"),
+        ],
+        metadata: {
+          title: "looping",
+          author: "artist",
+          group: "crew",
+          font: "IBM VGA",
+          width: 8,
+          height: 2,
+        },
+        complete: true,
+        loop: true,
+        frameDelayMs: 10,
+      });
+
+      latestState = state;
+      return <output data-testid="snapshot-state">{state.displayValue}</output>;
+    }
+
+    try {
+      render(<Harness />);
+
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      expect(latestState?.frameCount).toBe(2);
+      expect(latestState?.frameIndex).toBe(0);
+      expect(latestState?.displayValue).toBe("        \ntail    ");
+
+      await act(async () => {
+        now = 12;
+        scheduledFrame?.(now);
+        await Promise.resolve();
+      });
+
+      expect(latestState?.frameIndex).toBe(1);
+      expect(latestState?.displayValue).toBe("head    \ntail    ");
+
+      await act(async () => {
+        now = 22;
+        scheduledFrame?.(now);
+        await Promise.resolve();
+      });
+
+      expect(latestState?.frameIndex).toBe(0);
+      expect(latestState?.displayValue).toBe("        \ntail    ");
+    } finally {
+      performanceNowSpy.mockRestore();
+      requestAnimationFrameSpy.mockRestore();
+      cancelAnimationFrameSpy.mockRestore();
+    }
+  });
+
+  it("resets cleanly when the byte stream shrinks to a shorter payload", async () => {
+    const encoder = new TextEncoder();
+    let latestState: RetroScreenAnsiSnapshotPlayerState | null = null;
+
+    function Harness({
+      byteStream,
+      complete,
+    }: {
+      byteStream: readonly Uint8Array[];
+      complete: boolean;
+    }) {
+      const state = useRetroScreenAnsiSnapshotPlayer({
+        byteStream,
+        metadata: {
+          title: "reset",
+          author: "artist",
+          group: "crew",
+          font: "IBM VGA",
+          width: 8,
+          height: 2,
+        },
+        complete,
+        frameDelayMs: 10,
+      });
+
+      latestState = state;
+      return <output data-testid="snapshot-state">{state.displayValue}</output>;
+    }
+
+    const firstChunk = encoder.encode("\u001b[2;1Htail");
+    const secondChunk = encoder.encode("\u001b[1;1Hhead");
+    const { rerender } = render(
+      <Harness byteStream={[firstChunk, secondChunk]} complete />
+    );
+
+    await waitFor(() => {
+      expect(latestState?.frameCount).toBe(2);
+      expect(latestState?.displayValue).toBe("        \ntail    ");
+    });
+
+    rerender(<Harness byteStream={[firstChunk]} complete={false} />);
+
+    await waitFor(() => {
+      expect(latestState?.frameCount).toBe(0);
+      expect(latestState?.frameIndex).toBe(0);
+      expect(latestState?.displayValue).toBe("        \ntail    ");
+      expect(latestState?.displayValue).not.toContain("head");
+    });
   });
 });

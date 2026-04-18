@@ -6,6 +6,7 @@ import type {
 import type { RetroScreenCell, RetroScreenCellStyle } from "../terminal/types";
 import {
   applySgrParameters,
+  cloneColor,
   cloneStyle,
   DEFAULT_CELL_STYLE
 } from "../terminal/sgr";
@@ -90,6 +91,7 @@ const stringifyGridLines = (grid: readonly RetroScreenCell[][]) =>
 const EMPTY_CELL_CHARACTER = " ";
 const PREVIEW_ROWS = 25;
 const PREVIEW_COLS = 80;
+const DEFAULT_TAB_WIDTH = 8;
 
 type RetroScreenAnsiDenseGrid = RetroScreenCell[][];
 type RetroScreenAnsiSparseGrid = Map<number, Map<number, RetroScreenCell>>;
@@ -105,10 +107,29 @@ const createAnsiCell = (
   style: cloneStyle(style)
 });
 
+const createEraseStyle = (style: RetroScreenCellStyle): RetroScreenCellStyle => ({
+  ...cloneStyle(DEFAULT_CELL_STYLE),
+  background: cloneColor(style.background)
+});
+
 const cloneAnsiCell = (cell: RetroScreenCell): RetroScreenCell => ({
   char: cell.char,
   style: cloneStyle(cell.style)
 });
+
+const isIgnoredControlCharacter = (character: string) => {
+  const codePoint = character.codePointAt(0);
+
+  if (typeof codePoint !== "number") {
+    return false;
+  }
+
+  return (
+    (codePoint >= 0x00 && codePoint < 0x20) ||
+    codePoint === 0x7f ||
+    (codePoint >= 0x80 && codePoint <= 0x9f)
+  );
+};
 
 const cloneAnsiCellRow = (row: readonly RetroScreenCell[]) => row.map((cell) => cloneAnsiCell(cell));
 
@@ -500,6 +521,8 @@ export const createRetroScreenAnsiSnapshotStream = ({
   let frameDirty = false;
   let cursorRow = 0;
   let cursorCol = 0;
+  let savedCursorRow = 0;
+  let savedCursorCol = 0;
   let previousAbsoluteRow: number | null = null;
   let previousAbsoluteCol: number | null = null;
   let pendingWrap = false;
@@ -569,10 +592,15 @@ export const createRetroScreenAnsiSnapshotStream = ({
   const createBlankDenseRow = () =>
     Array.from({ length: normalizedCols }, () => createAnsiCell());
 
+  const createStyledBlankDenseRow = (style: RetroScreenCellStyle) =>
+    Array.from({ length: normalizedCols }, () => createAnsiCell(EMPTY_CELL_CHARACTER, style));
+
   const scrollViewportUp = () => {
+    const fillStyle = createEraseStyle(currentStyle);
+
     if (grid) {
       grid.shift();
-      grid.push(createBlankDenseRow());
+      grid.push(createStyledBlankDenseRow(fillStyle));
     }
 
     if (normalizedStorageMode === "sparse") {
@@ -590,7 +618,25 @@ export const createRetroScreenAnsiSnapshotStream = ({
         }
       }
 
+      const fillRow = new Map<number, RetroScreenCell>();
+
+      for (let col = 0; col < normalizedCols; col += 1) {
+        const nextCell = createAnsiCell(EMPTY_CELL_CHARACTER, fillStyle);
+
+        if (shouldPersistSparseCell(nextCell)) {
+          fillRow.set(col, nextCell);
+        }
+      }
+
+      if (fillRow.size > 0) {
+        nextSparseGrid.set(normalizedRows - 1, fillRow);
+      }
+
       sparseGrid = nextSparseGrid;
+    }
+
+    if (savedCursorRow > 0) {
+      savedCursorRow -= 1;
     }
 
     markFrameDirty();
@@ -631,6 +677,30 @@ export const createRetroScreenAnsiSnapshotStream = ({
     cursorCol = 0;
   };
 
+  const saveCursor = () => {
+    normalizeCursorForMovement();
+    savedCursorRow = cursorRow;
+    savedCursorCol = cursorCol;
+  };
+
+  const restoreCursor = () => {
+    pendingWrap = false;
+    cursorRow = clamp(savedCursorRow, 0, normalizedRows - 1);
+    cursorCol = clamp(savedCursorCol, 0, normalizedCols - 1);
+  };
+
+  const backspace = () => {
+    if (pendingWrap || cursorCol >= normalizedCols) {
+      pendingWrap = false;
+      cursorCol = Math.max(0, normalizedCols - 2);
+      return;
+    }
+
+    if (cursorCol > 0) {
+      cursorCol -= 1;
+    }
+  };
+
   const lineFeed = () => {
     normalizeCursorForMovement();
 
@@ -640,6 +710,188 @@ export const createRetroScreenAnsiSnapshotStream = ({
     }
 
     cursorRow = clamp(cursorRow + 1, 0, normalizedRows - 1);
+  };
+
+  const writePrintable = (character: string) => {
+    prepareCursorForPrint();
+    const nextCell = createAnsiCell(character, currentStyle);
+
+    if (normalizedStorageMode === "sparse") {
+      const currentRow = sparseGrid.get(cursorRow) ?? new Map<number, RetroScreenCell>();
+
+      if (!shouldPersistSparseCell(nextCell)) {
+        currentRow.delete(cursorCol);
+      } else {
+        currentRow.set(cursorCol, nextCell);
+      }
+
+      if (currentRow.size === 0) {
+        sparseGrid.delete(cursorRow);
+      } else {
+        sparseGrid.set(cursorRow, currentRow);
+      }
+    } else if (grid) {
+      grid[cursorRow]![cursorCol] = nextCell;
+    }
+
+    markFrameDirty();
+
+    if (cursorCol === normalizedCols - 1) {
+      cursorCol = normalizedCols;
+      pendingWrap = true;
+    } else {
+      cursorCol += 1;
+      pendingWrap = false;
+    }
+  };
+
+  const insertTab = () => {
+    normalizeCursorForMovement();
+    const spaces = DEFAULT_TAB_WIDTH - (cursorCol % DEFAULT_TAB_WIDTH || 0);
+    cursorCol = clamp(cursorCol + spaces, 0, normalizedCols - 1);
+    pendingWrap = false;
+  };
+
+  const eraseChars = (count: number) => {
+    normalizeCursorForMovement();
+    const eraseCount = Math.min(normalizedCols - cursorCol, Math.max(1, Math.floor(count)));
+    const eraseStyle = createEraseStyle(currentStyle);
+
+    for (let col = cursorCol; col < Math.min(normalizedCols, cursorCol + eraseCount); col += 1) {
+      const nextCell = createAnsiCell(EMPTY_CELL_CHARACTER, eraseStyle);
+
+      if (normalizedStorageMode === "sparse") {
+        const currentRow = sparseGrid.get(cursorRow) ?? new Map<number, RetroScreenCell>();
+
+        if (!shouldPersistSparseCell(nextCell)) {
+          currentRow.delete(col);
+        } else {
+          currentRow.set(col, nextCell);
+        }
+
+        if (currentRow.size === 0) {
+          sparseGrid.delete(cursorRow);
+        } else {
+          sparseGrid.set(cursorRow, currentRow);
+        }
+      } else if (grid) {
+        grid[cursorRow]![col] = nextCell;
+      }
+    }
+
+    markFrameDirty();
+  };
+
+  const eraseInLine = (mode: number) => {
+    const eraseStyle = createEraseStyle(currentStyle);
+    const applyEraseAtColumn = (col: number) => {
+      const nextCell = createAnsiCell(EMPTY_CELL_CHARACTER, eraseStyle);
+
+      if (normalizedStorageMode === "sparse") {
+        const currentRow = sparseGrid.get(cursorRow) ?? new Map<number, RetroScreenCell>();
+
+        if (!shouldPersistSparseCell(nextCell)) {
+          currentRow.delete(col);
+        } else {
+          currentRow.set(col, nextCell);
+        }
+
+        if (currentRow.size === 0) {
+          sparseGrid.delete(cursorRow);
+        } else {
+          sparseGrid.set(cursorRow, currentRow);
+        }
+      } else if (grid) {
+        grid[cursorRow]![col] = nextCell;
+      }
+    };
+
+    switch (mode) {
+      case 1:
+        for (let col = 0; col <= cursorCol; col += 1) {
+          applyEraseAtColumn(col);
+        }
+        break;
+      case 2:
+        if (normalizedStorageMode === "sparse") {
+          const currentRow = new Map<number, RetroScreenCell>();
+          for (let col = 0; col < normalizedCols; col += 1) {
+            const nextCell = createAnsiCell(EMPTY_CELL_CHARACTER, eraseStyle);
+            if (shouldPersistSparseCell(nextCell)) {
+              currentRow.set(col, nextCell);
+            }
+          }
+          if (currentRow.size === 0) {
+            sparseGrid.delete(cursorRow);
+          } else {
+            sparseGrid.set(cursorRow, currentRow);
+          }
+        } else if (grid) {
+          grid[cursorRow] = createStyledBlankDenseRow(eraseStyle);
+        }
+        break;
+      default:
+        for (let col = cursorCol; col < normalizedCols; col += 1) {
+          applyEraseAtColumn(col);
+        }
+        break;
+    }
+
+    markFrameDirty();
+  };
+
+  const eraseInDisplay = (mode: number) => {
+    const eraseStyle = createEraseStyle(currentStyle);
+    const replaceRow = (rowIndex: number) => {
+      if (normalizedStorageMode === "sparse") {
+        const currentRow = new Map<number, RetroScreenCell>();
+        for (let col = 0; col < normalizedCols; col += 1) {
+          const nextCell = createAnsiCell(EMPTY_CELL_CHARACTER, eraseStyle);
+          if (shouldPersistSparseCell(nextCell)) {
+            currentRow.set(col, nextCell);
+          }
+        }
+        if (currentRow.size === 0) {
+          sparseGrid.delete(rowIndex);
+        } else {
+          sparseGrid.set(rowIndex, currentRow);
+        }
+      } else if (grid) {
+        grid[rowIndex] = createStyledBlankDenseRow(eraseStyle);
+      }
+    };
+
+    switch (mode) {
+      case 1:
+        for (let rowIndex = 0; rowIndex < cursorRow; rowIndex += 1) {
+          replaceRow(rowIndex);
+        }
+        for (let col = 0; col <= cursorCol; col += 1) {
+          const previousCursorCol = cursorCol;
+          cursorCol = col;
+          eraseChars(1);
+          cursorCol = previousCursorCol;
+        }
+        break;
+      case 2:
+        for (let rowIndex = 0; rowIndex < normalizedRows; rowIndex += 1) {
+          replaceRow(rowIndex);
+        }
+        break;
+      default:
+        for (let col = cursorCol; col < normalizedCols; col += 1) {
+          const previousCursorCol = cursorCol;
+          cursorCol = col;
+          eraseChars(1);
+          cursorCol = previousCursorCol;
+        }
+        for (let rowIndex = cursorRow + 1; rowIndex < normalizedRows; rowIndex += 1) {
+          replaceRow(rowIndex);
+        }
+        break;
+    }
+
+    markFrameDirty();
   };
 
   const handleCsiSequence = (sequence: string) => {
@@ -682,6 +934,31 @@ export const createRetroScreenAnsiSnapshotStream = ({
       return;
     }
 
+    if (finalByte === "J") {
+      eraseInDisplay(params[0] ?? 0);
+      return;
+    }
+
+    if (finalByte === "K") {
+      eraseInLine(params[0] ?? 0);
+      return;
+    }
+
+    if (finalByte === "X") {
+      eraseChars(getCursorParam(0, 1));
+      return;
+    }
+
+    if (finalByte === "s") {
+      saveCursor();
+      return;
+    }
+
+    if (finalByte === "u") {
+      restoreCursor();
+      return;
+    }
+
     if (finalByte === "A") {
       normalizeCursorForMovement();
       cursorRow = clamp(cursorRow - getCursorParam(0, 1), 0, normalizedRows - 1);
@@ -709,6 +986,16 @@ export const createRetroScreenAnsiSnapshotStream = ({
   const appendText = (text: string) => {
     for (const character of text) {
       if (pendingEscape !== null) {
+        if (character === "\u001b") {
+          pendingEscape = character;
+          continue;
+        }
+
+        if (character === "\u0018" || character === "\u001a") {
+          pendingEscape = null;
+          continue;
+        }
+
         pendingEscape += character;
 
         if (pendingEscape.length === 1) {
@@ -743,36 +1030,26 @@ export const createRetroScreenAnsiSnapshotStream = ({
         continue;
       }
 
-      prepareCursorForPrint();
-      const nextCell = createAnsiCell(character, currentStyle);
-
-      if (normalizedStorageMode === "sparse") {
-        const currentRow = sparseGrid.get(cursorRow) ?? new Map<number, RetroScreenCell>();
-
-        if (!shouldPersistSparseCell(nextCell)) {
-          currentRow.delete(cursorCol);
-        } else {
-          currentRow.set(cursorCol, nextCell);
-        }
-
-        if (currentRow.size === 0) {
-          sparseGrid.delete(cursorRow);
-        } else {
-          sparseGrid.set(cursorRow, currentRow);
-        }
-      } else if (grid) {
-        grid[cursorRow]![cursorCol] = nextCell;
+      if (character === "\b") {
+        backspace();
+        continue;
       }
 
-      markFrameDirty();
-
-      if (cursorCol === normalizedCols - 1) {
-        cursorCol = normalizedCols;
-        pendingWrap = true;
-      } else {
-        cursorCol += 1;
-        pendingWrap = false;
+      if (character === "\t") {
+        insertTab();
+        continue;
       }
+
+      if (character === "\f") {
+        lineFeed();
+        continue;
+      }
+
+      if (character === "\u0007" || isIgnoredControlCharacter(character)) {
+        continue;
+      }
+
+      writePrintable(character);
     }
 
     return getSnapshot();
@@ -797,6 +1074,8 @@ export const createRetroScreenAnsiSnapshotStream = ({
       frameDirty = false;
       cursorRow = 0;
       cursorCol = 0;
+      savedCursorRow = 0;
+      savedCursorCol = 0;
       previousAbsoluteRow = null;
       previousAbsoluteCol = null;
       pendingWrap = false;

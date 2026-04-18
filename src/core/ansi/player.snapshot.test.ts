@@ -23,6 +23,30 @@ const solidWaste87260FixturePath = resolve(ansiDir, "fixtures/solid-waste-87260.
 const loadSolidWaste87260Fixture = async () =>
   new Uint8Array(gunzipSync(await readFile(solidWaste87260FixturePath)));
 
+const normalizeCellsForComparison = (cells: Array<Array<{ char: string; style: Record<string, unknown> }>>) =>
+  cells.map((row) =>
+    row.map((cell) => ({
+      char: cell.char,
+      style: {
+        intensity:
+          typeof cell.style.intensity === "string"
+            ? cell.style.intensity
+            : cell.style.bold
+              ? "bold"
+              : cell.style.faint
+                ? "faint"
+                : "normal",
+        bold: Boolean(cell.style.bold),
+        faint: Boolean(cell.style.faint),
+        inverse: Boolean(cell.style.inverse),
+        conceal: Boolean(cell.style.conceal),
+        blink: Boolean(cell.style.blink),
+        foreground: cell.style.foreground,
+        background: cell.style.background,
+      },
+    })),
+  );
+
 describe("ANSI snapshot stream", () => {
   it("preserves true source rows and cols while exposing line arrays", () => {
     const stream = createRetroScreenAnsiSnapshotStream({
@@ -207,6 +231,52 @@ describe("ANSI snapshot stream", () => {
     ]);
   });
 
+  it("restores ANSI-saved cursor positions before later writes", async () => {
+    const payload = "ABCD\u001b[s\u001b[2;1HZZZZ\u001b[uXY";
+    const terminal = new Terminal({
+      allowProposedApi: true,
+      rows: 2,
+      cols: 6,
+      scrollback: 16,
+    });
+
+    await new Promise<void>((resolveWrite) => {
+      terminal.write(payload, () => resolveWrite());
+    });
+
+    const referenceSnapshot = normalizeXtermSnapshot(terminal);
+    const snapshot = createRetroScreenAnsiSnapshotStream({
+      rows: 2,
+      cols: 6,
+    }).appendText(payload);
+
+    expect(snapshot.currentFrame.lines).toEqual(referenceSnapshot.rawLines);
+    terminal.dispose();
+  });
+
+  it("keeps ANSI-saved cursor positions attached to scrolled content", async () => {
+    const payload = "A\r\nB\r\nC\u001b[s\r\n\u001b[uX";
+    const terminal = new Terminal({
+      allowProposedApi: true,
+      rows: 3,
+      cols: 4,
+      scrollback: 16,
+    });
+
+    await new Promise<void>((resolveWrite) => {
+      terminal.write(payload, () => resolveWrite());
+    });
+
+    const referenceSnapshot = normalizeXtermSnapshot(terminal);
+    const snapshot = createRetroScreenAnsiSnapshotStream({
+      rows: 3,
+      cols: 4,
+    }).appendText(payload);
+
+    expect(snapshot.currentFrame.lines).toEqual(referenceSnapshot.rawLines);
+    terminal.dispose();
+  });
+
   it("scrolls the visible viewport upward when line feed lands on the bottom row", () => {
     const stream = createRetroScreenAnsiSnapshotStream({
       rows: 2,
@@ -218,6 +288,168 @@ describe("ANSI snapshot stream", () => {
       "BBBB",
       "CCCC",
     ]);
+  });
+
+  it("ignores unsupported C0 control bytes the same way xterm does", async () => {
+    const payloadBytes = new Uint8Array([0x15, 0x41, 0x16, 0x42, 0x1a, 0x43]);
+    const terminal = new Terminal({
+      allowProposedApi: true,
+      rows: 1,
+      cols: 6,
+      scrollback: 16,
+    });
+
+    await new Promise<void>((resolveWrite) => {
+      terminal.write(decodeRetroScreenAnsiBytes(payloadBytes), () => resolveWrite());
+    });
+
+    const referenceSnapshot = normalizeXtermSnapshot(terminal);
+    const snapshot = createRetroScreenAnsiSnapshotStream({
+      rows: 1,
+      cols: 6,
+    }).appendChunk(payloadBytes);
+
+    expect(snapshot.currentFrame.lines).toEqual(referenceSnapshot.rawLines);
+    expect(snapshot.currentFrame.cells?.map((row) => row.map((cell) => cell.char))).toEqual(
+      referenceSnapshot.cells.map((row) => row.map((cell) => cell.char))
+    );
+    terminal.dispose();
+  });
+
+  it("treats tabs as cursor movement instead of painting styled spaces", async () => {
+    const payload = "\u001b[5;30;47m\tX";
+    const terminal = new Terminal({
+      allowProposedApi: true,
+      rows: 1,
+      cols: 10,
+      scrollback: 16,
+    });
+
+    await new Promise<void>((resolveWrite) => {
+      terminal.write(payload, () => resolveWrite());
+    });
+
+    const referenceSnapshot = normalizeXtermSnapshot(terminal);
+    const snapshot = createRetroScreenAnsiSnapshotStream({
+      rows: 1,
+      cols: 10,
+    }).appendText(payload);
+
+    expect(snapshot.currentFrame.lines).toEqual(referenceSnapshot.rawLines);
+    expect(normalizeCellsForComparison(snapshot.currentFrame.cells ?? [])).toEqual(
+      normalizeCellsForComparison(referenceSnapshot.cells),
+    );
+    terminal.dispose();
+  });
+
+  it("restarts malformed CSI parsing when a fresh escape arrives", async () => {
+    const payload = "\u001b[   \u001b[40m\u001b[2JS";
+    const terminal = new Terminal({
+      allowProposedApi: true,
+      rows: 1,
+      cols: 4,
+      scrollback: 16,
+    });
+
+    await new Promise<void>((resolveWrite) => {
+      terminal.write(payload, () => resolveWrite());
+    });
+
+    const referenceSnapshot = normalizeXtermSnapshot(terminal);
+    const snapshot = createRetroScreenAnsiSnapshotStream({
+      rows: 1,
+      cols: 4,
+    }).appendText(payload);
+
+    expect(snapshot.currentFrame.lines).toEqual(referenceSnapshot.rawLines);
+    expect(normalizeCellsForComparison(snapshot.currentFrame.cells ?? [])).toEqual(
+      normalizeCellsForComparison(referenceSnapshot.cells),
+    );
+    terminal.dispose();
+  });
+
+  it("cancels malformed CSI parsing on SUB before visible text resumes", async () => {
+    const payload = "\u001b[255\u001aSAUCE";
+    const terminal = new Terminal({
+      allowProposedApi: true,
+      rows: 1,
+      cols: 8,
+      scrollback: 16,
+    });
+
+    await new Promise<void>((resolveWrite) => {
+      terminal.write(payload, () => resolveWrite());
+    });
+
+    const referenceSnapshot = normalizeXtermSnapshot(terminal);
+    const snapshot = createRetroScreenAnsiSnapshotStream({
+      rows: 1,
+      cols: 8,
+    }).appendText(payload);
+
+    expect(snapshot.currentFrame.lines).toEqual(referenceSnapshot.rawLines);
+    expect(normalizeCellsForComparison(snapshot.currentFrame.cells ?? [])).toEqual(
+      normalizeCellsForComparison(referenceSnapshot.cells),
+    );
+    terminal.dispose();
+  });
+
+  it("preserves explicit black erase backgrounds the same way xterm does", async () => {
+    const payload = "\u001b[40m\u001b[2J";
+    const terminal = new Terminal({
+      allowProposedApi: true,
+      rows: 2,
+      cols: 4,
+      scrollback: 16,
+    });
+
+    await new Promise<void>((resolveWrite) => {
+      terminal.write(payload, () => resolveWrite());
+    });
+
+    const referenceSnapshot = normalizeXtermSnapshot(terminal);
+    const snapshot = createRetroScreenAnsiSnapshotStream({
+      rows: 2,
+      cols: 4,
+    }).appendText(payload);
+
+    expect(snapshot.currentFrame.lines).toEqual(referenceSnapshot.rawLines);
+    expect(snapshot.currentFrame.cells?.[0]?.[0]?.style.background).toEqual(
+      referenceSnapshot.cells[0]?.[0]?.style.background
+    );
+    expect(snapshot.currentFrame.cells?.[1]?.[3]?.style.background).toEqual(
+      referenceSnapshot.cells[1]?.[3]?.style.background
+    );
+    terminal.dispose();
+  });
+
+  it("preserves erase background styles on rows scrolled into view", async () => {
+    const payload = "\u001b[40m\u001b[2J12\r\n34\r\n";
+    const terminal = new Terminal({
+      allowProposedApi: true,
+      rows: 2,
+      cols: 4,
+      scrollback: 16,
+    });
+
+    await new Promise<void>((resolveWrite) => {
+      terminal.write(payload, () => resolveWrite());
+    });
+
+    const referenceSnapshot = normalizeXtermSnapshot(terminal);
+    const snapshot = createRetroScreenAnsiSnapshotStream({
+      rows: 2,
+      cols: 4,
+    }).appendText(payload);
+
+    expect(snapshot.currentFrame.lines).toEqual(referenceSnapshot.rawLines);
+    expect(snapshot.currentFrame.cells?.[0]?.[2]?.style.background).toEqual(
+      referenceSnapshot.cells[0]?.[2]?.style.background
+    );
+    expect(snapshot.currentFrame.cells?.[1]?.[3]?.style.background).toEqual(
+      referenceSnapshot.cells[1]?.[3]?.style.background
+    );
+    terminal.dispose();
   });
 
   it("matches the terminal reference for the Solid Waste 87260 artifact", async () => {
