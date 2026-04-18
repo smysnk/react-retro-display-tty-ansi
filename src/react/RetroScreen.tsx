@@ -32,7 +32,7 @@ import type {
 import { RetroScreenDisplay } from "./RetroScreenDisplay";
 import { RetroScreenInputOverlay } from "./RetroScreenInputOverlay";
 import { resolveRetroScreenLayoutStrategy } from "./retro-screen-layout-strategy";
-import { getDisplayModeRootVars } from "./retro-screen-display-color";
+import { getDisplayModeRootVars, normalizeDisplayColorMode } from "./retro-screen-display-color";
 import { resolveRetroScreenFitWidthLayout } from "./retro-screen-fit-layout";
 import { getDisplayPaddingVars } from "./retro-screen-display-padding";
 import { getDisplayTypographyVars } from "./retro-screen-display-typography";
@@ -118,7 +118,7 @@ export function RetroScreen(props: RetroScreenProps) {
   });
   const fitWidthLayoutActive = resolvedLayoutStrategy.fitWidthLayoutActive;
   const staticGridActive = resolvedLayoutStrategy.gridMode === "static";
-  const displayColorMode = props.displayColorMode ?? "phosphor-green";
+  const displayColorMode = normalizeDisplayColorMode(props.displayColorMode ?? "phosphor-green");
   const displaySurfaceMode = props.displaySurfaceMode ?? "dark";
   const displayCharacterSizingMode = props.displayCharacterSizingMode ?? "grid";
   const displayDebugOverlay = props.displayDebugOverlay ?? false;

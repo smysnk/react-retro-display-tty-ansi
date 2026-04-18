@@ -1212,6 +1212,22 @@ describe("RetroScreen", () => {
     expect(root?.style.getPropertyValue("--retro-screen-bg-bottom")).toBe("#edf5e7");
   });
 
+  it("falls back to a safe display palette when runtime code passes an invalid display color mode", () => {
+    const { container } = render(
+      <RetroScreen
+        mode="value"
+        value="grid"
+        displayColorMode={"blink" as unknown as never}
+      />
+    );
+
+    const root = container.querySelector(".retro-screen") as HTMLElement | null;
+    expect(root).not.toBeNull();
+    expect(root).toHaveAttribute("data-display-color-mode", "phosphor-green");
+    expect(root?.style.getPropertyValue("--retro-screen-color")).toBe("#97ff9b");
+    expect(getBodyText(container)).toContain("grid");
+  });
+
   it("keeps ansi foreground and background colors legible in light surface mode", () => {
     const controller = createRetroScreenController({ rows: 2, cols: 8 });
     const { container } = render(

@@ -2,6 +2,8 @@ import type { CSSProperties } from "react";
 import type { RetroScreenCell, RetroScreenTerminalColor } from "../core/terminal/types";
 import type { RetroScreenDisplayColorMode, RetroScreenDisplaySurfaceMode } from "../core/types";
 
+const DEFAULT_DISPLAY_COLOR_MODE: RetroScreenDisplayColorMode = "phosphor-green";
+
 const DISPLAY_MODE_ACCENTS: Record<RetroScreenDisplayColorMode, string> = {
   "phosphor-green": "#97ff9b",
   "phosphor-amber": "#ffc96b",
@@ -241,22 +243,41 @@ const buildXtermPalette = () => {
 
 const XTERM_256_PALETTE = buildXtermPalette();
 
+export const normalizeDisplayColorMode = (
+  displayColorMode: RetroScreenDisplayColorMode | string | null | undefined
+): RetroScreenDisplayColorMode => {
+  if (
+    displayColorMode === "phosphor-green" ||
+    displayColorMode === "phosphor-amber" ||
+    displayColorMode === "phosphor-ice" ||
+    displayColorMode === "ansi-classic" ||
+    displayColorMode === "ansi-extended"
+  ) {
+    return displayColorMode;
+  }
+
+  return DEFAULT_DISPLAY_COLOR_MODE;
+};
+
 const getSurfaceBackground = (
   displayColorMode: RetroScreenDisplayColorMode,
   displaySurfaceMode: RetroScreenDisplaySurfaceMode
-) =>
-  displaySurfaceMode === "light"
-    ? LIGHT_SURFACE_BACKGROUNDS[displayColorMode]
+) => {
+  const normalizedDisplayColorMode = normalizeDisplayColorMode(displayColorMode);
+
+  return displaySurfaceMode === "light"
+    ? LIGHT_SURFACE_BACKGROUNDS[normalizedDisplayColorMode]
     : {
         top:
-          displayColorMode === "ansi-classic" || displayColorMode === "ansi-extended"
+          normalizedDisplayColorMode === "ansi-classic" || normalizedDisplayColorMode === "ansi-extended"
             ? "#141a24"
             : "#071008",
         bottom:
-          displayColorMode === "ansi-classic" || displayColorMode === "ansi-extended"
+          normalizedDisplayColorMode === "ansi-classic" || normalizedDisplayColorMode === "ansi-extended"
             ? ANSI_CLASSIC_DEFAULT_BACKGROUND
             : "#071008"
       };
+};
 
 const getDefaultAnsiForeground = (
   displayColorMode: RetroScreenDisplayColorMode,
@@ -318,8 +339,9 @@ export const getDisplayModeRootVars = (
   displaySurfaceMode: RetroScreenDisplaySurfaceMode,
   colorOverride?: string
 ): CSSProperties => {
-  const surface = getSurfaceBackground(displayColorMode, displaySurfaceMode);
-  const baseAccent = colorOverride ?? DISPLAY_MODE_ACCENTS[displayColorMode];
+  const normalizedDisplayColorMode = normalizeDisplayColorMode(displayColorMode);
+  const surface = getSurfaceBackground(normalizedDisplayColorMode, displaySurfaceMode);
+  const baseAccent = colorOverride ?? DISPLAY_MODE_ACCENTS[normalizedDisplayColorMode];
   const nextColor =
     displaySurfaceMode === "light" ? ensureContrast(baseAccent, surface.bottom, 6) : baseAccent;
 
@@ -343,30 +365,33 @@ export const getCellPresentationStyle = (
   displayColorMode: RetroScreenDisplayColorMode,
   displaySurfaceMode: RetroScreenDisplaySurfaceMode
 ): CSSProperties | undefined => {
-  if (displayColorMode !== "ansi-classic" && displayColorMode !== "ansi-extended") {
+  const normalizedDisplayColorMode = normalizeDisplayColorMode(displayColorMode);
+
+  if (normalizedDisplayColorMode !== "ansi-classic" && normalizedDisplayColorMode !== "ansi-extended") {
     return undefined;
   }
 
-  const palette = displayColorMode === "ansi-extended" ? XTERM_256_PALETTE : ANSI_CLASSIC_PALETTE;
+  const palette =
+    normalizedDisplayColorMode === "ansi-extended" ? XTERM_256_PALETTE : ANSI_CLASSIC_PALETTE;
   const resolvedForeground = resolveAnsiColor(
     cell.style.foreground,
     "foreground",
     palette,
-    displayColorMode,
+    normalizedDisplayColorMode,
     displaySurfaceMode
   );
   const resolvedBackground = resolveAnsiColor(
     cell.style.background,
     "background",
     palette,
-    displayColorMode,
+    normalizedDisplayColorMode,
     displaySurfaceMode
   );
   let [color, backgroundColor] = cell.style.inverse
     ? [resolvedBackground, resolvedForeground]
     : [resolvedForeground, resolvedBackground];
   const showBackground = cell.style.inverse || cell.style.background.mode !== "default";
-  const surfaceBackground = getSurfaceBackground(displayColorMode, displaySurfaceMode).bottom;
+  const surfaceBackground = getSurfaceBackground(normalizedDisplayColorMode, displaySurfaceMode).bottom;
 
   if (displaySurfaceMode === "light" && showBackground) {
     backgroundColor = ensureBackgroundContrast(backgroundColor, color, surfaceBackground, 4.8);
