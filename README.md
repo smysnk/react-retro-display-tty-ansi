@@ -16,6 +16,15 @@ semantic display color modes, and an xterm-checked terminal behavior surface for
 character playback. It can also project itself onto either dark or light LCD glass without
 asking the whole app shell to follow.
 
+## See It In Action
+
+Want to see the component running in a real product surface instead of a contained story?
+Check out [ascii.gallery](http://ascii.gallery), which uses the retro player and viewer stack
+to honor the ANSI and ASCII scenes of old through a living gallery of scrolling artwork,
+fullscreen playback, and preserved retro display behavior.
+
+[![ascii.gallery five-column desktop homepage demo](https://raw.githubusercontent.com/smysnk/react-retro-display-tty-ansi-ascii/main/docs/assets/react-retro-display-tty-ansi-ascii-ascii-gallery-home-desktop-5col.webp)](http://ascii.gallery)
+
 Latest CI runs: [github.com/smysnk/react-retro-display-tty-ansi-ascii/actions/workflows/cicd.yml](https://github.com/smysnk/react-retro-display-tty-ansi-ascii/actions/workflows/cicd.yml)
 
 ## Getting Started

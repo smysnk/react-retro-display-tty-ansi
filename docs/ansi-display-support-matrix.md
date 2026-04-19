@@ -6,8 +6,8 @@ This report is generated from `src/core/terminal/conformance/ansi-sequence-matri
 
 ## Summary
 
-- Total tracked display-facing families: 38
-- Oracle Backed: 23
+- Total tracked display-facing families: 39
+- Oracle Backed: 24
 - State Backed: 6
 - Host Facing: 2
 - Deferred: 7
@@ -30,6 +30,7 @@ Verified against xterm-headless fixtures and visible browser playback.
 | <code>c0-carriage-return</code> | <code>\r</code> | oracle-backed via <code>c0-carriage-return</code> | CR returns the cursor to column 1 on the active row. |
 | <code>c0-backspace</code> | <code>\b</code> | oracle-backed via <code>c0-backspace</code> | BS moves the cursor left without erasing the existing cell. |
 | <code>c0-tab</code> | <code>\t</code> | oracle-backed via <code>c0-tab</code> | HT moves the cursor to the next active tab stop. |
+| <code>c0-vertical-tab</code> | <code>\u000b</code> | oracle-backed via <code>c0-vertical-tab</code> | VT advances vertically the same way xterm treats a line feed. |
 | <code>csi-insert-chars</code> | <code>\u001b[2@</code> | oracle-backed via <code>csi-insert-chars</code> | CSI @ / ICH inserts blank cells at the cursor position. |
 | <code>csi-cursor-relative</code> | <code>\u001b[3A</code>, <code>\u001b[4B</code>, <code>\u001b[5C</code>, <code>\u001b[6D</code> | oracle-backed via <code>csi-cursor-up</code>, <code>csi-cursor-down</code>, <code>csi-cursor-forward</code>, <code>csi-cursor-backward</code> | CSI A/B/C/D performs relative cursor motion. |
 | <code>csi-cursor-position</code> | <code>\u001b[7;8H</code>, <code>\u001b[2;3f</code> | oracle-backed via <code>csi-cursor-position-h</code>, <code>csi-cursor-position-f</code> | CSI H/f performs row and column cursor positioning. |
