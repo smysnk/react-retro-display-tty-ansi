@@ -41,6 +41,7 @@ type RetroScreenDisplayProps = {
   renderModel: RetroScreenRenderModel;
   displayColorMode: RetroScreenDisplayColorMode;
   displaySurfaceMode: RetroScreenDisplaySurfaceMode;
+  displayFrame: boolean;
   screenRef: RefObject<HTMLDivElement | null>;
   probeRef: RefObject<HTMLSpanElement | null>;
   viewportRef?: RefObject<HTMLDivElement | null>;
@@ -67,6 +68,7 @@ export function RetroScreenDisplay({
   renderModel,
   displayColorMode,
   displaySurfaceMode,
+  displayFrame,
   screenRef,
   probeRef,
   viewportRef,
@@ -88,7 +90,7 @@ export function RetroScreenDisplay({
   children
 }: RetroScreenDisplayProps) {
   return (
-    <div className="retro-screen__screen">
+    <div className={joinClassNames("retro-screen__screen", displayFrame ? undefined : "retro-screen__screen--frameless")}>
       <div
         ref={viewportRef}
         className="retro-screen__viewport"

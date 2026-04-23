@@ -119,6 +119,7 @@ export function RetroScreen(props: RetroScreenProps) {
   const fitWidthLayoutActive = resolvedLayoutStrategy.fitWidthLayoutActive;
   const staticGridActive = resolvedLayoutStrategy.gridMode === "static";
   const displayColorMode = normalizeDisplayColorMode(props.displayColorMode ?? "phosphor-green");
+  const displayFrame = props.displayFrame ?? true;
   const displaySurfaceMode = props.displaySurfaceMode ?? "dark";
   const displayCharacterSizingMode = props.displayCharacterSizingMode ?? "grid";
   const displayDebugOverlay = props.displayDebugOverlay ?? false;
@@ -1250,7 +1251,11 @@ export function RetroScreen(props: RetroScreenProps) {
   return (
     <div
       ref={resizablePanel.rootRef}
-      className={joinClassNames("retro-screen", props.className)}
+      className={joinClassNames(
+        "retro-screen",
+        displayFrame ? undefined : "retro-screen--frameless",
+        props.className
+      )}
       style={inlineStyle}
       data-mode={props.mode}
       data-cursor-mode={renderModel.cursor?.mode ?? cursorMode}
@@ -1259,6 +1264,7 @@ export function RetroScreen(props: RetroScreenProps) {
       data-grid-mode={resolvedLayoutStrategy.gridMode}
       data-layout-strategy={resolvedLayoutStrategy.kind}
       data-display-color-mode={displayColorMode}
+      data-display-frame={displayFrame ? "true" : "false"}
       data-display-character-sizing-mode={displayCharacterSizingMode}
       data-display-font-sizing-mode={props.displayFontSizingMode ?? "contain"}
       data-display-layout-mode={props.displayLayoutMode ?? "default"}
@@ -1289,10 +1295,13 @@ export function RetroScreen(props: RetroScreenProps) {
         fitWidthLayoutMetrics ? String(fitWidthLayoutMetrics.contentAspectRatio) : undefined
       }
     >
-      <div className="retro-screen__bezel" aria-hidden="true" />
+      {displayFrame ? <div className="retro-screen__bezel" aria-hidden="true" /> : null}
       {touchInput?.enabled ? (
         <div
-          className="retro-screen__touch-overlay"
+          className={joinClassNames(
+            "retro-screen__touch-overlay",
+            displayFrame ? undefined : "retro-screen__touch-overlay--frameless"
+          )}
           data-testid={touchInput.overlayTestId}
           aria-hidden="true"
           onPointerCancel={(event) => {
@@ -1314,6 +1323,7 @@ export function RetroScreen(props: RetroScreenProps) {
         renderModel={renderModel}
         displayColorMode={displayColorMode}
         displaySurfaceMode={displaySurfaceMode}
+        displayFrame={displayFrame}
         screenRef={screenRef}
         probeRef={probeRef}
         viewportRef={viewportRef}

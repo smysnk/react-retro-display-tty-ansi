@@ -1623,6 +1623,56 @@ describe("RetroScreen", () => {
     expect(root?.getAttribute("data-focus-glow")).toBe("false");
   });
 
+  it("supports a frameless shell that removes the bezel and chrome in place", () => {
+    const view = render(
+      <RetroScreen
+        mode="terminal"
+        value="frameless"
+        displayFrame={false}
+        touchInput={{
+          enabled: true,
+          overlayTestId: "touch-overlay"
+        }}
+      />
+    );
+
+    const root = view.container.querySelector(".retro-screen") as HTMLDivElement | null;
+    const bezel = view.container.querySelector(".retro-screen__bezel");
+    const screenSurface = view.container.querySelector(".retro-screen__screen") as HTMLDivElement | null;
+    const overlay = screen.getByTestId("touch-overlay") as HTMLDivElement | null;
+
+    expect(root).not.toBeNull();
+    expect(root).toHaveClass("retro-screen--frameless");
+    expect(root?.getAttribute("data-display-frame")).toBe("false");
+    expect(bezel).toBeNull();
+    expect(screenSurface).not.toBeNull();
+    expect(screenSurface).toHaveClass("retro-screen__screen--frameless");
+    expect(overlay).not.toBeNull();
+    expect(overlay).toHaveClass("retro-screen__touch-overlay--frameless");
+  });
+
+  it("keeps frameless mode chromeless when the screen becomes focused", async () => {
+    const user = userEvent.setup();
+    const view = render(<RetroScreen mode="value" value="" editable displayFrame={false} />);
+
+    const root = view.container.querySelector(".retro-screen") as HTMLDivElement | null;
+    const screenSurface = view.container.querySelector(".retro-screen__screen") as HTMLDivElement | null;
+
+    expect(root).not.toBeNull();
+    expect(screenSurface).not.toBeNull();
+    expect(root).toHaveClass("retro-screen--frameless");
+    expect(screenSurface).toHaveClass("retro-screen__screen--frameless");
+    expect(root?.getAttribute("data-focused")).toBe("false");
+    expect(view.container.querySelector(".retro-screen__bezel")).toBeNull();
+
+    await user.click(screen.getByLabelText("RetroScreen input"));
+
+    expect(root?.getAttribute("data-focused")).toBe("true");
+    expect(root).toHaveClass("retro-screen--frameless");
+    expect(screenSurface).toHaveClass("retro-screen__screen--frameless");
+    expect(view.container.querySelector(".retro-screen__bezel")).toBeNull();
+  });
+
   it("keeps the cursor at the end when editable text is appended externally", () => {
     const appendedValue = "Compose inline.\nPress Enter when the thought lands.";
     const { container, rerender } = render(

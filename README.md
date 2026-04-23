@@ -150,6 +150,24 @@ surfaces clearly read as active. Disable it when you want a quieter shell:
 <RetroScreen mode="terminal" focusGlow={false} />
 ```
 
+## Display Frame
+
+Use `displayFrame={false}` when the glass itself should stay visible but the outer shell chrome
+should drop away. This is especially useful for fullscreen mobile artwork, embedded canvases, or
+layouts where the host surface already provides the surrounding frame.
+
+```tsx
+<RetroScreen
+  mode="terminal"
+  value="frameless but still live"
+  displayFrame={false}
+  displayPadding={0}
+/>
+```
+
+Frameless mode removes the bezel, inset border, outer radius, and shell shadow while keeping the
+same display surface, grid, ANSI rendering, and optional touch overlay behavior.
+
 Because rows and columns are measured from the visible screen area, tighter padding yields a
 denser grid and looser padding yields fewer cells.
 

@@ -66,6 +66,7 @@ export type RetroScreenTouchInputOptions = {
 export type RetroScreenSharedProps = {
   color?: string;
   displayColorMode?: RetroScreenDisplayColorMode;
+  displayFrame?: boolean;
   displaySurfaceMode?: RetroScreenDisplaySurfaceMode;
   displayLayoutMode?: RetroScreenDisplayLayoutMode;
   displayLayoutMaxHeight?: number;
